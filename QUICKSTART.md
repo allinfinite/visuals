@@ -1,5 +1,7 @@
 # Quick Start Guide
 
+This project features **34 unique visual patterns** that react to audio and mouse input.
+
 ## Installation & Running
 
 ```bash
