@@ -17,6 +17,9 @@ export class ImpossibleGeometry implements Pattern {
   private time: number = 0;
   private shapes: ImpossibleShape[] = [];
   private currentMode: number = 0; // 0-4 different impossible structures
+  private targetMode: number = 0;
+  private morphProgress: number = 1; // 1 = fully in currentMode, 0-1 = transitioning
+  private transitionDuration: number = 3; // 3 seconds for smooth transition
   private rotationSpeed: number = 0.3;
   private globalRotation: number = 0;
 
@@ -48,14 +51,24 @@ export class ImpossibleGeometry implements Pattern {
   public update(dt: number, audio: AudioData, input: InputState): void {
     this.time += dt;
     
-    // Click cycles through modes
+    // Click initiates smooth transition to next mode
     input.clicks.forEach((click) => {
       const age = this.time - click.time;
-      if (age < 0.05) {
-        this.currentMode = (this.currentMode + 1) % 5;
-        this.initShapes(); // Reinitialize for new mode
+      if (age < 0.05 && this.morphProgress >= 1) {
+        // Only allow new transition if current one is complete
+        this.targetMode = (this.currentMode + 1) % 5;
+        this.morphProgress = 0;
       }
     });
+    
+    // Update transition progress
+    if (this.morphProgress < 1) {
+      this.morphProgress += dt / this.transitionDuration;
+      if (this.morphProgress >= 1) {
+        this.morphProgress = 1;
+        this.currentMode = this.targetMode;
+      }
+    }
     
     // Audio-reactive rotation speed
     this.rotationSpeed = 0.3 + audio.treble * 0.5;
@@ -79,8 +92,42 @@ export class ImpossibleGeometry implements Pattern {
     const cx = width / 2;
     const cy = height / 2;
     
-    // Draw based on current mode
-    switch (this.currentMode) {
+    // If transitioning, draw both modes with alpha blend
+    if (this.morphProgress < 1) {
+      // Draw outgoing mode (fading out)
+      this.graphics.alpha = 1 - this.morphProgress;
+      this.drawMode(this.currentMode, cx, cy, audio);
+      
+      // Draw incoming mode (fading in)
+      this.graphics.alpha = this.morphProgress;
+      this.drawMode(this.targetMode, cx, cy, audio);
+      
+      this.graphics.alpha = 1;
+    } else {
+      // Draw current mode at full opacity
+      this.drawMode(this.currentMode, cx, cy, audio);
+    }
+    
+    // Draw mode indicator
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xffffff, 0.7);
+    
+    // Simple text rendering using shapes
+    const indicatorY = 30;
+    const indicatorX = 20;
+    const displayMode = this.morphProgress < 1 ? this.targetMode : this.currentMode;
+    for (let i = 0; i < 5; i++) {
+      const active = i === displayMode;
+      const size = active ? 8 : 4;
+      const alpha = active ? 0.9 : 0.3;
+      this.graphics.beginFill(0xffffff, alpha);
+      this.graphics.drawCircle(indicatorX + i * 20, indicatorY, size);
+      this.graphics.endFill();
+    }
+  }
+  
+  private drawMode(mode: number, cx: number, cy: number, audio: AudioData): void {
+    switch (mode) {
       case 0:
         this.drawInfinitePenrose(cx, cy, audio);
         break;
@@ -96,22 +143,6 @@ export class ImpossibleGeometry implements Pattern {
       case 4:
         this.drawMorphingCube(cx, cy, audio);
         break;
-    }
-    
-    // Draw mode indicator
-    this.graphics.lineStyle(0);
-    this.graphics.beginFill(0xffffff, 0.7);
-    
-    // Simple text rendering using shapes
-    const indicatorY = 30;
-    const indicatorX = 20;
-    for (let i = 0; i < 5; i++) {
-      const active = i === this.currentMode;
-      const size = active ? 8 : 4;
-      const alpha = active ? 0.9 : 0.3;
-      this.graphics.beginFill(0xffffff, alpha);
-      this.graphics.drawCircle(indicatorX + i * 20, indicatorY, size);
-      this.graphics.endFill();
     }
   }
   
