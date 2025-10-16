@@ -57,6 +57,9 @@ import { WeatherSync } from './scenes/WeatherSync';
 import { GlyphOrbit } from './scenes/GlyphOrbit';
 import { ChromaticBloom } from './scenes/ChromaticBloom';
 import { FacesInNoise } from './scenes/FacesInNoise';
+import { SilhouetteParticles } from './scenes/SilhouetteParticles';
+import { RotatingPolyhedra } from './scenes/RotatingPolyhedra';
+import { PointCloudMorph } from './scenes/PointCloudMorph';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -129,6 +132,9 @@ async function main() {
   sceneManager.addPattern(new GlyphOrbit(context));
   sceneManager.addPattern(new ChromaticBloom(context));
   sceneManager.addPattern(new FacesInNoise(context));
+  sceneManager.addPattern(new SilhouetteParticles(context));
+  sceneManager.addPattern(new RotatingPolyhedra(context));
+  sceneManager.addPattern(new PointCloudMorph(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);

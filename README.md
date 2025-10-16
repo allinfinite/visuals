@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **55 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
+- **58 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
@@ -97,10 +97,15 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Sigil Glyphs** - Procedural magical symbols spawned on click with intricate geometry
 - **Glyph Orbit** - Symbolic shapes orbiting cursor with 10 unique glyph types
 - **Faces in Noise** - Pareidolia effect creating organic faces from Perlin noise
+- **Silhouette Particles** - Human/creature shapes that disintegrate and reform
 
 ### Visual Illusions
 - **Moiré Rotation** - Overlapping line patterns creating interference effects
 - **Recursive Tiles** - Fractal subdivision with dynamic zoom and rotation
+
+### 3D Geometry
+- **Rotating Polyhedra** - 2D-projected 3D shapes (cube, tetrahedron, octahedron, icosahedron, dodecahedron)
+- **Point Cloud Morph** - 500 particles morphing between 8 formations (sphere, cube, torus, spiral, wave, DNA helix, lattice, galaxy)
 
 ### Environmental/Temporal
 - **Day Night Cycle** - Animated sky with sun/moon transitions and audio-driven timing
