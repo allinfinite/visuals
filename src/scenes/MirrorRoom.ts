@@ -54,11 +54,11 @@ export class MirrorRoom implements Pattern {
   public update(dt: number, audio: AudioData, input: InputState): void {
     this.time += dt;
 
-    // Reflection count based on amplitude (1-8 reflections)
-    this.reflectionCount = Math.floor(2 + audio.rms * 6);
+    // Reduced reflection count (2-4 reflections instead of 2-8)
+    this.reflectionCount = Math.floor(2 + audio.rms * 2);
 
-    // Room rotation
-    this.roomRotation += dt * 0.3 * (1 + audio.treble);
+    // Slower room rotation (reduced by 3x)
+    this.roomRotation += dt * 0.1 * (1 + audio.treble * 0.3);
 
     // Click spawns new object
     input.clicks.forEach((click) => {
@@ -68,8 +68,8 @@ export class MirrorRoom implements Pattern {
       }
     });
 
-    // Beat spawns object
-    if (audio.beat && this.objects.length < 20) {
+    // Beat spawns object (reduced max from 20 to 8)
+    if (audio.beat && this.objects.length < 8) {
       this.spawnObject();
     }
 
@@ -103,20 +103,20 @@ export class MirrorRoom implements Pattern {
       obj.vx *= 0.98;
       obj.vy *= 0.98;
 
-      // Rotation
-      obj.rotation += dt * (1 + audio.mid);
+      // Slower rotation (reduced by 2x)
+      obj.rotation += dt * 0.5 * (1 + audio.mid * 0.5);
 
-      // Hue shifts
-      obj.hue = (obj.hue + dt * 30 + audio.centroid * 50) % 360;
+      // Slower hue shifts (reduced by 3x)
+      obj.hue = (obj.hue + dt * 10 + audio.centroid * 15) % 360;
 
       // Size pulses
       obj.size *= 1 + (audio.beat ? 0.1 : -0.05 * dt);
       obj.size = Math.max(15, Math.min(60, obj.size));
     });
 
-    // Remove excess objects
-    if (this.objects.length > 12) {
-      this.objects = this.objects.slice(-10);
+    // Remove excess objects (reduced from 12 to 6)
+    if (this.objects.length > 6) {
+      this.objects = this.objects.slice(-5);
     }
 
     this.draw(audio);
@@ -134,10 +134,10 @@ export class MirrorRoom implements Pattern {
     this.graphics.lineStyle(3, 0xffffff, wallAlpha);
     this.graphics.drawRect(50, 50, width - 100, height - 100);
 
-    // Draw corner indicators
-    const cornerSize = 20 + audio.bass * 20;
-    const cornerColor = hslToHex((this.time * 100) % 360, 70, 50);
-    this.graphics.beginFill(cornerColor, 0.5);
+    // Subtle corner indicators (reduced size and opacity)
+    const cornerSize = 10 + audio.bass * 5;
+    const cornerColor = hslToHex((this.time * 30) % 360, 70, 50);
+    this.graphics.beginFill(cornerColor, 0.2);
     this.graphics.drawCircle(50, 50, cornerSize);
     this.graphics.drawCircle(width - 50, 50, cornerSize);
     this.graphics.drawCircle(width - 50, height - 50, cornerSize);
@@ -174,44 +174,27 @@ export class MirrorRoom implements Pattern {
 
         this.drawObject(reflectedObj, reflectionAlpha * reflectivity, audio);
 
-        // Mirror reflections (flip horizontally/vertically)
-        if (i % 2 === 0) {
-          const mirroredObj = {
-            ...obj,
-            x: width - obj.x,
-            y: obj.y,
-          };
-          this.drawObject(mirroredObj, reflectionAlpha * reflectivity * 0.7, audio);
-        }
-
-        if (i % 3 === 0) {
-          const mirroredObj = {
-            ...obj,
-            x: obj.x,
-            y: height - obj.y,
-          };
-          this.drawObject(mirroredObj, reflectionAlpha * reflectivity * 0.7, audio);
-        }
+        // Removed horizontal/vertical mirrors to reduce chaos
+        // (Was creating 3x the reflections - too overwhelming)
       }
     });
 
-    // Draw reflection lines (connecting objects to their reflections)
-    if (audio.beat) {
+    // Subtle reflection lines only occasionally (not every beat)
+    if (audio.beat && Math.random() < 0.3) {
       this.objects.forEach((obj) => {
-        for (let i = 1; i <= Math.min(2, this.reflectionCount); i++) {
-          const angle = (i / this.reflectionCount) * Math.PI * 2 + this.roomRotation;
-          const cos = Math.cos(angle);
-          const sin = Math.sin(angle);
-          const dx = obj.x - centerX;
-          const dy = obj.y - centerY;
-          const reflectedX = centerX + dx * cos - dy * sin;
-          const reflectedY = centerY + dx * sin + dy * cos;
+        // Only draw one reflection line per object
+        const angle = (1 / this.reflectionCount) * Math.PI * 2 + this.roomRotation;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const dx = obj.x - centerX;
+        const dy = obj.y - centerY;
+        const reflectedX = centerX + dx * cos - dy * sin;
+        const reflectedY = centerY + dx * sin + dy * cos;
 
-          const color = hslToHex(obj.hue, 70, 50);
-          this.graphics.lineStyle(1, color, 0.3);
-          this.graphics.moveTo(obj.x, obj.y);
-          this.graphics.lineTo(reflectedX, reflectedY);
-        }
+        const color = hslToHex(obj.hue, 70, 50);
+        this.graphics.lineStyle(1, color, 0.15); // Reduced opacity
+        this.graphics.moveTo(obj.x, obj.y);
+        this.graphics.lineTo(reflectedX, reflectedY);
       });
     }
   }
@@ -222,9 +205,9 @@ export class MirrorRoom implements Pattern {
     const color = hslToHex(obj.hue, 70, 50);
     const glowColor = hslToHex(obj.hue, 100, 70);
 
-    // Glow
-    this.graphics.beginFill(glowColor, alpha * 0.3 * (1 + audio.rms * 0.5));
-    this.graphics.drawCircle(obj.x, obj.y, obj.size * 1.5);
+    // Subtle glow (reduced opacity and size)
+    this.graphics.beginFill(glowColor, alpha * 0.15 * (1 + audio.rms * 0.3));
+    this.graphics.drawCircle(obj.x, obj.y, obj.size * 1.3);
     this.graphics.endFill();
 
     // Draw shape based on type
