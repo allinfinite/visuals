@@ -26,6 +26,7 @@ export class SilhouetteParticles implements Pattern {
   private time: number = 0;
   private silhouetteType: number = 0; // 0-4 different silhouettes
   private disintegrateDirection: number = 1; // 1 = disintegrating, -1 = reforming
+  private clickCooldown: number = 0; // Prevent click spam
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -213,24 +214,34 @@ export class SilhouetteParticles implements Pattern {
 
   public update(dt: number, audio: AudioData, input: InputState): void {
     this.time += dt;
+    
+    // Update cooldown
+    if (this.clickCooldown > 0) {
+      this.clickCooldown -= dt;
+    }
 
-    // Click changes silhouette
+    // Click changes silhouette (with cooldown and smooth transition)
     input.clicks.forEach((click) => {
       const age = this.time - click.time;
-      if (age < 0.05) {
-        this.silhouetteType = (this.silhouetteType + 1) % 5;
-        this.generateSilhouette();
+      if (age < 0.05 && this.clickCooldown <= 0) {
+        // Only change if mostly reformed (to avoid jarring mid-explosion change)
+        const avgDisintegration = this.particles.reduce((sum, p) => sum + p.disintegration, 0) / this.particles.length;
+        if (avgDisintegration < 0.3) {
+          this.silhouetteType = (this.silhouetteType + 1) % 5;
+          this.generateSilhouette();
+          this.clickCooldown = 1.0; // 1 second cooldown
+        }
       }
     });
 
-    // Beat toggles disintegration direction
-    if (audio.beat) {
+    // Beat toggles disintegration direction (less frequently)
+    if (audio.beat && Math.random() < 0.3) {
       this.disintegrateDirection *= -1;
     }
 
     this.particles.forEach((p) => {
-      // Animate disintegration
-      const disintegrateSpeed = 1.5 * (1 + audio.bass);
+      // Slower, smoother disintegration (reduced from 1.5)
+      const disintegrateSpeed = 0.8 * (1 + audio.bass * 0.5);
       if (this.disintegrateDirection > 0) {
         p.disintegration = Math.min(1, p.disintegration + dt * disintegrateSpeed);
       } else {
@@ -243,12 +254,13 @@ export class SilhouetteParticles implements Pattern {
         const noiseForce = noise2D(p.originalX * 0.01, p.originalY * 0.01 + this.time * 0.5);
         const angle = noiseForce * Math.PI * 2;
         
-        const explosionForce = p.disintegration * 200 * (1 + audio.treble);
+        // Gentler explosion (reduced from 200 to 100)
+        const explosionForce = p.disintegration * 100 * (1 + audio.treble * 0.5);
         p.vx += Math.cos(angle) * explosionForce * dt;
         p.vy += Math.sin(angle) * explosionForce * dt;
         
-        // Gravity
-        p.vy += 50 * p.disintegration * dt;
+        // Gentler gravity (reduced from 50 to 30)
+        p.vy += 30 * p.disintegration * dt;
       } else {
         // Reform to original position
         const returnSpeed = 5;
@@ -260,18 +272,18 @@ export class SilhouetteParticles implements Pattern {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
 
-      // Friction
-      p.vx *= 0.95;
-      p.vy *= 0.95;
+      // More friction for calmer movement (0.95 → 0.92)
+      p.vx *= 0.92;
+      p.vy *= 0.92;
 
       // Alpha based on disintegration
       p.alpha = 1 - p.disintegration * 0.7;
 
-      // Hue shifts
-      p.hue = (p.hue + dt * 20 + audio.centroid * 30) % 360;
+      // Slower hue shifts (reduced by 2x)
+      p.hue = (p.hue + dt * 10 + audio.centroid * 15) % 360;
 
-      // Size varies with audio
-      p.size *= 1 + (audio.beat ? 0.1 : -0.05 * dt);
+      // Gentler size pulses (reduced from 0.1/-0.05)
+      p.size *= 1 + (audio.beat ? 0.05 : -0.02 * dt);
       p.size = Math.max(1, Math.min(8, p.size));
     });
 
