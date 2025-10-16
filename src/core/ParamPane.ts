@@ -206,14 +206,14 @@ export class ParamPane {
 
     // Analog Look controls
     const analogFolder = this.pane.addFolder({
-      title: '🎞️ Analog Look',
+      title: '🎞️ Film Effects',
       expanded: true,
     });
 
     const postFX = this.app.getPostFX();
 
     analogFolder.addBinding(postFX.params, 'analogEnabled', {
-      label: 'Enable Analog Look',
+      label: 'Enable Film Effects',
     });
 
     analogFolder.addBinding(postFX.params, 'filmGrainIntensity', {
@@ -221,27 +221,6 @@ export class ParamPane {
       min: 0,
       max: 0.3,
       step: 0.01,
-    });
-
-    analogFolder.addBinding(postFX.params, 'warmth', {
-      label: 'Warmth',
-      min: 0.9,
-      max: 1.2,
-      step: 0.01,
-    });
-
-    analogFolder.addBinding(postFX.params, 'desaturation', {
-      label: 'Desaturation',
-      min: 0,
-      max: 0.5,
-      step: 0.05,
-    });
-
-    analogFolder.addBinding(postFX.params, 'softness', {
-      label: 'Softness (Blur)',
-      min: 0,
-      max: 3,
-      step: 0.1,
     });
 
     analogFolder.addBinding(postFX.params, 'vignetteStrength', {

@@ -1,4 +1,4 @@
-import { Container, RenderTexture, Sprite, Graphics, Texture, BlurFilter, ColorMatrixFilter, BLEND_MODES } from 'pixi.js';
+import { Container, RenderTexture, Sprite, Graphics, Texture, BLEND_MODES } from 'pixi.js';
 import type { RendererContext } from '../types';
 
 export class PostFX {
@@ -15,13 +15,13 @@ export class PostFX {
     bloomThreshold: 0.8,
     bloomIntensity: 0.3,
     
-    // Analog look parameters
-    analogEnabled: false, // Disabled by default to not break existing visuals
+    // Film effects parameters (grain & vignette overlays)
+    analogEnabled: false, // Disabled by default, enable in UI
     filmGrainIntensity: 0.12,
-    warmth: 1.08,
-    desaturation: 0.15,
-    softness: 1.0,
     vignetteStrength: 0.25,
+    
+    // Note: Color grading filters (warmth, desaturation, blur) are disabled
+    // because they break rendering when applied to the stage container
   };
 
   constructor(context: RendererContext) {
@@ -147,33 +147,8 @@ export class PostFX {
       return;
     }
     
-    const filters: any[] = [];
-    
-    // 1. Subtle blur for softness
-    if (this.params.softness > 0) {
-      const blurFilter = new BlurFilter(this.params.softness, 3);
-      filters.push(blurFilter);
-    }
-    
-    // 2. Color grading - warm, slightly desaturated analog look
-    const colorMatrix = new ColorMatrixFilter();
-    
-    // Desaturate slightly
-    colorMatrix.saturate(1 - this.params.desaturation, false);
-    
-    // Warm tone by adjusting hue slightly towards orange
-    const warmthDegrees = (this.params.warmth - 1) * 15; // Convert warmth to hue shift
-    colorMatrix.hue(warmthDegrees, false);
-    
-    // Slight brightness adjustment for analog feel
-    colorMatrix.brightness(0.98, false);
-    
-    filters.push(colorMatrix);
-    
-    // Apply filters to container
-    if (filters.length > 0) {
-      container.filters = filters;
-    }
+    // Don't apply filters to the main stage container - it breaks rendering
+    // Instead, only add overlays (grain/vignette) without filters
     
     // Add film grain overlay
     if (this.grainSprite && this.params.filmGrainIntensity > 0) {
@@ -183,7 +158,7 @@ export class PostFX {
       this.grainSprite.alpha = this.params.filmGrainIntensity;
     }
     
-    // Add vignette overlay
+    // Add vignette overlay  
     if (this.vignetteGraphics && this.params.vignetteStrength > 0) {
       if (!this.vignetteGraphics.parent) {
         container.addChild(this.vignetteGraphics);
