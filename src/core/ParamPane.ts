@@ -11,6 +11,7 @@ export class ParamPane {
 
   public params = {
     pattern: 0,
+    queuePattern: 0, // For queuing specific patterns in multi-layer mode
     enableAudio: false,
     audioSensitivity: 100, // 0-200, 100 = normal
     feedbackEnabled: true,
@@ -126,6 +127,32 @@ export class ParamPane {
       .on('change', (ev: any) => {
         this.sceneManager.setActivePattern(ev.value);
       });
+
+    // Queue specific pattern (for multi-layer mode)
+    const queueFolder = this.pane.addFolder({
+      title: '➕ Queue Specific Pattern',
+      expanded: false,
+    });
+
+    queueFolder.addBinding(this.params, 'queuePattern', {
+      label: 'Select & Queue',
+      options: patternNames,
+    }).on('change', (ev: any) => {
+      const success = this.sceneManager.queueSpecificPattern(ev.value);
+      if (success) {
+        console.log(`✅ Queued: ${patterns[ev.value].name}`);
+      }
+    });
+
+    // Add info text
+    const queueInfo = queueFolder.addBlade({
+      view: 'text',
+      label: 'Info',
+      value: 'Only works in Multi-Layer mode',
+      parse: (v: string) => String(v),
+      format: (v: string) => String(v),
+    });
+    (queueInfo as any).disabled = true;
 
     // Pattern pool selector
     const poolFolder = this.pane.addFolder({

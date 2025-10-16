@@ -154,18 +154,50 @@ export class SceneManager {
     }
   }
 
-  private spawnRandomLayer(): void {
-    const availableIndices = Array.from(this.patternPool);
-    const activeIndices = new Set(this.activeLayers.map(l => this.patterns.indexOf(l.pattern)));
+  public queueSpecificPattern(index: number): boolean {
+    // Manually queue a specific pattern for multi-layer mode
+    if (!this.compositionEnabled) {
+      console.warn('SceneManager: Cannot queue pattern when composition mode is disabled');
+      return false;
+    }
     
-    // Filter out already active patterns
-    const spawnableIndices = availableIndices.filter(i => !activeIndices.has(i));
+    if (index < 0 || index >= this.patterns.length) {
+      console.warn(`SceneManager: Invalid pattern index ${index}`);
+      return false;
+    }
     
-    if (spawnableIndices.length === 0) return;
+    if (!this.patternPool.has(index)) {
+      console.warn(`SceneManager: Pattern ${index} (${this.patterns[index].name}) is not in the pool`);
+      return false;
+    }
+    
+    // Check if pattern is already active
+    const isAlreadyActive = this.activeLayers.some(
+      layer => this.patterns.indexOf(layer.pattern) === index
+    );
+    
+    if (isAlreadyActive) {
+      console.log(`SceneManager: Pattern ${this.patterns[index].name} is already active`);
+      return false;
+    }
+    
+    // If at max layers, remove oldest non-removing layer
+    if (this.activeLayers.length >= this.maxLayers) {
+      const oldestLayer = this.activeLayers.find(l => !l.isRemoving);
+      if (oldestLayer) {
+        oldestLayer.isRemoving = true;
+        console.log(`SceneManager: Marking oldest layer for removal to make room`);
+      }
+    }
+    
+    // Spawn the specific pattern
+    this.spawnLayer(index);
+    console.log(`SceneManager: Queued pattern ${this.patterns[index].name}`);
+    return true;
+  }
 
-    const randomIndex = spawnableIndices[Math.floor(Math.random() * spawnableIndices.length)];
-    const pattern = this.patterns[randomIndex];
-
+  private spawnLayer(index: number): void {
+    const pattern = this.patterns[index];
     pattern.container.visible = true;
     pattern.container.alpha = 0;
 
@@ -176,6 +208,19 @@ export class SceneManager {
       fadeOutProgress: 0,
       isRemoving: false,
     });
+  }
+
+  private spawnRandomLayer(): void {
+    const availableIndices = Array.from(this.patternPool);
+    const activeIndices = new Set(this.activeLayers.map(l => this.patterns.indexOf(l.pattern)));
+    
+    // Filter out already active patterns
+    const spawnableIndices = availableIndices.filter(i => !activeIndices.has(i));
+    
+    if (spawnableIndices.length === 0) return;
+
+    const randomIndex = spawnableIndices[Math.floor(Math.random() * spawnableIndices.length)];
+    this.spawnLayer(randomIndex);
   }
 
   public enableCompositionMode(): void {
