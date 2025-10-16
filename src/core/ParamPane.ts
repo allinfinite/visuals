@@ -28,9 +28,10 @@ export class ParamPane {
     activeLayerInfo: 'None',
   };
   
-  // Track queue counts for each pattern
-  private queueCounts: { [key: number]: number } = {};
+  // Track queue positions for each pattern
+  private queuePositions: { [key: number]: number[] } = {}; // Stores array of queue positions for each pattern
   private queueButtons: any[] = [];
+  private globalQueuePosition: number = 0; // Global counter for queue positions
 
   constructor(sceneManager: SceneManager, audio: Audio, app: App) {
     this.sceneManager = sceneManager;
@@ -152,29 +153,30 @@ export class ParamPane {
     queueFolder.addBlade({
       view: 'text',
       label: 'Info',
-      value: 'Click patterns to add to queue. Numbers show queue count.',
+      value: 'Click patterns to add to queue. Numbers show queue position.',
       parse: (v: string) => String(v),
       format: (v: string) => String(v),
     } as any);
 
     // Create clickable buttons for each pattern (sorted alphabetically)
     sortedPatterns.forEach(({ pattern, index }) => {
-      // Initialize queue count
-      this.queueCounts[index] = 0;
+      // Initialize queue positions array
+      this.queuePositions[index] = [];
       
       const buttonParam = { 
         action: () => {
           const success = this.sceneManager.queueSpecificPattern(index);
           if (success) {
-            this.queueCounts[index]++;
-            console.log(`✅ Queued: ${pattern.name} (${this.queueCounts[index]} in queue)`);
+            this.globalQueuePosition++;
+            this.queuePositions[index].push(this.globalQueuePosition);
+            console.log(`✅ Queued: ${pattern.name} at position ${this.globalQueuePosition}`);
             this.updateQueueButtons();
           }
         }
       };
       
       const button = queueFolder.addButton({
-        title: `${pattern.name} [0]`,
+        title: `${pattern.name}`,
         label: '',
       }).on('click', buttonParam.action);
       
@@ -300,12 +302,20 @@ export class ParamPane {
   }
 
   private updateQueueButtons(): void {
-    // Update button titles to show current queue count
+    // Update button titles to show queue positions
     const patterns = this.sceneManager.getAllPatterns();
     this.queueButtons.forEach(({ button, index }) => {
-      const count = this.queueCounts[index] || 0;
+      const positions = this.queuePositions[index] || [];
       const patternName = patterns[index].name;
-      button.title = `${patternName} [${count}]`;
+      
+      if (positions.length === 0) {
+        button.title = patternName;
+      } else if (positions.length === 1) {
+        button.title = `${patternName} [${positions[0]}]`;
+      } else {
+        // Show all positions if multiple
+        button.title = `${patternName} [${positions.join(', ')}]`;
+      }
     });
     this.pane.refresh();
   }
