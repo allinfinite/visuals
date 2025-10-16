@@ -223,6 +223,13 @@ export class ParamPane {
       step: 0.01,
     });
 
+    analogFolder.addBinding(postFX.params, 'softness', {
+      label: 'Softness (Blur)',
+      min: 0,
+      max: 3,
+      step: 0.1,
+    });
+
     analogFolder.addBinding(postFX.params, 'vignetteStrength', {
       label: 'Vignette',
       min: 0,

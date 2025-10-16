@@ -1,4 +1,4 @@
-import { Container, RenderTexture, Sprite, Graphics, Texture, BLEND_MODES } from 'pixi.js';
+import { Container, RenderTexture, Sprite, Graphics, Texture, BLEND_MODES, BlurFilter } from 'pixi.js';
 import type { RendererContext } from '../types';
 
 export class PostFX {
@@ -19,9 +19,7 @@ export class PostFX {
     analogEnabled: false, // Disabled by default, enable in UI
     filmGrainIntensity: 0.12,
     vignetteStrength: 0.5, // 0-1, multiplied by 0.15 internally for subtle effect
-    
-    // Note: Color grading filters (warmth, desaturation, blur) are disabled
-    // because they break rendering when applied to the stage container
+    softness: 1.0, // Blur amount (0-3 pixels)
   };
 
   constructor(context: RendererContext) {
@@ -149,8 +147,16 @@ export class PostFX {
       return;
     }
     
-    // Don't apply filters to the main stage container - it breaks rendering
-    // Instead, only add overlays (grain/vignette) without filters
+    // Apply blur filter if softness > 0
+    const filters: any[] = [];
+    
+    if (this.params.softness > 0) {
+      const blurFilter = new BlurFilter(this.params.softness, 4); // 4 = quality
+      filters.push(blurFilter);
+    }
+    
+    // Apply filters array (or null if empty)
+    container.filters = filters.length > 0 ? filters : null;
     
     // Add film grain overlay
     if (this.grainSprite && this.params.filmGrainIntensity > 0) {

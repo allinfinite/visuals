@@ -35,7 +35,7 @@ export class App {
     this.postFX.createFilmGrain();
     this.postFX.createVignette();
     
-    console.log('App initialized (enable Film Effects in UI for grain & vignette)');
+    console.log('App initialized (enable Film Effects in UI for grain, blur & vignette)');
   }
 
   public getSceneManager(): SceneManager {
