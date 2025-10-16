@@ -148,16 +148,13 @@ export class PostFX {
     // Desaturate slightly
     colorMatrix.saturate(1 - this.params.desaturation, false);
     
-    // Warm tone (shift towards orange/red)
-    const warmMatrix: [number, ...number[]] = [
-      this.params.warmth, 0, 0, 0, 8,    // Red channel (warmer)
-      0, 1, 0, 0, 4,                      // Green channel  
-      0, 0, 0.94, 0, -5,                  // Blue channel (less blue)
-      0, 0, 0, 1, 0, 0, 0, 0, 0, 0        // Complete 20-element matrix
-    ];
+    // Warm tone by adjusting hue slightly towards orange
+    const warmthDegrees = (this.params.warmth - 1) * 15; // Convert warmth to hue shift
+    colorMatrix.hue(warmthDegrees, false);
     
-    // Apply custom matrix
-    colorMatrix.matrix = warmMatrix;
+    // Slight brightness adjustment for analog feel
+    colorMatrix.brightness(0.98, false);
+    
     filters.push(colorMatrix);
     
     // Apply filters to container
