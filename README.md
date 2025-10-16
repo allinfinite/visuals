@@ -10,6 +10,8 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 - **68 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
+  - **🖱️ All layers respond to mouse/clicks**: Every active pattern reacts to your interactions
+  - **Real-time monitoring**: See which patterns are currently active
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
 - **Autonomous Animation**: All patterns animate continuously without user interaction
@@ -173,8 +175,10 @@ Use the dropdown in the Tweakpane UI to switch between patterns.
 ### Multi-Layer Composition System
 Create complex, evolving visual compositions by mixing patterns:
 - **Enable Multi-Layer**: Toggle composition mode on/off
+- **🖱️ Interactive**: All active layers respond to mouse movements and clicks simultaneously
+- **Active Layer Monitor**: See in real-time which patterns are currently running
 - **Pattern Pool**: Check/uncheck which patterns can appear in the mix
-- **Max Layers**: Control how many patterns run simultaneously (1-5)
+- **Max Layers**: Control how many patterns run simultaneously (1-3)
 - **Layer Duration**: How long each pattern stays visible (5-60s)
 - **Spawn Interval**: Time between new patterns appearing (2-30s)
 - Patterns fade in and out smoothly

@@ -78,6 +78,14 @@ export class SceneManager {
     return this.patterns;
   }
 
+  public getActiveLayerCount(): number {
+    return this.activeLayers.length;
+  }
+
+  public getActiveLayerNames(): string[] {
+    return this.activeLayers.map(layer => layer.pattern.name);
+  }
+
   public update(dt: number, audio: AudioData, input: InputState): void {
     if (this.compositionEnabled) {
       this.updateCompositionMode(dt, audio, input);
@@ -93,7 +101,7 @@ export class SceneManager {
   private updateCompositionMode(dt: number, audio: AudioData, input: InputState): void {
     this.timeSinceLastSpawn += dt;
 
-    // Update existing layers
+    // Update existing layers - ALL layers receive the same input
     this.activeLayers.forEach(layer => {
       layer.lifetime += dt;
 
@@ -101,7 +109,9 @@ export class SceneManager {
       if (layer.fadeInProgress < 1) {
         layer.fadeInProgress += dt / this.fadeInDuration;
         layer.fadeInProgress = Math.min(1, layer.fadeInProgress);
-        layer.pattern.container.alpha = layer.fadeInProgress;
+        // Keep full alpha during fade for better interactivity visibility
+        const fadeAlpha = layer.fadeInProgress;
+        layer.pattern.container.alpha = fadeAlpha;
       }
 
       // Check if layer should start fading out
@@ -115,7 +125,8 @@ export class SceneManager {
         layer.pattern.container.alpha = Math.max(0, 1 - layer.fadeOutProgress);
       }
 
-      // Update the pattern
+      // IMPORTANT: All active layers receive mouse/click input simultaneously
+      // This ensures user interactions affect all visible patterns
       layer.pattern.update(dt, audio, input);
     });
 

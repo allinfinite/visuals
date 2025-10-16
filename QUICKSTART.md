@@ -30,17 +30,21 @@ Open your browser to `http://localhost:3000`
 
 1. Toggle **"Enable Multi-Layer"** in the Composition Mode section
 2. Patterns will now randomly fade in and out, layering on top of each other
-3. Select which patterns are available in the **Pattern Pool** checkboxes (24 total!)
-4. Adjust settings:
-   - **Max Layers**: How many patterns can be active simultaneously (1-5)
+3. **🖱️ All active layers respond to your mouse/clicks simultaneously!**
+4. Select which patterns are available in the **Pattern Pool** checkboxes
+5. Adjust settings:
+   - **Max Layers**: How many patterns can be active simultaneously (1-3)
    - **Layer Duration**: How long each pattern stays visible (5-60s)
    - **Spawn Interval**: Time between new patterns appearing (2-30s)
+6. **Monitor active layers** in real-time with the "Active Layers" counter
 
 Perfect for installations and screensavers:
 - Multiple patterns blend and mix automatically
+- All layers respond to mouse movements and clicks
 - Each layer fades in/out smoothly
 - Trails create evolving, layered compositions
 - Visuals never repeat exactly - always unique
+- Real-time monitoring shows which patterns are currently active
 - Can run for hours creating ambient atmospheres
 - Adjust trail length for different moods (short = energetic, long = ethereal)
 

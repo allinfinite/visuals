@@ -160,7 +160,12 @@ async function main() {
   sceneManager.setActivePattern(0);
 
   // Setup UI
-  new ParamPane(sceneManager, app.getAudio(), app);
+  const paramPane = new ParamPane(sceneManager, app.getAudio(), app);
+
+  // Update UI periodically (10 times per second)
+  setInterval(() => {
+    paramPane.update();
+  }, 100);
 
   // Start the app
   app.start();
@@ -169,6 +174,7 @@ async function main() {
   console.log('🖱️  Move mouse and click to interact');
   console.log('🎵 Enable microphone in the UI for audio reactivity');
   console.log('🎨 Enable Multi-Layer for generative compositions');
+  console.log('🖱️  All layers respond to mouse/clicks simultaneously');
   console.log(`📊 ${sceneManager.getAllPatterns().length} patterns loaded`);
 }
 

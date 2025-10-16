@@ -22,6 +22,10 @@ export class ParamPane {
     maxLayers: 2, // Reduced from 3 for performance
     layerDuration: 15,
     spawnInterval: 8, // Increased from 5 for performance
+    
+    // Active layer info (read-only, updated dynamically)
+    activeLayerCount: 0,
+    activeLayerInfo: 'None',
   };
 
   constructor(sceneManager: SceneManager, audio: Audio, app: App) {
@@ -51,6 +55,28 @@ export class ParamPane {
       } else {
         this.sceneManager.disableCompositionMode();
       }
+    });
+
+    // Add info text about input handling
+    compositionFolder.addBlade({
+      view: 'text',
+      label: 'Input Handling',
+      value: '🖱️ All layers respond to mouse/clicks',
+      parse: (v: string) => v,
+      format: (v: string) => v,
+    } as any);
+
+    // Add active layer count monitor
+    compositionFolder.addBinding(this.params, 'activeLayerCount', {
+      label: 'Active Layers',
+      readonly: true,
+    });
+
+    // Add active layer names monitor
+    compositionFolder.addBinding(this.params, 'activeLayerInfo', {
+      label: 'Current Patterns',
+      readonly: true,
+      multiline: true,
     });
 
     compositionFolder.addBinding(this.params, 'maxLayers', {
@@ -184,6 +210,19 @@ export class ParamPane {
         folder.addBinding(params, key);
       }
     });
+  }
+
+  public update(): void {
+    // Update active layer information
+    if (this.params.compositionMode) {
+      this.params.activeLayerCount = this.sceneManager.getActiveLayerCount();
+      const names = this.sceneManager.getActiveLayerNames();
+      this.params.activeLayerInfo = names.length > 0 ? names.join('\n') : 'None';
+    } else {
+      this.params.activeLayerCount = 0;
+      this.params.activeLayerInfo = 'Single pattern mode';
+    }
+    this.pane.refresh();
   }
 
   public destroy(): void {
