@@ -10,15 +10,30 @@ interface TunnelRing {
   offset: { x: number; y: number };
 }
 
+interface Particle {
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  size: number;
+  life: number;
+  maxLife: number;
+  hue: number;
+  angle: number;
+}
+
 export class WireframeTunnel implements Pattern {
   public name = 'Wireframe Tunnel';
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;
   private rings: TunnelRing[] = [];
+  private particles: Particle[] = [];
   private time: number = 0;
-  private tunnelSpeed: number = 0.5;
+  private tunnelSpeed: number = 0.3; // Reduced from 0.5 to 0.3
   private cameraOffset: { x: number; y: number } = { x: 0, y: 0 };
+  private particleSpawnTimer: number = 0;
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -55,8 +70,8 @@ export class WireframeTunnel implements Pattern {
     this.cameraOffset.x += (targetOffsetX - this.cameraOffset.x) * 3 * dt;
     this.cameraOffset.y += (targetOffsetY - this.cameraOffset.y) * 3 * dt;
 
-    // Tunnel speed varies with audio
-    this.tunnelSpeed = 0.3 + audio.rms * 0.7 + (audio.beat ? 0.5 : 0);
+    // Tunnel speed varies with audio (slower overall)
+    this.tunnelSpeed = 0.15 + audio.rms * 0.4 + (audio.beat ? 0.3 : 0);
 
     // Move rings forward and recycle
     this.rings.forEach((ring) => {
@@ -88,6 +103,60 @@ export class WireframeTunnel implements Pattern {
 
     // Sort rings by depth (far to near)
     this.rings.sort((a, b) => a.z - b.z);
+
+    // Spawn particles from rings
+    this.particleSpawnTimer += dt;
+    if (this.particleSpawnTimer > 0.05) { // Spawn every 0.05 seconds
+      this.particleSpawnTimer = 0;
+      
+      // Pick a random ring to spawn from
+      const ring = this.rings[Math.floor(Math.random() * this.rings.length)];
+      const spawnCount = 2 + Math.floor(audio.rms * 3);
+      
+      for (let i = 0; i < spawnCount; i++) {
+        const angle = (Math.random() * ring.sides / ring.sides) * Math.PI * 2 + ring.rotation;
+        const x = Math.cos(angle) * ring.radius + ring.offset.x;
+        const y = Math.sin(angle) * ring.radius + ring.offset.y;
+        
+        // Velocity pointing outward from ring
+        const expansionSpeed = 30 + audio.bass * 50;
+        this.particles.push({
+          x,
+          y,
+          z: ring.z,
+          vx: Math.cos(angle) * expansionSpeed,
+          vy: Math.sin(angle) * expansionSpeed,
+          size: 2 + Math.random() * 3,
+          life: 0,
+          maxLife: 1 + Math.random() * 1.5,
+          hue: (ring.z * 360 + this.time * 50 + audio.centroid * 100) % 360,
+          angle: angle,
+        });
+      }
+    }
+    
+    // Update particles
+    this.particles.forEach((p) => {
+      p.life += dt;
+      
+      // Expand outward
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      
+      // Move with tunnel
+      p.z += this.tunnelSpeed * dt;
+      
+      // Expand in size
+      p.size += dt * 15 * (1 + audio.treble);
+    });
+    
+    // Remove dead particles
+    this.particles = this.particles.filter(p => p.life < p.maxLife && p.z < 1.2);
+    
+    // Limit particle count
+    if (this.particles.length > 500) {
+      this.particles = this.particles.slice(-400);
+    }
 
     this.draw(audio);
   }
@@ -189,6 +258,53 @@ export class WireframeTunnel implements Pattern {
             this.graphics.drawCircle(v.x, v.y, vertexSize);
             this.graphics.endFill();
           });
+        }
+      }
+    });
+
+    // Draw particles
+    this.particles.forEach((p) => {
+      const projected = this.projectPoint(p.x, p.y, p.z);
+      
+      // Fade based on life
+      const lifeProgress = p.life / p.maxLife;
+      const alpha = (1 - lifeProgress) * projected.alpha * 0.8;
+      
+      if (alpha > 0.05) {
+        const size = p.size * projected.scale;
+        const color = hslToHex(p.hue, 80, 60);
+        const glowColor = hslToHex(p.hue, 100, 80);
+        
+        // Outer glow (expanding)
+        this.graphics.beginFill(glowColor, alpha * 0.3);
+        this.graphics.drawCircle(projected.x, projected.y, size * 2);
+        this.graphics.endFill();
+        
+        // Middle glow
+        this.graphics.beginFill(glowColor, alpha * 0.5);
+        this.graphics.drawCircle(projected.x, projected.y, size * 1.3);
+        this.graphics.endFill();
+        
+        // Core particle
+        this.graphics.beginFill(color, alpha);
+        this.graphics.drawCircle(projected.x, projected.y, size);
+        this.graphics.endFill();
+        
+        // Bright center
+        this.graphics.beginFill(0xffffff, alpha * 0.7);
+        this.graphics.drawCircle(projected.x, projected.y, size * 0.4);
+        this.graphics.endFill();
+        
+        // Trail line (connecting back to origin)
+        if (lifeProgress < 0.5) {
+          const trailDistance = Math.sqrt(p.vx * p.vx + p.vy * p.vy) * p.life * 0.3;
+          const trailX = p.x - Math.cos(p.angle) * trailDistance;
+          const trailY = p.y - Math.sin(p.angle) * trailDistance;
+          const trailProjected = this.projectPoint(trailX, trailY, p.z);
+          
+          this.graphics.lineStyle(size * 0.5, glowColor, alpha * 0.4);
+          this.graphics.moveTo(trailProjected.x, trailProjected.y);
+          this.graphics.lineTo(projected.x, projected.y);
         }
       }
     });
