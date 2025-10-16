@@ -58,9 +58,94 @@ export class AIKenBurns implements Pattern {
       console.warn('AIKenBurns: No OpenAI API key found. Set VITE_OPENAI_API_KEY in .env');
     } else {
       console.log('AIKenBurns: OpenAI API key loaded');
-      // Generate first image
+    }
+    
+    // Load fallback image immediately for instant display
+    this.loadFallbackImage();
+    
+    // Queue first AI generation
+    if (this.apiKey) {
       this.queueImageGeneration();
     }
+  }
+
+  private loadFallbackImage(): void {
+    // Generate a procedural trippy pattern as fallback
+    this.generateProceduralImage();
+  }
+
+  private generateProceduralImage(): void {
+    // Create a canvas with procedural trippy pattern
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const ctx = canvas.getContext('2d')!;
+    
+    // Draw psychedelic fractal pattern
+    const centerX = 512;
+    const centerY = 512;
+    
+    // Radial gradient background
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 512);
+    gradient.addColorStop(0, '#ff0080');
+    gradient.addColorStop(0.3, '#8000ff');
+    gradient.addColorStop(0.6, '#00ffff');
+    gradient.addColorStop(1, '#000033');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 1024, 1024);
+    
+    // Draw multiple rotating mandala layers
+    for (let layer = 0; layer < 6; layer++) {
+      const radius = 50 + layer * 80;
+      const segments = 12;
+      const hue = (layer * 60) % 360;
+      
+      for (let i = 0; i < segments; i++) {
+        const angle = (i / segments) * Math.PI * 2 + layer * 0.5;
+        
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
+        
+        // Draw petal shapes
+        const petalSize = 40 + layer * 10;
+        ctx.beginPath();
+        ctx.ellipse(radius, 0, petalSize, petalSize * 0.6, 0, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.6)`;
+        ctx.fill();
+        
+        // Inner glow
+        ctx.beginPath();
+        ctx.ellipse(radius, 0, petalSize * 0.5, petalSize * 0.3, 0, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${(hue + 180) % 360}, 90%, 80%, 0.8)`;
+        ctx.fill();
+        
+        ctx.restore();
+      }
+    }
+    
+    // Add sparkle overlay
+    for (let i = 0; i < 200; i++) {
+      const x = Math.random() * 1024;
+      const y = Math.random() * 1024;
+      const size = Math.random() * 3 + 1;
+      const alpha = Math.random() * 0.8;
+      
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.fill();
+    }
+    
+    // Convert canvas to texture and load as first image
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        this.loadImageFromUrl(url, 'Procedural Mandala Pattern').then(() => {
+          URL.revokeObjectURL(url);
+        });
+      }
+    });
   }
 
   private queueImageGeneration(): void {
