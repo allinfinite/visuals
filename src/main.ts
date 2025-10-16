@@ -26,6 +26,12 @@ import { Constellations } from './scenes/Constellations';
 import { GridPulses } from './scenes/GridPulses';
 import { Metaballs } from './scenes/Metaballs';
 import { MinimalDots } from './scenes/MinimalDots';
+import { CircuitPulses } from './scenes/CircuitPulses';
+import { SnowDrift } from './scenes/SnowDrift';
+import { OceanWaves } from './scenes/OceanWaves';
+import { BlackHole } from './scenes/BlackHole';
+import { Supernova } from './scenes/Supernova';
+import { GradientClouds } from './scenes/GradientClouds';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -67,6 +73,12 @@ async function main() {
   sceneManager.addPattern(new GridPulses(context));
   sceneManager.addPattern(new Metaballs(context));
   sceneManager.addPattern(new MinimalDots(context));
+  sceneManager.addPattern(new CircuitPulses(context));
+  sceneManager.addPattern(new SnowDrift(context));
+  sceneManager.addPattern(new OceanWaves(context));
+  sceneManager.addPattern(new BlackHole(context));
+  sceneManager.addPattern(new Supernova(context));
+  sceneManager.addPattern(new GradientClouds(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);

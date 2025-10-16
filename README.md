@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **24 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, and more
+- **30 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
@@ -47,11 +47,15 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Vector Flow Field** - Visualized curl noise field with arrows
 - **Ribbon Trails** - Smooth spline ribbons following targets
 - **Wave Curves** - Sine-modulated Bézier lines deformed by frequency
+- **Grid Pulses** - Uniform grid brightness oscillation
+- **Circuit Pulses** - Edge-routing graph with traveling sparks
 
 ### Elemental
 - **Lightning** - L-system branching with beat triggers
 - **Rain Ripples** - Circle SDF expansion with droplet density
 - **Fire Plume** - Particle + heat distortion with buoyancy
+- **Snow Drift** - Simple particle gravity with crystalline patterns
+- **Ocean Waves** - Sine field with layered depth and foam
 
 ### Cosmic
 - **Starfield Zoom** - 3D star projection with speed sync
