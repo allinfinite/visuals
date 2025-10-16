@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **37 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
+- **40 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system

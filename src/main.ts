@@ -39,6 +39,9 @@ import { WatercolorFade } from './scenes/WatercolorFade';
 import { YokaiParade } from './scenes/YokaiParade';
 import { ButterflySwarms } from './scenes/ButterflySwarms';
 import { ZoomingDoves } from './scenes/ZoomingDoves';
+import { Cymatics } from './scenes/Cymatics';
+import { StrobeHalo } from './scenes/StrobeHalo';
+import { RadiantGrid } from './scenes/RadiantGrid';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -93,6 +96,9 @@ async function main() {
   sceneManager.addPattern(new YokaiParade(context));
   sceneManager.addPattern(new ButterflySwarms(context));
   sceneManager.addPattern(new ZoomingDoves(context));
+  sceneManager.addPattern(new Cymatics(context));
+  sceneManager.addPattern(new StrobeHalo(context));
+  sceneManager.addPattern(new RadiantGrid(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
