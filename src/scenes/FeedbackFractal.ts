@@ -12,6 +12,9 @@ export class FeedbackFractal implements Pattern {
   private maxDepth: number = 5;
   private branchAngle: number = Math.PI / 6; // 30 degrees
   private growthPhase: number = 0; // For animated growth
+  private zoomPhase: number = 0; // For zoom in/out cycle
+  private rotationPhase: number = 0; // For rotation
+  private zoomCycleTime: number = 8; // Seconds per zoom cycle
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -32,8 +35,20 @@ export class FeedbackFractal implements Pattern {
       }
     });
 
-    // Growth phase for animated expansion (0 to 1)
+    // Growth phase for animated expansion (0 to 1, continuous loop)
     this.growthPhase = (this.time * 0.3) % 1;
+
+    // Zoom phase: oscillate between 0.5x and 2.0x scale
+    const zoomCycleProgress = (this.time % this.zoomCycleTime) / this.zoomCycleTime;
+    // Use sine wave for smooth zoom in/out
+    const zoomOscillation = Math.sin(zoomCycleProgress * Math.PI * 2) * 0.5 + 0.5; // 0 to 1
+    this.zoomPhase = 0.5 + zoomOscillation * 1.5; // 0.5 to 2.0
+    
+    // Add audio boost to zoom
+    this.zoomPhase *= 1 + audio.rms * 0.3;
+
+    // Continuous rotation (slow spin)
+    this.rotationPhase = this.time * 0.1 + audio.bass * 0.5;
 
     // Audio controls fractal parameters
     this.branchAngle = (Math.PI / 6) * (1 + audio.treble * 0.5); // 30-45 degrees
@@ -50,32 +65,58 @@ export class FeedbackFractal implements Pattern {
     const centerY = height / 2;
     
     const baseHue = (this.time * 20) % 360;
-    const initialLength = Math.min(width, height) * 0.25;
+    const initialLength = Math.min(width, height) * 0.25 * this.zoomPhase; // Apply zoom to base size
+
+    // Store transform state for drawing fractal with zoom and rotation
+    const originalTransform = {
+      x: this.graphics.x,
+      y: this.graphics.y,
+      scaleX: this.graphics.scale.x,
+      scaleY: this.graphics.scale.y,
+      rotation: this.graphics.rotation,
+    };
+
+    // Apply zoom and rotation around center point
+    this.graphics.pivot.set(centerX, centerY);
+    this.graphics.position.set(centerX, centerY);
+    this.graphics.scale.set(this.zoomPhase, this.zoomPhase);
+    this.graphics.rotation = this.rotationPhase;
+
+    // Adjust coordinates to account for pivot
+    const adjustedCenterX = centerX;
+    const adjustedCenterY = centerY;
 
     switch (this.fractalType) {
       case 0: // Fractal Tree
-        this.drawFractalTree(centerX, height * 0.8, -Math.PI / 2, initialLength, 0, baseHue, audio);
+        this.drawFractalTree(adjustedCenterX, height * 0.8, -Math.PI / 2, initialLength / this.zoomPhase, 0, baseHue, audio);
         break;
       case 1: // Sierpinski Triangle
+        const triLength = initialLength / this.zoomPhase;
         this.drawSierpinski(
-          centerX, height * 0.7, 
-          centerX - initialLength * 1.5, height * 0.2,
-          centerX + initialLength * 1.5, height * 0.2,
+          adjustedCenterX, height * 0.7, 
+          adjustedCenterX - triLength * 1.5, height * 0.2,
+          adjustedCenterX + triLength * 1.5, height * 0.2,
           0, baseHue, audio
         );
         break;
       case 2: // Koch Snowflake
-        this.drawKochSnowflake(centerX, centerY, initialLength * 1.2, baseHue, audio);
+        this.drawKochSnowflake(adjustedCenterX, adjustedCenterY, initialLength * 1.2 / this.zoomPhase, baseHue, audio);
         break;
       case 3: // Recursive Circles (Apollonian Gasket style)
-        this.drawRecursiveCircles(centerX, centerY, initialLength, 0, baseHue, audio);
+        this.drawRecursiveCircles(adjustedCenterX, adjustedCenterY, initialLength / this.zoomPhase, 0, baseHue, audio);
         break;
       case 4: // Recursive Squares (Pythagoras Tree style)
-        this.drawPythagorasTree(centerX, height * 0.85, initialLength * 0.8, -Math.PI / 2, 0, baseHue, audio);
+        this.drawPythagorasTree(adjustedCenterX, height * 0.85, initialLength * 0.8 / this.zoomPhase, -Math.PI / 2, 0, baseHue, audio);
         break;
     }
 
-    // Draw fractal type indicator
+    // Reset transform
+    this.graphics.pivot.set(0, 0);
+    this.graphics.position.set(originalTransform.x, originalTransform.y);
+    this.graphics.scale.set(originalTransform.scaleX, originalTransform.scaleY);
+    this.graphics.rotation = originalTransform.rotation;
+
+    // Draw fractal type indicator (not affected by zoom/rotation)
     const indicatorY = 30;
     const color = hslToHex(baseHue, 70, 50);
     
@@ -85,6 +126,19 @@ export class FeedbackFractal implements Pattern {
       this.graphics.drawCircle(30 + i * 20, indicatorY, 5);
       this.graphics.endFill();
     }
+    
+    // Draw zoom indicator (progress bar)
+    const zoomBarWidth = 100;
+    const zoomBarX = width - zoomBarWidth - 20;
+    const zoomBarY = 30;
+    
+    this.graphics.lineStyle(2, 0xffffff, 0.3);
+    this.graphics.drawRect(zoomBarX, zoomBarY - 5, zoomBarWidth, 10);
+    
+    const zoomProgress = (this.zoomPhase - 0.5) / 1.5; // Normalize to 0-1
+    this.graphics.beginFill(hslToHex(baseHue, 70, 50), 0.7);
+    this.graphics.drawRect(zoomBarX, zoomBarY - 5, zoomBarWidth * zoomProgress, 10);
+    this.graphics.endFill();
   }
 
   // Fractal Tree - classic recursive branching
