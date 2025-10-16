@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **46 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
+- **49 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
@@ -90,12 +90,17 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Yokai Parade** - Japanese spirit procession with 5 different yokai types
 - **Coral Growth** - Branching reef structure with color gradients and polyps
 - **Neural Network** - Multi-layer network visualization with signal propagation
+- **Cellular Automata** - Conway's Game of Life with audio-reactive evolution
 
 ### Mystical/Symbolic
 - **Sigil Glyphs** - Procedural magical symbols spawned on click with intricate geometry
 
 ### Visual Illusions
 - **Moiré Rotation** - Overlapping line patterns creating interference effects
+- **Recursive Tiles** - Fractal subdivision with dynamic zoom and rotation
+
+### Environmental/Temporal
+- **Day Night Cycle** - Animated sky with sun/moon transitions and audio-driven timing
 
 ## Getting Started
 

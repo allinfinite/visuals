@@ -48,6 +48,9 @@ import { NeuralNetwork } from './scenes/NeuralNetwork';
 import { MoireRotation } from './scenes/MoireRotation';
 import { SigilGlyphs } from './scenes/SigilGlyphs';
 import { AudioPaint } from './scenes/AudioPaint';
+import { CellularAutomata } from './scenes/CellularAutomata';
+import { DayNightCycle } from './scenes/DayNightCycle';
+import { RecursiveTiles } from './scenes/RecursiveTiles';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -111,6 +114,9 @@ async function main() {
   sceneManager.addPattern(new MoireRotation(context));
   sceneManager.addPattern(new SigilGlyphs(context));
   sceneManager.addPattern(new AudioPaint(context));
+  sceneManager.addPattern(new CellularAutomata(context));
+  sceneManager.addPattern(new DayNightCycle(context));
+  sceneManager.addPattern(new RecursiveTiles(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
