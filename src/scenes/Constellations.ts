@@ -62,7 +62,7 @@ export class Constellations implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up
-    // this.graphics.clear();
+    this.graphics.clear();
 
     // Draw connections between nearby stars
     for (let i = 0; i < this.stars.length; i++) {

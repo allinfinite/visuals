@@ -113,7 +113,7 @@ export class OrbitSystem implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up
-    // this.graphics.clear();
+    this.graphics.clear();
 
     // Draw center star
     const starSize = 15 + audio.bass * 10;

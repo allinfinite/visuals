@@ -112,7 +112,7 @@ export class Cymatics implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Draw nodal lines (where amplitude is near zero)
     for (let i = 0; i < this.resolution; i++) {

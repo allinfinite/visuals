@@ -108,7 +108,7 @@ export class SnowDrift implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.snowflakes.forEach((flake) => {
       // Simple snowflake shape

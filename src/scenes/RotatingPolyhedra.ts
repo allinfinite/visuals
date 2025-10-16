@@ -288,7 +288,7 @@ export class RotatingPolyhedra implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.polyhedra.forEach((poly) => {
       const color = hslToHex(poly.hue, 70, 50);

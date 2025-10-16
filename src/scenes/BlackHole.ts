@@ -104,7 +104,7 @@ export class BlackHole implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Event horizon (black circle)
     this.graphics.beginFill(0x000000, 0.3);

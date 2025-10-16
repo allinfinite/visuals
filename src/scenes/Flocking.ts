@@ -185,7 +185,7 @@ export class Flocking implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up via feedback system
-    // this.graphics.clear();
+    this.graphics.clear();
 
     this.boids.forEach((boid) => {
       const angle = Math.atan2(boid.vy, boid.vx);

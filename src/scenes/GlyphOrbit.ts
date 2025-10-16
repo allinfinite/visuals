@@ -114,7 +114,7 @@ export class GlyphOrbit implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Draw orbit paths
     this.graphics.lineStyle(1, 0xffffff, 0.1 + audio.rms * 0.1);

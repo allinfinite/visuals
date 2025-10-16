@@ -22,7 +22,7 @@ export class WaveCurves implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up
-    // this.graphics.clear();
+    this.graphics.clear();
 
     const numWaves = 8;
     const points = 100;

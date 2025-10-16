@@ -119,7 +119,7 @@ export class MagneticLines implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up via feedback system
-    // this.graphics.clear();
+    this.graphics.clear();
 
     this.lines.forEach((line) => {
       if (line.points.length < 2) return;

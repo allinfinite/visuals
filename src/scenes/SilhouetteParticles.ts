@@ -279,7 +279,7 @@ export class SilhouetteParticles implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.particles.forEach((p) => {
       const color = hslToHex(p.hue, 70, 50);

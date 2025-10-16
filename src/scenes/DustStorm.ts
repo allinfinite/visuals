@@ -106,7 +106,7 @@ export class DustStorm implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Draw dust particles with directional blur
     this.particles.forEach((p) => {

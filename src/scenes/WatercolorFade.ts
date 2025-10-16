@@ -104,7 +104,7 @@ export class WatercolorFade implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Draw all strokes
     this.strokes.forEach((stroke) => {

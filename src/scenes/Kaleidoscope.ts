@@ -29,7 +29,7 @@ export class Kaleidoscope implements Pattern {
   }
 
   private draw(audio: AudioData, input: InputState): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     const { width, height } = this.context;
     const centerX = width / 2;

@@ -27,7 +27,7 @@ export class GradientClouds implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     const { width, height } = this.context;
     const gridSize = 40;

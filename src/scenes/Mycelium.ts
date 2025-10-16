@@ -88,7 +88,7 @@ export class Mycelium implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up via feedback system
-    // this.graphics.clear();
+    this.graphics.clear();
 
     this.branches.forEach((branch, index) => {
       const endX = branch.x + Math.cos(branch.angle) * branch.length;

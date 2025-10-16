@@ -89,7 +89,7 @@ export class MinimalDots implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up
-    // this.graphics.clear();
+    this.graphics.clear();
 
     this.dots.forEach((dot) => {
       // Breathing effect

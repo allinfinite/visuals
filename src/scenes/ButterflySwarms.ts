@@ -185,7 +185,7 @@ export class ButterflySwarms implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.butterflies.forEach((b) => {
       const wingOpen = Math.abs(Math.sin(b.wingPhase)) * (0.7 + audio.treble * 0.3);

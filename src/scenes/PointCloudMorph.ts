@@ -314,7 +314,7 @@ export class PointCloudMorph implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.points.forEach((point) => {
       const color = hslToHex(point.hue % 360, 70, 50);

@@ -68,7 +68,7 @@ export class RainRipples implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up
-    // this.graphics.clear();
+    this.graphics.clear();
 
     this.ripples.forEach((ripple) => {
       const progress = ripple.radius / ripple.maxRadius;

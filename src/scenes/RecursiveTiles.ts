@@ -113,7 +113,7 @@ export class RecursiveTiles implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     const centerX = this.context.width / 2;
     const centerY = this.context.height / 2;

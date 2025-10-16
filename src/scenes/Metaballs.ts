@@ -94,7 +94,7 @@ export class Metaballs implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up
-    // this.graphics.clear();
+    this.graphics.clear();
 
     const width = this.context.width;
     const height = this.context.height;

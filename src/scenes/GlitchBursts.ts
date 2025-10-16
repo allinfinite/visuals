@@ -117,7 +117,7 @@ export class GlitchBursts implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Draw glitch blocks
     this.glitchBlocks.forEach((block) => {

@@ -131,7 +131,7 @@ export class FacesInNoise implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.faces.forEach((face) => {
       this.drawFace(face, audio);

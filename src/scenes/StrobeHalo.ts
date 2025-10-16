@@ -117,7 +117,7 @@ export class StrobeHalo implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Draw all pulses
     this.pulses.forEach((pulse) => {

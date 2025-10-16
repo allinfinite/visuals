@@ -23,7 +23,7 @@ export class Aurora implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up via feedback system
-    // this.graphics.clear();
+    this.graphics.clear();
 
     const layers = 5;
     const points = 100;

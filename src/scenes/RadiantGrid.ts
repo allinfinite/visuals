@@ -142,7 +142,7 @@ export class RadiantGrid implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Draw connecting lines (grid structure)
     this.graphics.lineStyle(1, 0x444444, 0.1 + audio.rms * 0.2);

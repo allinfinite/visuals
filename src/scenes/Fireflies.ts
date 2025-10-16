@@ -129,7 +129,7 @@ export class Fireflies implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up via feedback system
-    // this.graphics.clear();
+    this.graphics.clear();
 
     this.fireflies.forEach((f) => {
       // Sine wave flicker

@@ -101,7 +101,7 @@ export class ZoomingDoves implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Sort doves by z (draw far ones first)
     const sortedDoves = [...this.doves].sort((a, b) => a.z - b.z);

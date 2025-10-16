@@ -23,7 +23,7 @@ export class VectorFlow implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up via feedback system
-    // this.graphics.clear();
+    this.graphics.clear();
 
     const gridSize = 30;
     const arrowLength = 15 + audio.bass * 10;

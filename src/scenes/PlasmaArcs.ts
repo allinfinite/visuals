@@ -128,7 +128,7 @@ export class PlasmaArcs implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up
-    // this.graphics.clear();
+    this.graphics.clear();
 
     // Draw nodes
     this.nodes.forEach((node) => {

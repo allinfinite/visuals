@@ -19,9 +19,9 @@ export class ParamPane {
     
     // Composition mode
     compositionMode: false,
-    maxLayers: 3,
+    maxLayers: 2, // Reduced from 3 for performance
     layerDuration: 15,
-    spawnInterval: 5,
+    spawnInterval: 8, // Increased from 5 for performance
   };
 
   constructor(sceneManager: SceneManager, audio: Audio, app: App) {
@@ -56,7 +56,7 @@ export class ParamPane {
     compositionFolder.addBinding(this.params, 'maxLayers', {
       label: 'Max Layers',
       min: 1,
-      max: 5,
+      max: 3, // Reduced from 5 for performance
       step: 1,
     }).on('change', (ev: any) => {
       this.sceneManager.maxLayers = ev.value;

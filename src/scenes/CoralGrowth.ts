@@ -131,7 +131,7 @@ export class CoralGrowth implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Draw branches from deepest to shallowest (back to front)
     const sortedBranches = [...this.branches].sort((a, b) => b.depth - a.depth);

@@ -33,7 +33,7 @@ export class Mandala implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up via feedback system
-    // this.graphics.clear();
+    this.graphics.clear();
 
     const centerX = this.context.width / 2;
     const centerY = this.context.height / 2;

@@ -117,7 +117,7 @@ export class YokaiParade implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.yokai.forEach((y) => {
       const glowSize = y.size * (1 + audio.bass * 0.5);

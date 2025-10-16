@@ -119,7 +119,7 @@ export class LensFlares implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.flares.forEach((flare) => {
       const color = this.hslToHex(flare.hue, 100, 60);

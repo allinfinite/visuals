@@ -184,7 +184,7 @@ export class CellularAutomata implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     const offsetX = (this.context.width - this.gridWidth * this.cellSize) / 2;
     const offsetY = (this.context.height - this.gridHeight * this.cellSize) / 2;

@@ -98,7 +98,7 @@ export class Lightning implements Pattern {
 
   private draw(): void {
     // Don't clear - let trails build up via feedback system
-    // this.graphics.clear();
+    this.graphics.clear();
 
     this.bolts.forEach((bolt) => {
       const alpha = bolt.life;

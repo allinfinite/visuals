@@ -165,7 +165,7 @@ export class WeatherSync implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.particles.forEach((particle) => {
       if (particle.type === 'rain') {

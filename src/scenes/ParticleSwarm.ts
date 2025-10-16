@@ -133,7 +133,7 @@ export class ParticleSwarm implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up via feedback system
-    // this.graphics.clear();
+    this.graphics.clear();
 
     this.particles.forEach((p) => {
       const brightness = lerp(0.3, 1, audio.rms);

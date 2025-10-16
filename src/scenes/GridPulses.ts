@@ -53,7 +53,7 @@ export class GridPulses implements Pattern {
 
   private draw(audio: AudioData): void {
     // Don't clear - let trails build up
-    // this.graphics.clear();
+    this.graphics.clear();
 
     const cols = Math.ceil(this.context.width / this.gridSize);
     const rows = Math.ceil(this.context.height / this.gridSize);

@@ -143,7 +143,7 @@ export class SigilGlyphs implements Pattern {
   }
 
   private draw(_audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.sigils.forEach((sigil) => {
       if (sigil.alpha < 0.01) return;

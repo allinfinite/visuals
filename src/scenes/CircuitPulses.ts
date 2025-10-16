@@ -140,7 +140,7 @@ export class CircuitPulses implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     // Draw edges
     this.edges.forEach((edge) => {

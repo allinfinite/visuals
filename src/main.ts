@@ -60,6 +60,8 @@ import { FacesInNoise } from './scenes/FacesInNoise';
 import { SilhouetteParticles } from './scenes/SilhouetteParticles';
 import { RotatingPolyhedra } from './scenes/RotatingPolyhedra';
 import { PointCloudMorph } from './scenes/PointCloudMorph';
+import { WireframeTunnel } from './scenes/WireframeTunnel';
+import { FeedbackFractal } from './scenes/FeedbackFractal';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -135,6 +137,8 @@ async function main() {
   sceneManager.addPattern(new SilhouetteParticles(context));
   sceneManager.addPattern(new RotatingPolyhedra(context));
   sceneManager.addPattern(new PointCloudMorph(context));
+  sceneManager.addPattern(new WireframeTunnel(context));
+  sceneManager.addPattern(new FeedbackFractal(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);

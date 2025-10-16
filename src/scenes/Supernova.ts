@@ -129,7 +129,7 @@ export class Supernova implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     this.explosions.forEach((explosion) => {
       const progress = explosion.time / explosion.maxTime;

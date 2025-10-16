@@ -59,7 +59,7 @@ export class TerrainMorph implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear(); // Commented for feedback trails
 
     const { width, height } = this.context;
     const centerY = height * 0.6;

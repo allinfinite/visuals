@@ -21,9 +21,9 @@ export class SceneManager {
   
   // Settings
   public compositionEnabled: boolean = false;
-  public maxLayers: number = 3;
+  public maxLayers: number = 2; // Reduced from 3 for performance
   public layerDuration: number = 15; // seconds
-  public spawnInterval: number = 5; // seconds between new patterns
+  public spawnInterval: number = 8; // seconds between new patterns (increased for performance)
   public fadeInDuration: number = 2; // seconds
   public fadeOutDuration: number = 3; // seconds
 
