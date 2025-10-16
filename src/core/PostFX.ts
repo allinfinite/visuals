@@ -1,4 +1,4 @@
-import { Container, RenderTexture, Sprite, Graphics, Texture, BlurFilter, ColorMatrixFilter } from 'pixi.js';
+import { Container, RenderTexture, Sprite, Graphics, Texture, BlurFilter, ColorMatrixFilter, BLEND_MODES } from 'pixi.js';
 import type { RendererContext } from '../types';
 
 export class PostFX {
@@ -107,7 +107,7 @@ export class PostFX {
     const grainTexture = Texture.from(grainCanvas);
     this.grainSprite = new Sprite(grainTexture);
     this.grainSprite.alpha = this.params.filmGrainIntensity;
-    this.grainSprite.blendMode = 'overlay' as any;
+    this.grainSprite.blendMode = BLEND_MODES.SCREEN; // Screen blend for subtle film grain
   }
 
   public createVignette(): void {
