@@ -138,6 +138,10 @@ export class ShadowTrails implements Pattern {
   }
 
   private hslToHex(h: number, s: number, l: number): number {
+    // Clamp inputs to valid ranges
+    h = ((h % 360) + 360) % 360;
+    s = Math.max(0, Math.min(100, s));
+    l = Math.max(0, Math.min(100, l));
     h = ((h % 360) + 360) % 360;
     s = Math.max(0, Math.min(100, s));
     l = Math.max(0, Math.min(100, l));

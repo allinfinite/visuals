@@ -139,6 +139,10 @@ export class RibbonTrails implements Pattern {
   }
 
   private hslToHex(h: number, s: number, l: number): number {
+    // Clamp inputs to valid ranges
+    h = ((h % 360) + 360) % 360;
+    s = Math.max(0, Math.min(100, s));
+    l = Math.max(0, Math.min(100, l));
     l /= 100;
     const a = (s * Math.min(l, 1 - l)) / 100;
     const f = (n: number) => {

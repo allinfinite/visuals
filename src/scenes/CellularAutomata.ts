@@ -247,6 +247,10 @@ export class CellularAutomata implements Pattern {
   }
 
   private hslToHex(h: number, s: number, l: number): number {
+    // Clamp inputs to valid ranges
+    h = ((h % 360) + 360) % 360;
+    s = Math.max(0, Math.min(100, s));
+    l = Math.max(0, Math.min(100, l));
     const c = (1 - Math.abs(2 * (l / 100) - 1)) * (s / 100);
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
     const m = l / 100 - c / 2;
@@ -259,9 +263,9 @@ export class CellularAutomata implements Pattern {
     else if (h < 300) { r = x; b = c; }
     else { r = c; b = x; }
 
-    const red = Math.round((r + m) * 255);
-    const green = Math.round((g + m) * 255);
-    const blue = Math.round((b + m) * 255);
+    const red = Math.max(0, Math.min(255, Math.round((r + m) * 255)));
+    const green = Math.max(0, Math.min(255, Math.round((g + m) * 255)));
+    const blue = Math.max(0, Math.min(255, Math.round((b + m) * 255)));
 
     return (red << 16) | (green << 8) | blue;
   }
