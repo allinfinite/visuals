@@ -226,7 +226,7 @@ export class ParamPane {
     analogFolder.addBinding(postFX.params, 'vignetteStrength', {
       label: 'Vignette',
       min: 0,
-      max: 0.6,
+      max: 1,
       step: 0.05,
     });
 

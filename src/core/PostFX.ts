@@ -18,7 +18,7 @@ export class PostFX {
     // Film effects parameters (grain & vignette overlays)
     analogEnabled: false, // Disabled by default, enable in UI
     filmGrainIntensity: 0.12,
-    vignetteStrength: 0.25,
+    vignetteStrength: 0.5, // 0-1, multiplied by 0.15 internally for subtle effect
     
     // Note: Color grading filters (warmth, desaturation, blur) are disabled
     // because they break rendering when applied to the stage container
@@ -118,12 +118,14 @@ export class PostFX {
     const cy = this.context.height / 2;
     const maxRadius = Math.sqrt(cx * cx + cy * cy);
     
-    // Create radial gradient effect with multiple circles
-    const steps = 30;
+    // Create subtle radial gradient effect - only darken the far edges
+    const steps = 20;
     for (let i = 0; i < steps; i++) {
       const progress = i / steps;
-      const radius = maxRadius * (0.3 + progress * 0.7);
-      const alpha = Math.pow(progress, 2) * this.params.vignetteStrength;
+      // Start vignette at 70% of radius, only affect outer 30%
+      const radius = maxRadius * (0.7 + progress * 0.3);
+      // Very subtle alpha that increases towards edges (overall strength controlled by graphics.alpha)
+      const alpha = Math.pow(progress, 3) * 0.15;
       
       this.vignetteGraphics.beginFill(0x000000, alpha);
       this.vignetteGraphics.drawCircle(cx, cy, radius);
@@ -158,11 +160,13 @@ export class PostFX {
       this.grainSprite.alpha = this.params.filmGrainIntensity;
     }
     
-    // Add vignette overlay  
+    // Add vignette overlay with controllable strength
     if (this.vignetteGraphics && this.params.vignetteStrength > 0) {
       if (!this.vignetteGraphics.parent) {
         container.addChild(this.vignetteGraphics);
       }
+      // Allow real-time adjustment of vignette intensity
+      this.vignetteGraphics.alpha = Math.min(1, this.params.vignetteStrength);
     }
   }
 
