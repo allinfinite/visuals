@@ -28,7 +28,7 @@ export class AIKenBurns implements Pattern {
   
   // Ken Burns parameters
   private imageDuration: number = 15; // seconds per image
-  private transitionDuration: number = 2; // fade transition time
+  private transitionDuration: number = 3; // fade transition time
   private maxImages: number = 3; // Keep 3 images in rotation
   
   // Trippy prompts for generation
@@ -149,13 +149,17 @@ export class AIKenBurns implements Pattern {
   }
 
   private queueImageGeneration(): void {
-    if (this.isGenerating || this.images.length >= this.maxImages) return;
+    if (this.isGenerating) return;
     
-    // Pick a random prompt
-    const prompt = this.prompts[Math.floor(Math.random() * this.prompts.length)];
-    this.generationQueue.push(prompt);
+    // Queue more images if we're running low
+    const targetQueue = Math.max(1, this.maxImages - this.images.length + 1);
+    while (this.generationQueue.length < targetQueue && this.images.length < this.maxImages) {
+      // Pick a random prompt
+      const prompt = this.prompts[Math.floor(Math.random() * this.prompts.length)];
+      this.generationQueue.push(prompt);
+    }
     
-    if (!this.isGenerating) {
+    if (!this.isGenerating && this.generationQueue.length > 0) {
       this.generateNextImage();
     }
   }
@@ -317,23 +321,27 @@ export class AIKenBurns implements Pattern {
       img.sprite.x = img.startX + (img.endX - img.startX) * eased;
       img.sprite.y = img.startY + (img.endY - img.startY) * eased;
       
-      // Fade in/out transitions
+      // Fade in/out transitions with overlap to prevent black screen
       const fadeIn = Math.min(1, age / this.transitionDuration);
       const fadeOut = age > (img.duration - this.transitionDuration)
         ? 1 - (age - (img.duration - this.transitionDuration)) / this.transitionDuration
         : 1;
       
-      img.sprite.alpha = Math.min(fadeIn, fadeOut) * 0.4; // Keep subtle in background
+      // Ensure minimum alpha to prevent black screen
+      const baseAlpha = Math.min(fadeIn, fadeOut);
+      const minAlpha = this.images.length === 1 ? 0.2 : 0.1; // Keep at least one image visible
+      img.sprite.alpha = Math.max(baseAlpha * 0.4, minAlpha);
       
       // Audio reactivity - subtle brightness pulse
       const brightness = 1 + audio.rms * 0.2;
       img.sprite.tint = this.rgbToHex(brightness, brightness, brightness);
     });
     
-    // Remove expired images
+    // Remove expired images (but keep them longer to prevent black screen)
     this.images = this.images.filter(img => {
       const age = this.time - img.startTime;
-      if (age > img.duration) {
+      const extendedDuration = img.duration + this.transitionDuration; // Keep longer
+      if (age > extendedDuration) {
         this.container.removeChild(img.sprite);
         img.texture.destroy(true);
         img.sprite.destroy();
@@ -342,8 +350,8 @@ export class AIKenBurns implements Pattern {
       return true;
     });
     
-    // Queue new images to maintain rotation
-    if (this.images.length < this.maxImages && this.apiKey && !this.isGenerating) {
+    // Queue new images to maintain smooth rotation
+    if (this.apiKey && !this.isGenerating) {
       this.queueImageGeneration();
     }
     
