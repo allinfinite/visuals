@@ -185,6 +185,7 @@ export class AIKenBurns implements Pattern {
           size: '1024x1024',
           quality: 'standard',
           style: 'vivid',
+          response_format: 'b64_json', // Request base64 instead of URL to avoid CORS
         }),
       });
 
@@ -193,10 +194,10 @@ export class AIKenBurns implements Pattern {
       }
 
       const data = await response.json();
-      const imageUrl = data.data[0].url;
+      const b64Image = data.data[0].b64_json;
       
-      console.log('AIKenBurns: Image generated, loading...');
-      await this.loadImageFromUrl(imageUrl, prompt);
+      console.log('AIKenBurns: Image generated, loading from base64...');
+      await this.loadImageFromBase64(b64Image, prompt);
       
     } catch (error) {
       console.error('AIKenBurns: Failed to generate image:', error);
@@ -210,38 +211,15 @@ export class AIKenBurns implements Pattern {
     }
   }
 
+  private async loadImageFromBase64(b64Data: string, prompt: string): Promise<void> {
+    // Convert base64 to data URL
+    const dataUrl = `data:image/png;base64,${b64Data}`;
+    return this.loadImageFromBlobUrl(dataUrl, prompt);
+  }
+
   private async loadImageFromUrl(url: string, prompt: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // For OpenAI images, we need to fetch and convert to blob to avoid CORS issues
-      const isOpenAIUrl = url.includes('oaidalleapiprodscus.blob.core.windows.net');
-      
-      if (isOpenAIUrl) {
-        // Fetch the image and convert to blob URL
-        fetch(url)
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`Failed to fetch image: ${response.status}`);
-            }
-            return response.blob();
-          })
-          .then(blob => {
-            const blobUrl = URL.createObjectURL(blob);
-            this.loadImageFromBlobUrl(blobUrl, prompt)
-              .then(() => {
-                URL.revokeObjectURL(blobUrl);
-                resolve();
-              })
-              .catch(reject);
-          })
-          .catch(error => {
-            console.error('AIKenBurns: Failed to fetch image:', error);
-            reject(error);
-          });
-      } else {
-        // For local blob URLs, load directly
-        this.loadImageFromBlobUrl(url, prompt).then(resolve).catch(reject);
-      }
-    });
+    // This method is kept for the procedural fallback image
+    return this.loadImageFromBlobUrl(url, prompt);
   }
 
   private async loadImageFromBlobUrl(url: string, prompt: string): Promise<void> {
