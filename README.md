@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **30 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, and more
+- **34 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
@@ -38,6 +38,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 ### Sacred Geometry
 - **Mandala** - Radial instancing with symmetry
 - **Flower of Life** - Layered circles pattern
+- **Kaleidoscope** - Multi-segment mirrored patterns with noise offset
 
 ### Light & Energy
 - **Aurora Curtain** - Layered sine wave bands with spectral color shifts
@@ -56,6 +57,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Fire Plume** - Particle + heat distortion with buoyancy
 - **Snow Drift** - Simple particle gravity with crystalline patterns
 - **Ocean Waves** - Sine field with layered depth and foam
+- **Dust Storm** - Brownian particles with directional wind and motion blur
 
 ### Cosmic
 - **Starfield** - 3D star projection with speed sync
@@ -67,10 +69,12 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ### Fluid/Paint
 - **Metaballs** - SDF blending with organic liquid motion
+- **Watercolor Fade** - Paint strokes with blur feedback and pigment diffusion
 
 ### Emotional/Mood
 - **Minimal Dots** - Sparse particles drifting with breathing rhythm
 - **Gradient Clouds** - Layered noise with RMS-driven hue rotation
+- **Glitch Bursts** - Chromatic aberration blocks triggered by amplitude spikes
 
 ### Organic/Biological
 - **Mycelium Growth** - Branching network with recursive growth

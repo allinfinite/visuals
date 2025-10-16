@@ -32,6 +32,10 @@ import { OceanWaves } from './scenes/OceanWaves';
 import { BlackHole } from './scenes/BlackHole';
 import { Supernova } from './scenes/Supernova';
 import { GradientClouds } from './scenes/GradientClouds';
+import { Kaleidoscope } from './scenes/Kaleidoscope';
+import { DustStorm } from './scenes/DustStorm';
+import { GlitchBursts } from './scenes/GlitchBursts';
+import { WatercolorFade } from './scenes/WatercolorFade';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -79,6 +83,10 @@ async function main() {
   sceneManager.addPattern(new BlackHole(context));
   sceneManager.addPattern(new Supernova(context));
   sceneManager.addPattern(new GradientClouds(context));
+  sceneManager.addPattern(new Kaleidoscope(context));
+  sceneManager.addPattern(new DustStorm(context));
+  sceneManager.addPattern(new GlitchBursts(context));
+  sceneManager.addPattern(new WatercolorFade(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
