@@ -8,13 +8,14 @@ export class FeedbackFractal implements Pattern {
   private graphics: Graphics;
   private context: RendererContext;
   private time: number = 0;
-  private fractalType: number = 0; // 0: Tree, 1: Sierpinski, 2: Koch, 3: Dragon curve, 4: Spiral
-  private maxDepth: number = 5;
+  private fractalType: number = 0; // 0: Tree, 1: Sierpinski, 2: Koch, 3: Recursive Circles, 4: Pythagoras Tree
+  private maxDepth: number = 6; // Increased depth for more detail
   private branchAngle: number = Math.PI / 6; // 30 degrees
   private growthPhase: number = 0; // For animated growth
-  private zoomPhase: number = 0; // For zoom in/out cycle
+  private zoomPhase: number = 1; // Start at normal scale
   private rotationPhase: number = 0; // For rotation
-  private zoomCycleTime: number = 8; // Seconds per zoom cycle
+  private expansionSteps: number = 8; // More steps for smoother expansion
+  private clickCooldown: number = 0; // Prevent rapid clicking
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -26,33 +27,41 @@ export class FeedbackFractal implements Pattern {
   public update(dt: number, audio: AudioData, input: InputState): void {
     this.time += dt;
 
-    // Click changes fractal type
+    // Update click cooldown
+    this.clickCooldown = Math.max(0, this.clickCooldown - dt);
+
+    // Click changes fractal type (with cooldown to prevent rapid cycling)
     input.clicks.forEach((click) => {
       const age = this.time - click.time;
-      if (age < 0.05) {
+      if (age < 0.05 && this.clickCooldown <= 0) {
         this.fractalType = (this.fractalType + 1) % 5;
         this.growthPhase = 0; // Reset growth animation
+        this.zoomPhase = 1; // Reset zoom to normal
+        this.clickCooldown = 0.5; // 0.5 second cooldown
       }
     });
 
-    // Growth phase for animated expansion (0 to 1, continuous loop)
-    this.growthPhase = (this.time * 0.3) % 1;
+    // Growth phase for animated expansion (0 to 1, smooth expansion)
+    if (this.growthPhase < 1) {
+      this.growthPhase = Math.min(1, this.growthPhase + dt * 0.8); // Slower, smoother expansion
+    } else {
+      // Once fully expanded, continue growing but slower
+      this.growthPhase = 1 + (this.time * 0.1) % 0.2; // Slight pulsing when fully grown
+    }
 
-    // Zoom phase: oscillate between 0.5x and 2.0x scale
-    const zoomCycleProgress = (this.time % this.zoomCycleTime) / this.zoomCycleTime;
-    // Use sine wave for smooth zoom in/out
-    const zoomOscillation = Math.sin(zoomCycleProgress * Math.PI * 2) * 0.5 + 0.5; // 0 to 1
-    this.zoomPhase = 0.5 + zoomOscillation * 1.5; // 0.5 to 2.0
+    // Zoom phase: zoom in as fractal expands
+    const targetZoom = 1 + this.growthPhase * 1.5; // Zoom from 1x to 2.5x as it grows
+    this.zoomPhase = this.zoomPhase + (targetZoom - this.zoomPhase) * dt * 2; // Smooth interpolation
     
     // Add audio boost to zoom
-    this.zoomPhase *= 1 + audio.rms * 0.3;
+    this.zoomPhase *= 1 + audio.rms * 0.2;
 
     // Continuous rotation (slow spin)
-    this.rotationPhase = this.time * 0.1 + audio.bass * 0.5;
+    this.rotationPhase = this.time * 0.05 + audio.bass * 0.3;
 
     // Audio controls fractal parameters
-    this.branchAngle = (Math.PI / 6) * (1 + audio.treble * 0.5); // 30-45 degrees
-    this.maxDepth = Math.floor(4 + audio.rms * 3); // 4-7 levels based on volume
+    this.branchAngle = (Math.PI / 6) * (1 + audio.treble * 0.4); // 30-42 degrees
+    this.maxDepth = Math.floor(5 + audio.rms * 2); // 5-7 levels based on volume
 
     this.draw(audio);
   }
@@ -88,25 +97,24 @@ export class FeedbackFractal implements Pattern {
 
     switch (this.fractalType) {
       case 0: // Fractal Tree
-        this.drawFractalTree(adjustedCenterX, height * 0.8, -Math.PI / 2, initialLength / this.zoomPhase, 0, baseHue, audio);
+        this.drawFractalTree(adjustedCenterX, height * 0.8, -Math.PI / 2, initialLength, 0, baseHue, audio);
         break;
       case 1: // Sierpinski Triangle
-        const triLength = initialLength / this.zoomPhase;
         this.drawSierpinski(
           adjustedCenterX, height * 0.7, 
-          adjustedCenterX - triLength * 1.5, height * 0.2,
-          adjustedCenterX + triLength * 1.5, height * 0.2,
+          adjustedCenterX - initialLength * 1.5, height * 0.2,
+          adjustedCenterX + initialLength * 1.5, height * 0.2,
           0, baseHue, audio
         );
         break;
       case 2: // Koch Snowflake
-        this.drawKochSnowflake(adjustedCenterX, adjustedCenterY, initialLength * 1.2 / this.zoomPhase, baseHue, audio);
+        this.drawKochSnowflake(adjustedCenterX, adjustedCenterY, initialLength * 1.2, baseHue, audio);
         break;
       case 3: // Recursive Circles (Apollonian Gasket style)
-        this.drawRecursiveCircles(adjustedCenterX, adjustedCenterY, initialLength / this.zoomPhase, 0, baseHue, audio);
+        this.drawRecursiveCircles(adjustedCenterX, adjustedCenterY, initialLength, 0, baseHue, audio);
         break;
       case 4: // Recursive Squares (Pythagoras Tree style)
-        this.drawPythagorasTree(adjustedCenterX, height * 0.85, initialLength * 0.8 / this.zoomPhase, -Math.PI / 2, 0, baseHue, audio);
+        this.drawPythagorasTree(adjustedCenterX, height * 0.85, initialLength * 0.8, -Math.PI / 2, 0, baseHue, audio);
         break;
     }
 
@@ -135,9 +143,21 @@ export class FeedbackFractal implements Pattern {
     this.graphics.lineStyle(2, 0xffffff, 0.3);
     this.graphics.drawRect(zoomBarX, zoomBarY - 5, zoomBarWidth, 10);
     
-    const zoomProgress = (this.zoomPhase - 0.5) / 1.5; // Normalize to 0-1
+    const zoomProgress = Math.min(1, (this.zoomPhase - 1) / 1.5); // Normalize to 0-1 (1x to 2.5x)
     this.graphics.beginFill(hslToHex(baseHue, 70, 50), 0.7);
     this.graphics.drawRect(zoomBarX, zoomBarY - 5, zoomBarWidth * zoomProgress, 10);
+    this.graphics.endFill();
+    
+    // Draw growth indicator
+    const growthBarWidth = 80;
+    const growthBarX = width - growthBarWidth - 20;
+    const growthBarY = 50;
+    
+    this.graphics.lineStyle(2, 0xffffff, 0.3);
+    this.graphics.drawRect(growthBarX, growthBarY - 5, growthBarWidth, 8);
+    
+    this.graphics.beginFill(hslToHex((baseHue + 60) % 360, 70, 50), 0.7);
+    this.graphics.drawRect(growthBarX, growthBarY - 5, growthBarWidth * Math.min(1, this.growthPhase), 8);
     this.graphics.endFill();
   }
 
@@ -145,28 +165,37 @@ export class FeedbackFractal implements Pattern {
   private drawFractalTree(x: number, y: number, angle: number, length: number, depth: number, baseHue: number, audio: AudioData): void {
     if (depth > this.maxDepth || length < 2) return;
     
-    // Fade branches as they grow
+    // More granular expansion steps
     const depthProgress = depth / this.maxDepth;
-    if (depthProgress > this.growthPhase) return; // Animated growth
+    const expansionStep = Math.floor(this.growthPhase * this.expansionSteps);
+    const currentStep = Math.floor(depthProgress * this.expansionSteps);
+    
+    if (currentStep > expansionStep) return; // Animated growth with more steps
     
     const x2 = x + Math.cos(angle) * length;
     const y2 = y + Math.sin(angle) * length;
     
-    const hue = (baseHue + depth * 30) % 360;
-    const color = hslToHex(hue, 70, 50);
-    const lineWidth = Math.max(1, 8 - depth * 1.2);
-    const alpha = 0.9 - depth * 0.1;
+    const hue = (baseHue + depth * 25) % 360;
+    const color = hslToHex(hue, 80, 60);
+    const lineWidth = Math.max(1, 10 - depth * 1.5);
+    const alpha = Math.min(1, 1 - depthProgress * 0.3 + audio.beat ? 0.2 : 0);
     
     this.graphics.lineStyle(lineWidth, color, alpha);
     this.graphics.moveTo(x, y);
     this.graphics.lineTo(x2, y2);
     
-    // Recursive branches
-    const angleVariation = this.branchAngle * (1 + audio.bass * 0.3);
-    const lengthRatio = 0.67 + audio.treble * 0.1;
+    // Recursive branches with audio reactivity
+    const angleVariation = this.branchAngle * (1 + audio.bass * 0.4);
+    const lengthRatio = 0.65 + audio.treble * 0.15;
     
     this.drawFractalTree(x2, y2, angle - angleVariation, length * lengthRatio, depth + 1, baseHue, audio);
     this.drawFractalTree(x2, y2, angle + angleVariation, length * lengthRatio, depth + 1, baseHue, audio);
+    
+    // Add a third branch on strong beats for more complexity
+    if (audio.beat && depth < 3) {
+      const middleAngle = angle + (Math.random() - 0.5) * this.branchAngle * 0.5;
+      this.drawFractalTree(x2, y2, middleAngle, length * lengthRatio * 0.8, depth + 1, baseHue, audio);
+    }
   }
 
   // Sierpinski Triangle - recursive triangle subdivision
@@ -174,13 +203,16 @@ export class FeedbackFractal implements Pattern {
     if (depth > this.maxDepth) return;
     
     const depthProgress = depth / this.maxDepth;
-    if (depthProgress > this.growthPhase) return;
+    const expansionStep = Math.floor(this.growthPhase * this.expansionSteps);
+    const currentStep = Math.floor(depthProgress * this.expansionSteps);
     
-    const hue = (baseHue + depth * 40) % 360;
-    const color = hslToHex(hue, 70, 50);
-    const alpha = 0.8 - depth * 0.1;
+    if (currentStep > expansionStep) return;
     
-    this.graphics.lineStyle(2, color, alpha);
+    const hue = (baseHue + depth * 35) % 360;
+    const color = hslToHex(hue, 80, 60);
+    const alpha = Math.min(1, 0.9 - depthProgress * 0.2 + (audio.beat ? 0.1 : 0));
+    
+    this.graphics.lineStyle(Math.max(1, 3 - depth * 0.3), color, alpha);
     this.graphics.moveTo(x1, y1);
     this.graphics.lineTo(x2, y2);
     this.graphics.lineTo(x3, y3);
@@ -216,21 +248,24 @@ export class FeedbackFractal implements Pattern {
   }
 
   private drawKochLine(x1: number, y1: number, x2: number, y2: number, depth: number, baseHue: number, audio: AudioData): void {
-    const maxKochDepth = Math.min(4, this.maxDepth);
+    const maxKochDepth = Math.min(5, this.maxDepth);
     if (depth > maxKochDepth) {
-      const hue = (baseHue + depth * 25) % 360;
-      const color = hslToHex(hue, 70, 50);
-      this.graphics.lineStyle(2, color, 0.8);
+      const hue = (baseHue + depth * 30) % 360;
+      const color = hslToHex(hue, 80, 60);
+      this.graphics.lineStyle(Math.max(1, 3 - depth * 0.4), color, 0.8);
       this.graphics.moveTo(x1, y1);
       this.graphics.lineTo(x2, y2);
       return;
     }
     
     const depthProgress = depth / maxKochDepth;
-    if (depthProgress > this.growthPhase) {
-      const hue = (baseHue + depth * 25) % 360;
-      const color = hslToHex(hue, 70, 50);
-      this.graphics.lineStyle(2, color, 0.8);
+    const expansionStep = Math.floor(this.growthPhase * this.expansionSteps);
+    const currentStep = Math.floor(depthProgress * this.expansionSteps);
+    
+    if (currentStep > expansionStep) {
+      const hue = (baseHue + depth * 30) % 360;
+      const color = hslToHex(hue, 80, 60);
+      this.graphics.lineStyle(Math.max(1, 3 - depth * 0.4), color, 0.8);
       this.graphics.moveTo(x1, y1);
       this.graphics.lineTo(x2, y2);
       return;
@@ -262,19 +297,22 @@ export class FeedbackFractal implements Pattern {
     if (depth > this.maxDepth || radius < 3) return;
     
     const depthProgress = depth / this.maxDepth;
-    if (depthProgress > this.growthPhase) return;
+    const expansionStep = Math.floor(this.growthPhase * this.expansionSteps);
+    const currentStep = Math.floor(depthProgress * this.expansionSteps);
     
-    const hue = (baseHue + depth * 35) % 360;
-    const color = hslToHex(hue, 70, 50);
-    const alpha = 0.7 - depth * 0.08;
+    if (currentStep > expansionStep) return;
     
-    this.graphics.lineStyle(2, color, alpha);
+    const hue = (baseHue + depth * 40) % 360;
+    const color = hslToHex(hue, 80, 60);
+    const alpha = Math.min(1, 0.8 - depthProgress * 0.15 + (audio.beat ? 0.1 : 0));
+    
+    this.graphics.lineStyle(Math.max(1, 3 - depth * 0.3), color, alpha);
     this.graphics.drawCircle(x, y, radius);
     
     // Draw smaller circles around the perimeter
-    const childRadius = radius * 0.35;
-    const angleOffset = this.time + depth;
-    const count = 6;
+    const childRadius = radius * (0.3 + audio.treble * 0.1);
+    const angleOffset = this.time * 0.5 + depth;
+    const count = 6 + Math.floor(audio.rms * 3);
     
     for (let i = 0; i < count; i++) {
       const angle = (i / count) * Math.PI * 2 + angleOffset;
@@ -291,16 +329,19 @@ export class FeedbackFractal implements Pattern {
     if (depth > this.maxDepth || size < 3) return;
     
     const depthProgress = depth / this.maxDepth;
-    if (depthProgress > this.growthPhase) return;
+    const expansionStep = Math.floor(this.growthPhase * this.expansionSteps);
+    const currentStep = Math.floor(depthProgress * this.expansionSteps);
     
-    const hue = (baseHue + depth * 30) % 360;
-    const color = hslToHex(hue, 70, 50);
-    const fillColor = hslToHex(hue, 80, 40);
-    const alpha = 0.8 - depth * 0.1;
+    if (currentStep > expansionStep) return;
+    
+    const hue = (baseHue + depth * 35) % 360;
+    const color = hslToHex(hue, 80, 60);
+    const fillColor = hslToHex(hue, 90, 40);
+    const alpha = Math.min(1, 0.9 - depthProgress * 0.2 + (audio.beat ? 0.1 : 0));
     
     // Draw square
-    this.graphics.lineStyle(1, color, alpha);
-    this.graphics.beginFill(fillColor, alpha * 0.3);
+    this.graphics.lineStyle(Math.max(1, 2 - depth * 0.2), color, alpha);
+    this.graphics.beginFill(fillColor, alpha * 0.4);
     
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
@@ -326,9 +367,9 @@ export class FeedbackFractal implements Pattern {
     const topRightX = x + size * cos - size * sin;
     const topRightY = y + size * sin - size * cos;
     
-    const leftAngle = angle - this.branchAngle * (1 + audio.bass * 0.2);
-    const rightAngle = angle + this.branchAngle * (1 + audio.treble * 0.2);
-    const shrink = 0.6;
+    const leftAngle = angle - this.branchAngle * (1 + audio.bass * 0.3);
+    const rightAngle = angle + this.branchAngle * (1 + audio.treble * 0.3);
+    const shrink = 0.65 + audio.rms * 0.05;
     
     this.drawPythagorasTree(topLeftX, topLeftY, size * shrink, leftAngle, depth + 1, baseHue, audio);
     this.drawPythagorasTree(topRightX, topRightY, size * shrink, rightAngle, depth + 1, baseHue, audio);
