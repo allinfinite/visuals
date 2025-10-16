@@ -21,6 +21,8 @@ export class ParticleSwarm implements Pattern {
   private graphics: Graphics;
   private particles: Particle[] = [];
   private context: RendererContext;
+  private time: number = 0;
+  private expansionPhase: number = 0; // 0 = contract, 1 = expand
 
   private params = {
     count: 2000,
@@ -32,6 +34,9 @@ export class ParticleSwarm implements Pattern {
     spawnRadius: 200,
     particleSize: 2,
     colorSpeed: 0.1,
+    separationRadius: 15, // Min distance between particles
+    separationStrength: 0.3,
+    expansionCycleTime: 6, // Seconds per expand/contract cycle
   };
 
   constructor(context: RendererContext) {
@@ -67,10 +72,18 @@ export class ParticleSwarm implements Pattern {
     }
   }
 
-  public update(_dt: number, audio: AudioData, input: InputState): void {
+  public update(dt: number, audio: AudioData, input: InputState): void {
+    this.time += dt;
     const time = performance.now() / 1000;
 
-    this.particles.forEach((p) => {
+    // Update expansion phase (breathing cycle)
+    const cycleProgress = (this.time % this.params.expansionCycleTime) / this.params.expansionCycleTime;
+    this.expansionPhase = Math.sin(cycleProgress * Math.PI * 2) * 0.5 + 0.5; // 0 to 1 and back
+
+    const centerX = this.context.width / 2;
+    const centerY = this.context.height / 2;
+
+    this.particles.forEach((p, idx) => {
       // Store previous position (Verlet integration)
       const oldX = p.x;
       const oldY = p.y;
@@ -86,6 +99,45 @@ export class ParticleSwarm implements Pattern {
       );
       p.vx += noiseX * this.params.noiseStrength * audio.mid * 2;
       p.vy += noiseY * this.params.noiseStrength * audio.mid * 2;
+
+      // Expansion/contraction from center (breathing effect)
+      const toCenterX = centerX - p.x;
+      const toCenterY = centerY - p.y;
+      const centerDist = Math.sqrt(toCenterX * toCenterX + toCenterY * toCenterY);
+      
+      if (centerDist > 1) {
+        // expansionPhase: 0 = contract, 1 = expand
+        const expansionForce = (this.expansionPhase - 0.5) * 2; // -1 to 1
+        const expansionStrength = 0.4 * (1 + audio.rms * 0.5);
+        p.vx -= (toCenterX / centerDist) * expansionStrength * expansionForce;
+        p.vy -= (toCenterY / centerDist) * expansionStrength * expansionForce;
+      }
+
+      // Separation force (prevent particles from getting too close)
+      let separationX = 0;
+      let separationY = 0;
+      let separationCount = 0;
+
+      // Only check nearby particles (optimization: check every 10th particle)
+      for (let i = idx - 50; i < idx + 50; i++) {
+        if (i === idx || i < 0 || i >= this.particles.length) continue;
+        
+        const other = this.particles[i];
+        const dx = p.x - other.x;
+        const dy = p.y - other.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > 0 && dist < this.params.separationRadius) {
+          separationX += dx / dist;
+          separationY += dy / dist;
+          separationCount++;
+        }
+      }
+
+      if (separationCount > 0) {
+        p.vx += (separationX / separationCount) * this.params.separationStrength;
+        p.vy += (separationY / separationCount) * this.params.separationStrength;
+      }
 
       // Attraction/repulsion to cursor
       const dx = input.x - p.x;
@@ -123,7 +175,7 @@ export class ParticleSwarm implements Pattern {
       if (p.y < 0) p.y = this.context.height;
       if (p.y > this.context.height) p.y = 0;
 
-      // Update color based on audio
+      // Update color based on audio and expansion phase
       p.hue += this.params.colorSpeed * audio.centroid * 100;
       p.hue %= 360;
     });
@@ -132,7 +184,6 @@ export class ParticleSwarm implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // Don't clear - let trails build up via feedback system
     this.graphics.clear();
 
     this.particles.forEach((p) => {
@@ -140,10 +191,20 @@ export class ParticleSwarm implements Pattern {
       const saturation = lerp(50, 100, audio.mid);
       const alpha = 0.6 + audio.treble * 0.4;
       
-      // Beat pulse
-      const size = audio.beat 
-        ? this.params.particleSize * 1.5 
-        : this.params.particleSize;
+      // Beat pulse + expansion phase size variation
+      const expansionSize = 1 + this.expansionPhase * 0.3; // 1.0 to 1.3x size during expansion
+      const beatSize = audio.beat ? 1.5 : 1;
+      const size = this.params.particleSize * expansionSize * beatSize;
+
+      // Add slight glow during expansion phase
+      if (this.expansionPhase > 0.7) {
+        this.graphics.beginFill(
+          this.hslToHex(p.hue, saturation, brightness * 50), 
+          alpha * 0.3
+        );
+        this.graphics.drawCircle(p.x, p.y, size * 1.5);
+        this.graphics.endFill();
+      }
 
       this.graphics.beginFill(this.hslToHex(p.hue, saturation, brightness * 50), alpha);
       this.graphics.drawCircle(p.x, p.y, size);
