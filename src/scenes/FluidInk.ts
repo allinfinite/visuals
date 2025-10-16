@@ -57,6 +57,18 @@ export class FluidInk implements Pattern {
         };
       }
     }
+    
+    // Initialize with some fluid blobs for immediate visibility
+    for (let i = 0; i < 5; i++) {
+      const gridX = Math.floor(randomRange(this.gridWidth * 0.2, this.gridWidth * 0.8));
+      const gridY = Math.floor(randomRange(this.gridHeight * 0.2, this.gridHeight * 0.8));
+      const angle = Math.random() * Math.PI * 2;
+      const force = 100;
+      const velocityX = Math.cos(angle) * force;
+      const velocityY = Math.sin(angle) * force;
+      
+      this.injectFluid(gridX, gridY, velocityX, velocityY, 50, i * 72);
+    }
   }
 
   public update(dt: number, audio: AudioData, input: InputState): void {
@@ -74,8 +86,8 @@ export class FluidInk implements Pattern {
 
       this.injectFluid(gridX, gridY, velocityX, velocityY, audio.bass * 100, audio.centroid * 360);
     } else {
-      // Autonomous injection based on audio
-      if (audio.beat || Math.random() < audio.rms * 0.1) {
+      // Autonomous injection based on audio (increased frequency)
+      if (audio.beat || Math.random() < 0.08 + audio.rms * 0.15) {
         const gridX = Math.floor(randomRange(this.gridWidth * 0.2, this.gridWidth * 0.8));
         const gridY = Math.floor(randomRange(this.gridHeight * 0.2, this.gridHeight * 0.8));
         const angle = Math.random() * Math.PI * 2;
@@ -83,8 +95,15 @@ export class FluidInk implements Pattern {
         const velocityX = Math.cos(angle) * force;
         const velocityY = Math.sin(angle) * force;
 
-        this.injectFluid(gridX, gridY, velocityX, velocityY, audio.bass * 80 + 20, audio.centroid * 360);
+        this.injectFluid(gridX, gridY, velocityX, velocityY, audio.bass * 80 + 30, audio.centroid * 360);
       }
+    }
+    
+    // Additional continuous spawning for activity
+    if (Math.random() < 0.03) {
+      const gridX = Math.floor(randomRange(this.gridWidth * 0.3, this.gridWidth * 0.7));
+      const gridY = Math.floor(randomRange(this.gridHeight * 0.3, this.gridHeight * 0.7));
+      this.injectFluid(gridX, gridY, 0, 0, 20 + audio.rms * 30, (this.time * 50) % 360);
     }
 
     this.lastMouseX = input.x;
@@ -145,10 +164,10 @@ export class FluidInk implements Pattern {
     // Advect density
     this.advectDensity();
 
-    // Decay density over time
+    // Decay density over time (slower decay for longer visibility)
     for (let x = 0; x < this.gridWidth; x++) {
       for (let y = 0; y < this.gridHeight; y++) {
-        this.cells[x][y].density *= 0.99;
+        this.cells[x][y].density *= 0.995; // Slower decay (was 0.99)
       }
     }
   }
@@ -354,17 +373,28 @@ export class FluidInk implements Pattern {
     }
   }
 
-  private draw(_audio: AudioData): void {
+  private draw(audio: AudioData): void {
     this.graphics.clear();
 
-    // Draw fluid as colored circles
+    // Draw fluid as colored circles with improved visibility
     for (let x = 0; x < this.gridWidth; x++) {
       for (let y = 0; y < this.gridHeight; y++) {
         const cell = this.cells[x][y];
-        if (cell.density > 0.1) {
-          const alpha = Math.min(1, cell.density / 30);
-          const color = hslToHex(cell.hue, 70, 50);
+        if (cell.density > 0.5) { // Increased threshold for cleaner look
+          const alpha = Math.min(0.9, Math.max(0.2, cell.density / 40)); // Better alpha scaling
+          const color = hslToHex(cell.hue, 70 + audio.treble * 20, 50 + audio.rms * 10);
+          const glowColor = hslToHex(cell.hue, 90, 65);
 
+          // Glow layer
+          this.graphics.beginFill(glowColor, alpha * 0.3);
+          this.graphics.drawCircle(
+            x * this.cellSize + this.cellSize / 2,
+            y * this.cellSize + this.cellSize / 2,
+            this.cellSize * 0.8
+          );
+          this.graphics.endFill();
+
+          // Core layer
           this.graphics.beginFill(color, alpha);
           this.graphics.drawCircle(
             x * this.cellSize + this.cellSize / 2,
