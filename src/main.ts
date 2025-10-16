@@ -79,6 +79,7 @@ import { TorridRush } from './scenes/TorridRush';
 import { CarnalGlow } from './scenes/CarnalGlow';
 import { AIKenBurns } from './scenes/AIKenBurns';
 import { MysticWords } from './scenes/MysticWords';
+import { StealYourFace } from './scenes/StealYourFace';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -173,6 +174,7 @@ async function main() {
   sceneManager.addPattern(new CarnalGlow(context));
   sceneManager.addPattern(new AIKenBurns(context));
   sceneManager.addPattern(new MysticWords(context));
+  sceneManager.addPattern(new StealYourFace(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
