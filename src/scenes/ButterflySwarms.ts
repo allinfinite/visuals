@@ -15,6 +15,7 @@ interface Butterfly {
   size: number;
   hue: number;
   swarmId: number;
+  isFleeing: boolean; // Track if currently fleeing from cursor
 }
 
 export class ButterflySwarms implements Pattern {
@@ -67,6 +68,7 @@ export class ButterflySwarms implements Pattern {
       size: randomRange(8, 20),
       hue: swarmId * 120 + randomRange(-30, 30), // Each swarm has similar colors
       swarmId,
+      isFleeing: false,
     });
   }
 
@@ -94,6 +96,9 @@ export class ButterflySwarms implements Pattern {
     // Update butterflies
     this.butterflies.forEach((b) => {
       const center = this.swarmCenters[b.swarmId];
+      
+      // Reset fleeing state each frame
+      b.isFleeing = false;
 
       // Flocking behavior
       // 1. Cohesion - move towards swarm center
@@ -156,23 +161,28 @@ export class ButterflySwarms implements Pattern {
       if (b.y < -50) b.y = this.context.height + 50;
       if (b.y > this.context.height + 50) b.y = -50;
 
-      // Wing flapping (faster when moving faster)
-      b.wingPhase += b.wingSpeed * dt * (0.5 + speed / maxSpeed);
+      // Wing flapping (faster when moving faster, much faster when fleeing)
+      const panicMultiplier = b.isFleeing ? 2.5 : 1; // Flutter rapidly when fleeing
+      b.wingPhase += b.wingSpeed * dt * (0.5 + speed / maxSpeed) * panicMultiplier;
     });
 
-    // Mouse attraction
-    if (input.isDown || input.isDragging) {
-      this.butterflies.forEach((b) => {
-        const dx = input.x - b.x;
-        const dy = input.y - b.y;
-        const dist = Math.hypot(dx, dy);
+    // Mouse dispersion - butterflies scatter away from cursor
+    const disperseRadius = 150; // Distance at which butterflies react
+    const disperseForce = 400; // Strength of scatter force
+    
+    this.butterflies.forEach((b) => {
+      const dx = b.x - input.x; // Reversed: away from cursor
+      const dy = b.y - input.y;
+      const dist = Math.hypot(dx, dy);
 
-        if (dist < 200 && dist > 0) {
-          b.vx += (dx / dist) * 30 * dt;
-          b.vy += (dy / dist) * 30 * dt;
-        }
-      });
-    }
+      // Stronger force when cursor is closer
+      if (dist < disperseRadius && dist > 0) {
+        const force = disperseForce * (1 - dist / disperseRadius); // Stronger when closer
+        b.vx += (dx / dist) * force * dt;
+        b.vy += (dy / dist) * force * dt;
+        b.isFleeing = true; // Mark as fleeing for visual feedback
+      }
+    });
 
     // Spawn more on beat
     if (audio.beat && this.butterflies.length < 150) {
