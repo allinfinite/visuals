@@ -21,7 +21,7 @@ export class LatentMorphs implements Pattern {
   private currentTexture: Texture;
   private nextTexture: Texture;
   private morphProgress: number = 0;
-  private morphDuration: number = 5;
+  private morphDuration: number = 12; // Increased from 5 to 12 seconds for slower morphs
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -46,7 +46,6 @@ export class LatentMorphs implements Pattern {
 
   public update(dt: number, audio: AudioData, input: InputState): void {
     this.time += dt;
-    this.morphProgress += dt / this.morphDuration;
 
     // Click triggers immediate morph
     input.clicks.forEach((click) => {
@@ -58,14 +57,9 @@ export class LatentMorphs implements Pattern {
       }
     });
 
-    // Auto-morph based on audio
-    const morphSpeed = 1 + audio.rms;
-    this.morphProgress += dt / this.morphDuration * morphSpeed;
-
-    // Beat can trigger morph
-    if (audio.beat && this.morphProgress > 0.5) {
-      this.morphProgress = 1;
-    }
+    // Slow, gradual morph with subtle audio influence
+    const morphSpeed = 1 + audio.rms * 0.2; // Reduced audio influence from 1x to 0.2x
+    this.morphProgress += (dt / this.morphDuration) * morphSpeed;
 
     // Complete morph
     if (this.morphProgress >= 1) {
@@ -73,20 +67,21 @@ export class LatentMorphs implements Pattern {
       this.nextTexture = this.generateRandomTexture();
       this.morphProgress = 0;
       
-      // Vary morph duration
-      this.morphDuration = 3 + Math.random() * 4;
+      // Vary morph duration between 10-16 seconds (increased from 3-7)
+      this.morphDuration = 10 + Math.random() * 6;
     }
 
-    // Update textures with audio
-    this.currentTexture.rotation += dt * 0.2 * (1 + audio.treble);
-    this.nextTexture.rotation += dt * 0.3 * (1 + audio.treble);
+    // Update textures with audio - slower rotation
+    this.currentTexture.rotation += dt * 0.1 * (1 + audio.treble * 0.5);
+    this.nextTexture.rotation += dt * 0.15 * (1 + audio.treble * 0.5);
 
-    this.currentTexture.hue = (this.currentTexture.hue + dt * 20 + audio.centroid * 30) % 360;
-    this.nextTexture.hue = (this.nextTexture.hue + dt * 25 + audio.centroid * 35) % 360;
+    // Slower hue shift
+    this.currentTexture.hue = (this.currentTexture.hue + dt * 10 + audio.centroid * 15) % 360;
+    this.nextTexture.hue = (this.nextTexture.hue + dt * 12 + audio.centroid * 18) % 360;
 
-    const scaleTarget = 1 + audio.rms * 0.3;
-    this.currentTexture.scale += (scaleTarget - this.currentTexture.scale) * 2 * dt;
-    this.nextTexture.scale += (scaleTarget - this.nextTexture.scale) * 2 * dt;
+    const scaleTarget = 1 + audio.rms * 0.2;
+    this.currentTexture.scale += (scaleTarget - this.currentTexture.scale) * 1.5 * dt;
+    this.nextTexture.scale += (scaleTarget - this.nextTexture.scale) * 1.5 * dt;
 
     this.draw(audio);
   }
