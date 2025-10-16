@@ -18,7 +18,7 @@ Open your browser to `http://localhost:3000`
 2. **Move your mouse** - Influence particle flow and interactions
 3. **Click anywhere** - Spawn bursts, change patterns, trigger effects
 4. **Drag** - Paint trails and create smoke effects
-5. **Open Tweakpane** (top-right) - Switch between 13 patterns
+5. **Open Tweakpane** (top-right) - Switch between 30 patterns
 6. **Adjust Trail Length** - Control how long visual elements persist (1-100)
 7. **Enable Audio** - Grant microphone access to make visuals react to sound
 

@@ -58,17 +58,19 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Ocean Waves** - Sine field with layered depth and foam
 
 ### Cosmic
-- **Starfield Zoom** - 3D star projection with speed sync
+- **Starfield** - 3D star projection with speed sync
 - **Orbit System** - Hierarchical planetary motion with satellites
 - **Nebula** - Fractal noise volume rendering (cosmic gas clouds)
 - **Constellations** - Connect click points with glowing lines
+- **Black Hole** - Radial accretion disk with orbital physics
+- **Supernova** - Expanding particle shell explosions
 
 ### Fluid/Paint
-- **Liquid Color Blobs** - Metaballs with SDF blending
+- **Metaballs** - SDF blending with organic liquid motion
 
 ### Emotional/Mood
-- **Minimal Dots** - Sparse particles drifting with breathing rate
-- **Grid Pulses** - Uniform grid brightness oscillation
+- **Minimal Dots** - Sparse particles drifting with breathing rhythm
+- **Gradient Clouds** - Layered noise with RMS-driven hue rotation
 
 ### Organic/Biological
 - **Mycelium Growth** - Branching network with recursive growth
