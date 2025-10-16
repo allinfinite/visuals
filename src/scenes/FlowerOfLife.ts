@@ -20,6 +20,8 @@ export class FlowerOfLife implements Pattern {
   private growthPhase: number = 0;
   private maxRings: number = 4; // Increased from 3 for fuller pattern
   private cycleTime: number = 15; // Time for one full growth cycle
+  private colorOffset: number = 0; // Color offset changed by clicks
+  private zoomScale: number = 1; // Scale that increases as pattern expands
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -71,12 +73,21 @@ export class FlowerOfLife implements Pattern {
     this.growthPhase += dt * (1 + audio.rms * 0.5); // Audio speeds up growth
     if (this.growthPhase > this.cycleTime) {
       this.growthPhase = 0;
+      this.zoomScale = 1; // Reset zoom when pattern resets
     }
     
-    // Click resets growth cycle
-    if (input.clicks.length > 0) {
-      this.growthPhase = 0;
-    }
+    // Click changes color palette
+    input.clicks.forEach((click) => {
+      const age = this.time - click.time;
+      if (age < 0.05) {
+        this.colorOffset = (this.colorOffset + 120) % 360; // Shift hue by 120 degrees
+      }
+    });
+    
+    // Zoom increases as pattern expands (from 1.0 to 2.0)
+    const expansionProgress = this.growthPhase / this.cycleTime;
+    const targetZoom = 1 + expansionProgress * 1.0; // Scale from 1.0x to 2.0x
+    this.zoomScale += (targetZoom - this.zoomScale) * 3 * dt; // Smooth zoom
     
     this.draw(audio);
   }
@@ -88,6 +99,10 @@ export class FlowerOfLife implements Pattern {
     
     // Gradually shifting hue over time
     const globalHueShift = (this.time * 10) % 360; // Slow color rotation
+    
+    // Get center for zoom calculation
+    const centerX = this.context.width / 2;
+    const centerY = this.context.height / 2;
 
     this.circles.forEach((circle) => {
       // Calculate circle age relative to growth phase
@@ -101,9 +116,15 @@ export class FlowerOfLife implements Pattern {
       const expansionProgress = Math.min(1, age / expansionDuration);
       const easedProgress = this.easeOutElastic(expansionProgress);
       
-      // Radius grows from 0 to target with elastic ease
-      const radius = baseRadius * easedProgress;
+      // Radius grows from 0 to target with elastic ease, scaled by zoom
+      const radius = baseRadius * easedProgress * this.zoomScale;
       if (radius < 1) return; // Don't draw tiny circles
+      
+      // Apply zoom to circle position (zoom from center)
+      const dx = circle.x - centerX;
+      const dy = circle.y - centerY;
+      const zoomedX = centerX + dx * this.zoomScale;
+      const zoomedY = centerY + dy * this.zoomScale;
       
       // Fade in alpha (0 to 1 over 0.5 seconds)
       const fadeDuration = 0.5;
@@ -114,15 +135,15 @@ export class FlowerOfLife implements Pattern {
       const vibration = Math.sin(this.time * 3 + circle.ring * 0.5 + circle.index) * audio.bass * 3;
       const finalRadius = radius + vibration;
       
-      // Color gradients: shift based on ring position and time
-      const ringHue = (circle.ring * 40 + globalHueShift) % 360;
+      // Color gradients: shift based on ring position, time, and click offset
+      const ringHue = (circle.ring * 40 + globalHueShift + this.colorOffset) % 360;
       const indexOffset = (circle.index / (circle.ring === 0 ? 1 : circle.ring * 6)) * 60;
       const hue = (ringHue + indexOffset) % 360;
       const saturation = 60 + audio.mid * 30;
       const lightness = 50 + Math.sin(this.time * 2 + circle.ring) * 10 + audio.rms * 20;
       
-      // Line thickness varies with audio
-      const lineWidth = 2 + (audio.beat ? 2 : 0) + expansionProgress * 0.5;
+      // Line thickness varies with audio and zoom
+      const lineWidth = (2 + (audio.beat ? 2 : 0) + expansionProgress * 0.5) * this.zoomScale;
       
       // Draw the circle
       this.graphics.lineStyle(
@@ -130,13 +151,13 @@ export class FlowerOfLife implements Pattern {
         this.hslToHex(hue, saturation, lightness),
         alpha
       );
-      this.graphics.drawCircle(circle.x, circle.y, finalRadius);
+      this.graphics.drawCircle(zoomedX, zoomedY, finalRadius);
       
       // Draw subtle fill when fully grown
       if (expansionProgress > 0.9) {
         const fillAlpha = (expansionProgress - 0.9) / 0.1 * 0.1 * (1 + (audio.beat ? 0.1 : 0));
         this.graphics.beginFill(this.hslToHex(hue, saturation, lightness), fillAlpha);
-        this.graphics.drawCircle(circle.x, circle.y, finalRadius);
+        this.graphics.drawCircle(zoomedX, zoomedY, finalRadius);
         this.graphics.endFill();
       }
     });
