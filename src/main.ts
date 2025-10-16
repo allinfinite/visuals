@@ -65,6 +65,8 @@ import { FeedbackFractal } from './scenes/FeedbackFractal';
 import { AudioPoetry } from './scenes/AudioPoetry';
 import { ImpossibleGeometry } from './scenes/ImpossibleGeometry';
 import { LatentMorphs } from './scenes/LatentMorphs';
+import { MirrorRoom } from './scenes/MirrorRoom';
+import { WordRipples } from './scenes/WordRipples';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -145,6 +147,8 @@ async function main() {
   sceneManager.addPattern(new AudioPoetry(context));
   sceneManager.addPattern(new ImpossibleGeometry(context));
   sceneManager.addPattern(new LatentMorphs(context));
+  sceneManager.addPattern(new MirrorRoom(context));
+  sceneManager.addPattern(new WordRipples(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);

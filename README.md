@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **63 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
+- **65 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
@@ -109,10 +109,12 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Point Cloud Morph** - 500 particles morphing between 8 formations (sphere, cube, torus, spiral, wave, DNA helix, lattice, galaxy)
 - **Wireframe Tunnel** - 3D perspective tunnel with polygon rings moving through depth
 - **Feedback Fractal** - Recursive layered geometry with 5 concentric shape formations
+- **Mirror Room** - Kaleidoscope reflections with rotational symmetry and audio-driven reflectivity
 
 ### Text & Glyphs
 - **Audio Poetry** - Abstract geometric "letters" appearing on beat with spectrum-based colors
 - **Latent Morphs** - Procedural texture crossfading with 6 generation types (radial gradient, noise field, concentric rings, Voronoi-like, Perlin blobs, spectral bands)
+- **Word Ripples** - Grid of abstract glyphs displaced by ripple waves with sine-based distortion
 
 ### Environmental/Temporal
 - **Day Night Cycle** - Animated sky with sun/moon transitions and audio-driven timing
