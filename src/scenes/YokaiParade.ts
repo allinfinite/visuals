@@ -93,23 +93,26 @@ export class YokaiParade implements Pattern {
       this.spawnYokai();
     }
 
-    // Click interaction - spawn yokai at cursor
+    // Click interaction - spawn yokai parading in from the left
     input.clicks.forEach((click) => {
       const age = this.time - click.time;
       if (age < 0.05) {
-        const newYokai: Yokai = {
-          x: click.x,
-          y: click.y,
-          baseY: click.y,
-          speed: randomRange(30, 70),
-          size: randomRange(50, 120),
-          type: Math.floor(randomRange(0, 5)),
-          phase: randomRange(0, Math.PI * 2),
-          floatOffset: 0,
-          hue: (this.time * 100) % 360,
-          alpha: 0.8,
-        };
-        this.yokai.push(newYokai);
+        // Spawn 3 yokai from the left side with varied positions
+        for (let i = 0; i < 3; i++) {
+          const newYokai: Yokai = {
+            x: -150 - i * 80, // Stagger them from the left edge
+            y: randomRange(this.context.height * 0.2, this.context.height * 0.8),
+            baseY: randomRange(this.context.height * 0.2, this.context.height * 0.8),
+            speed: randomRange(40, 80),
+            size: randomRange(50, 120),
+            type: Math.floor(randomRange(0, 5)),
+            phase: randomRange(0, Math.PI * 2),
+            floatOffset: 0,
+            hue: (this.time * 100 + i * 60) % 360,
+            alpha: 0.8,
+          };
+          this.yokai.push(newYokai);
+        }
       }
     });
 
