@@ -11,7 +11,6 @@ export class ParamPane {
 
   public params = {
     pattern: 0,
-    queuePattern: 0, // For queuing specific patterns in multi-layer mode
     enableAudio: false,
     audioSensitivity: 100, // 0-200, 100 = normal
     feedbackEnabled: true,
@@ -28,6 +27,10 @@ export class ParamPane {
     activeLayerCount: 0,
     activeLayerInfo: 'None',
   };
+  
+  // Track queue counts for each pattern
+  private queueCounts: { [key: number]: number } = {};
+  private queueButtons: any[] = [];
 
   constructor(sceneManager: SceneManager, audio: Audio, app: App) {
     this.sceneManager = sceneManager;
@@ -133,31 +136,44 @@ export class ParamPane {
         this.sceneManager.setActivePattern(ev.value);
       });
 
-    // Queue specific pattern (for multi-layer mode)
+    // Queue specific pattern (for multi-layer mode) - Clickable list
     const queueFolder = this.pane.addFolder({
-      title: '➕ Queue Specific Pattern',
-      expanded: false,
-    });
-
-    queueFolder.addBinding(this.params, 'queuePattern', {
-      label: 'Select & Queue',
-      options: patternNames,
-    }).on('change', (ev: any) => {
-      const success = this.sceneManager.queueSpecificPattern(ev.value);
-      if (success) {
-        console.log(`✅ Queued: ${patterns[ev.value].name}`);
-      }
+      title: '➕ Click to Queue Patterns',
+      expanded: true,
     });
 
     // Add info text
-    const queueInfo = queueFolder.addBlade({
+    queueFolder.addBlade({
       view: 'text',
       label: 'Info',
-      value: 'Only works in Multi-Layer mode',
+      value: 'Click patterns to add to queue. Numbers show queue count.',
       parse: (v: string) => String(v),
       format: (v: string) => String(v),
+    } as any);
+
+    // Create clickable buttons for each pattern
+    patterns.forEach((pattern, index) => {
+      // Initialize queue count
+      this.queueCounts[index] = 0;
+      
+      const buttonParam = { 
+        action: () => {
+          const success = this.sceneManager.queueSpecificPattern(index);
+          if (success) {
+            this.queueCounts[index]++;
+            console.log(`✅ Queued: ${pattern.name} (${this.queueCounts[index]} in queue)`);
+            this.updateQueueButtons();
+          }
+        }
+      };
+      
+      const button = queueFolder.addButton({
+        title: `${pattern.name} [0]`,
+        label: '',
+      }).on('click', buttonParam.action);
+      
+      this.queueButtons.push({ button, index });
     });
-    (queueInfo as any).disabled = true;
 
     // Pattern pool selector
     const poolFolder = this.pane.addFolder({
@@ -275,6 +291,16 @@ export class ParamPane {
         folder.addBinding(params, key);
       }
     });
+  }
+
+  private updateQueueButtons(): void {
+    // Update button titles to show current queue count
+    const patterns = this.sceneManager.getAllPatterns();
+    this.queueButtons.forEach(({ button, index }) => {
+      const count = this.queueCounts[index] || 0;
+      button.title = `${patterns[index].name} [${count}]`;
+    });
+    this.pane.refresh();
   }
 
   public update(): void {
