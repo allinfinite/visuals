@@ -29,18 +29,30 @@ export class WeatherSync implements Pattern {
     this.container = new Container();
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
+    
+    // Initialize with some particles for immediate visibility
+    for (let i = 0; i < 30; i++) {
+      this.spawnParticle('rain');
+    }
+    for (let i = 0; i < 20; i++) {
+      this.spawnParticle('snow');
+    }
+    for (let i = 0; i < 10; i++) {
+      this.spawnParticle('fog');
+    }
   }
 
   private determineWeather(audio: AudioData): 'rain' | 'snow' | 'fog' {
-    // Weather based on audio characteristics
+    // More responsive weather thresholds based on audio characteristics
     const energy = audio.rms;
     const brightness = audio.treble;
     const depth = audio.bass;
 
-    if (energy > 0.6 && brightness > 0.5) {
-      return 'rain'; // High energy = rain
-    } else if (depth > 0.5 && brightness < 0.4) {
-      return 'snow'; // Deep, calm = snow
+    // Lower thresholds for more responsive weather changes
+    if (energy > 0.4 && brightness > 0.35) {
+      return 'rain'; // High energy = rain (was 0.6/0.5)
+    } else if (depth > 0.35 && brightness < 0.5) {
+      return 'snow'; // Deep, calm = snow (was 0.5/0.4)
     } else {
       return 'fog'; // Default ambient
     }
@@ -55,8 +67,8 @@ export class WeatherSync implements Pattern {
         y: randomRange(-20, 0),
         vx: randomRange(-20, 20),
         vy: randomRange(300, 600),
-        size: randomRange(1, 3),
-        alpha: randomRange(0.3, 0.8),
+        size: randomRange(1.5, 3.5), // Slightly thicker rain (was 1-3)
+        alpha: randomRange(0.4, 0.9), // Brighter (was 0.3-0.8)
         type: 'rain',
         rotation: randomRange(-0.2, 0.2),
         rotationSpeed: 0,
@@ -67,8 +79,8 @@ export class WeatherSync implements Pattern {
         y: randomRange(-20, 0),
         vx: randomRange(-20, 20),
         vy: randomRange(30, 80),
-        size: randomRange(2, 6),
-        alpha: randomRange(0.5, 0.9),
+        size: randomRange(3, 8), // Larger snowflakes (was 2-6)
+        alpha: randomRange(0.6, 1.0), // Brighter (was 0.5-0.9)
         type: 'snow',
         rotation: randomRange(0, Math.PI * 2),
         rotationSpeed: randomRange(-1, 1),
@@ -79,8 +91,8 @@ export class WeatherSync implements Pattern {
         y: randomRange(0, height),
         vx: randomRange(-10, 10),
         vy: randomRange(-5, 5),
-        size: randomRange(40, 120),
-        alpha: randomRange(0.05, 0.15),
+        size: randomRange(50, 150), // Larger fog clouds (was 40-120)
+        alpha: randomRange(0.1, 0.25), // More visible (was 0.05-0.15)
         type: 'fog',
         rotation: 0,
         rotationSpeed: 0,
@@ -94,14 +106,14 @@ export class WeatherSync implements Pattern {
     // Determine weather from audio
     this.weatherMode = this.determineWeather(audio);
 
-    // Spawn rate based on weather and audio
+    // Increased spawn rates for more dynamic weather
     let spawnRate = 0;
     if (this.weatherMode === 'rain') {
-      spawnRate = 5 + audio.rms * 15; // More rain with higher RMS
+      spawnRate = 8 + audio.rms * 20; // More rain (was 5+15)
     } else if (this.weatherMode === 'snow') {
-      spawnRate = 2 + audio.bass * 8;
+      spawnRate = 4 + audio.bass * 12; // More snow (was 2+8)
     } else {
-      spawnRate = 0.5 + audio.rms * 2;
+      spawnRate = 1.5 + audio.rms * 4; // More fog (was 0.5+2)
     }
 
     // Spawn particles
@@ -136,9 +148,9 @@ export class WeatherSync implements Pattern {
         particle.vx += (Math.random() - 0.5) * 5 * dt;
         particle.vy += (Math.random() - 0.5) * 5 * dt;
         
-        // Fade in and out
+        // Fade in and out (increased visibility range)
         particle.alpha += (Math.random() - 0.5) * 0.1 * dt;
-        particle.alpha = Math.max(0.02, Math.min(0.2, particle.alpha));
+        particle.alpha = Math.max(0.08, Math.min(0.35, particle.alpha)); // Was 0.02-0.2, now 0.08-0.35
       }
     });
 
@@ -230,30 +242,37 @@ export class WeatherSync implements Pattern {
         }
         
       } else { // fog
-        // Fog clouds (soft circles)
+        // Fog clouds (soft circles) - increased visibility
         const hue = 200 + audio.centroid * 60;
-        const color = hslToHex(hue, 20, 70);
+        const color = hslToHex(hue, 25, 75); // Slightly more saturated and lighter
         
-        // Multiple layers for softness
-        this.graphics.beginFill(color, particle.alpha * 0.3);
+        // Multiple layers for softness (increased alpha multipliers)
+        this.graphics.beginFill(color, particle.alpha * 0.6); // Was 0.3
         this.graphics.drawCircle(particle.x, particle.y, particle.size);
         this.graphics.endFill();
         
-        this.graphics.beginFill(color, particle.alpha * 0.2);
+        this.graphics.beginFill(color, particle.alpha * 0.4); // Was 0.2
         this.graphics.drawCircle(particle.x, particle.y, particle.size * 1.5);
         this.graphics.endFill();
         
-        this.graphics.beginFill(color, particle.alpha * 0.1);
+        this.graphics.beginFill(color, particle.alpha * 0.25); // Was 0.1
         this.graphics.drawCircle(particle.x, particle.y, particle.size * 2);
         this.graphics.endFill();
       }
     });
 
-    // Draw weather indicator
+    // Draw weather indicator (more visible)
     const weatherColor = this.weatherMode === 'rain' ? 0x88aaff : 
                         this.weatherMode === 'snow' ? 0xffffff : 0xcccccc;
-    this.graphics.beginFill(weatherColor, 0.3 + audio.rms * 0.3);
-    this.graphics.drawCircle(30, 30, 8);
+    
+    // Glow
+    this.graphics.beginFill(weatherColor, 0.3);
+    this.graphics.drawCircle(30, 30, 15);
+    this.graphics.endFill();
+    
+    // Core
+    this.graphics.beginFill(weatherColor, 0.6 + audio.rms * 0.4);
+    this.graphics.drawCircle(30, 30, 10);
     this.graphics.endFill();
   }
 
