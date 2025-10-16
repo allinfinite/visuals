@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **49 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
+- **52 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
@@ -101,6 +101,11 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ### Environmental/Temporal
 - **Day Night Cycle** - Animated sky with sun/moon transitions and audio-driven timing
+- **Terrain Morph** - Dynamic landscape with multi-octave noise and bass-driven peaks
+- **Weather Sync** - Atmospheric particles (rain/snow/fog) determined by audio mood
+
+### Interactive/Cursor
+- **Shadow Trails** - Cursor-following motion blur with velocity-reactive sizing
 
 ## Getting Started
 

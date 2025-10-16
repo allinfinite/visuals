@@ -51,6 +51,9 @@ import { AudioPaint } from './scenes/AudioPaint';
 import { CellularAutomata } from './scenes/CellularAutomata';
 import { DayNightCycle } from './scenes/DayNightCycle';
 import { RecursiveTiles } from './scenes/RecursiveTiles';
+import { ShadowTrails } from './scenes/ShadowTrails';
+import { TerrainMorph } from './scenes/TerrainMorph';
+import { WeatherSync } from './scenes/WeatherSync';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -117,6 +120,9 @@ async function main() {
   sceneManager.addPattern(new CellularAutomata(context));
   sceneManager.addPattern(new DayNightCycle(context));
   sceneManager.addPattern(new RecursiveTiles(context));
+  sceneManager.addPattern(new ShadowTrails(context));
+  sceneManager.addPattern(new TerrainMorph(context));
+  sceneManager.addPattern(new WeatherSync(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
