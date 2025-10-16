@@ -1,6 +1,19 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Pattern, AudioData, InputState, RendererContext } from '../types';
-import { noise2D } from '../utils/noise';
+
+interface KaleidoShape {
+  x: number; // Position in the first segment (0-1 normalized)
+  y: number; // Distance from center (0-1 normalized)
+  vx: number;
+  vy: number;
+  size: number;
+  hue: number;
+  rotation: number;
+  rotationSpeed: number;
+  type: 'circle' | 'triangle' | 'square' | 'star';
+  life: number;
+  maxLife: number;
+}
 
 export class Kaleidoscope implements Pattern {
   public name = 'Kaleidoscope';
@@ -9,110 +22,250 @@ export class Kaleidoscope implements Pattern {
   private context: RendererContext;
   private time: number = 0;
   private segments: number = 8;
+  private shapes: KaleidoShape[] = [];
+  private maxRadius: number;
 
   constructor(context: RendererContext) {
     this.context = context;
     this.container = new Container();
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
+    
+    // Calculate max radius for full-screen coverage
+    this.maxRadius = Math.sqrt(
+      Math.pow(context.width / 2, 2) + Math.pow(context.height / 2, 2)
+    );
+    
+    // Initialize with some shapes
+    for (let i = 0; i < 15; i++) {
+      this.spawnShape();
+    }
   }
 
   public update(dt: number, audio: AudioData, input: InputState): void {
-    this.time += dt * (0.5 + audio.rms * 1.5);
+    this.time += dt * (0.3 + audio.rms);
     
     // Change segment count on beat
-    if (audio.beat && Math.random() < 0.3) {
-      this.segments = 4 + Math.floor(Math.random() * 9); // 4-12 segments
+    if (audio.beat && Math.random() < 0.2) {
+      this.segments = 6 + Math.floor(Math.random() * 7) * 2; // 6, 8, 10, 12, 14, 16, 18
+    }
+    
+    // Spawn new shapes
+    const spawnRate = (0.5 + audio.rms * 2 + (audio.beat ? 5 : 0)) * dt;
+    if (Math.random() < spawnRate && this.shapes.length < 40) {
+      this.spawnShape();
+    }
+    
+    // Update shapes
+    this.shapes.forEach(shape => {
+      shape.x += shape.vx * dt;
+      shape.y += shape.vy * dt * (0.5 + audio.bass);
+      shape.rotation += shape.rotationSpeed * dt;
+      shape.life += dt;
+      shape.hue = (shape.hue + dt * 20 + audio.treble * 30) % 360;
+      
+      // Bounce off edges
+      if (shape.y > 1) {
+        shape.y = 1;
+        shape.vy *= -0.5;
+      }
+      if (shape.y < 0) {
+        shape.y = 0;
+        shape.vy *= -0.5;
+      }
+    });
+    
+    // Remove old shapes
+    this.shapes = this.shapes.filter(s => s.life < s.maxLife);
+    
+    // Mouse interaction
+    if (input.isDown || input.isDragging) {
+      const { width, height } = this.context;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      
+      // Convert mouse position to segment coordinates
+      const dx = input.x - centerX;
+      const dy = input.y - centerY;
+      const angle = Math.atan2(dy, dx);
+      const dist = Math.hypot(dx, dy);
+      
+      // Normalize to first segment
+      const segmentAngle = (Math.PI * 2) / this.segments;
+      const normalizedAngle = ((angle % segmentAngle) + segmentAngle) % segmentAngle;
+      
+      this.spawnShape(normalizedAngle / segmentAngle, dist / this.maxRadius);
     }
 
     this.draw(audio, input);
   }
+  
+  private spawnShape(x?: number, y?: number): void {
+    this.shapes.push({
+      x: x !== undefined ? x : Math.random(),
+      y: y !== undefined ? y : Math.random() * 0.5,
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: Math.random() * 0.1 + 0.05,
+      size: 5 + Math.random() * 15,
+      hue: Math.random() * 360,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 2,
+      type: ['circle', 'triangle', 'square', 'star'][Math.floor(Math.random() * 4)] as any,
+      life: 0,
+      maxLife: 10 + Math.random() * 10,
+    });
+  }
 
-  private draw(audio: AudioData, input: InputState): void {
-    this.graphics.clear(); // Commented for feedback trails
+  private draw(audio: AudioData, _input: InputState): void {
+    this.graphics.clear();
 
     const { width, height } = this.context;
     const centerX = width / 2;
     const centerY = height / 2;
     const segmentAngle = (Math.PI * 2) / this.segments;
 
-    // Draw in all segments with rotation
+    // Draw segment divider lines for visual clarity
+    this.graphics.lineStyle(1, 0xffffff, 0.1);
     for (let seg = 0; seg < this.segments; seg++) {
-      // Rotation angle for this segment
       const angle = seg * segmentAngle;
-
-      // Draw pattern in this segment with rotation
-      const layers = 5;
-      for (let layer = 0; layer < layers; layer++) {
-        const radius = 50 + layer * 40;
-        const points = 6 + layer * 2;
-        
-        for (let i = 0; i < points; i++) {
-          const pointAngle = angle + (i / points) * segmentAngle;
-          const x = centerX + Math.cos(pointAngle) * radius;
-          const y = centerY + Math.sin(pointAngle) * radius;
-
-          // Noise-based position offset
-          const noiseX = noise2D(x * 0.01, this.time + layer) * 20;
-          const noiseY = noise2D(y * 0.01, this.time + layer + 100) * 20;
-
-          // Audio-reactive size and color
-          const hue = (layer * 60 + audio.centroid * 120 + this.time * 30) % 360;
-          const size = (3 + layer * 2) * (1 + audio.spectrum[i % 32] * 2);
-          const alpha = 0.3 + audio.rms * 0.5;
-
-          // Glow
-          this.graphics.beginFill(this.hslToHex(hue, 100, 60), alpha * 0.3);
-          this.graphics.drawCircle(x + noiseX, y + noiseY, size * 2);
-          this.graphics.endFill();
-
-          // Core
-          this.graphics.beginFill(this.hslToHex(hue, 100, 70), alpha);
-          this.graphics.drawCircle(x + noiseX, y + noiseY, size);
-          this.graphics.endFill();
-        }
-      }
-
-      // Draw lines connecting points for this segment
-      const linePoints = 12;
-      this.graphics.lineStyle(1 + (audio.beat ? 2 : 0), 0xffffff, 0.2 + audio.mid * 0.3);
-      
-      for (let i = 0; i < linePoints; i++) {
-        const pointAngle = angle + (i / linePoints) * segmentAngle;
-        const radius = 80 + Math.sin(this.time + i + seg) * 30;
-        const x = centerX + Math.cos(pointAngle) * radius;
-        const y = centerY + Math.sin(pointAngle) * radius;
-        
-        if (i === 0) {
-          this.graphics.moveTo(x, y);
-        } else {
-          this.graphics.lineTo(x, y);
-        }
-      }
+      const x = centerX + Math.cos(angle) * this.maxRadius;
+      const y = centerY + Math.sin(angle) * this.maxRadius;
+      this.graphics.moveTo(centerX, centerY);
+      this.graphics.lineTo(x, y);
     }
 
-    // Center mandala
-    const centerRadius = 20 + audio.bass * 40;
-    const centerHue = (this.time * 50) % 360;
+    // Draw all shapes mirrored across all segments
+    this.shapes.forEach(shape => {
+      // Calculate fade in/out alpha
+      const lifeProgress = shape.life / shape.maxLife;
+      let alphaMultiplier = 1;
+      if (lifeProgress < 0.1) {
+        alphaMultiplier = lifeProgress / 0.1; // Fade in
+      } else if (lifeProgress > 0.9) {
+        alphaMultiplier = 1 - (lifeProgress - 0.9) / 0.1; // Fade out
+      }
+      
+      // Draw this shape in all segments with mirroring
+      for (let seg = 0; seg < this.segments; seg++) {
+        const baseAngle = seg * segmentAngle;
+        
+        // Alternate segments are mirrored (true kaleidoscope effect)
+        const mirror = seg % 2 === 0;
+        const normalizedX = mirror ? shape.x : (1 - shape.x);
+        
+        // Calculate position in this segment
+        const angleInSegment = normalizedX * segmentAngle;
+        const radius = shape.y * this.maxRadius;
+        
+        const finalAngle = baseAngle + angleInSegment;
+        const x = centerX + Math.cos(finalAngle) * radius;
+        const y = centerY + Math.sin(finalAngle) * radius;
+        
+        // Calculate audio-reactive size
+        const beatBoost = audio.beat ? 1.3 : 1;
+        const size = shape.size * (1 + audio.rms * 0.5) * beatBoost;
+        const alpha = (0.6 + audio.mid * 0.4) * alphaMultiplier;
+        
+        // Draw shape with glow
+        this.drawShape(shape.type, x, y, size, shape.hue, shape.rotation, alpha, audio);
+      }
+    });
+
+    // Draw pulsing center
+    const centerRadius = 15 + audio.bass * 30;
+    const centerHue = (this.time * 50 + audio.centroid * 180) % 360;
     
-    this.graphics.beginFill(this.hslToHex(centerHue, 100, 60), 0.5);
+    // Outer glow
+    this.graphics.beginFill(this.hslToHex(centerHue, 100, 50), 0.3);
+    this.graphics.drawCircle(centerX, centerY, centerRadius * 2);
+    this.graphics.endFill();
+    
+    // Main circle
+    this.graphics.beginFill(this.hslToHex(centerHue, 100, 60), 0.7);
     this.graphics.drawCircle(centerX, centerY, centerRadius);
     this.graphics.endFill();
     
-    this.graphics.beginFill(0xffffff, 0.8);
-    this.graphics.drawCircle(centerX, centerY, centerRadius * 0.5);
+    // Inner highlight
+    this.graphics.beginFill(0xffffff, 0.9);
+    this.graphics.drawCircle(centerX, centerY, centerRadius * 0.4);
     this.graphics.endFill();
-
-    // Mouse interaction - draw pattern at mouse position
-    if (input.isDown || input.isDragging) {
-      const distToCenter = Math.hypot(input.x - centerX, input.y - centerY);
-      if (distToCenter > 50) {
-        const hue = (this.time * 100) % 360;
-        this.graphics.beginFill(this.hslToHex(hue, 100, 70), 0.4);
-        this.graphics.drawCircle(input.x, input.y, 10 + audio.rms * 20);
+  }
+  
+  private drawShape(
+    type: string, 
+    x: number, 
+    y: number, 
+    size: number, 
+    hue: number, 
+    rotation: number, 
+    alpha: number,
+    _audio: AudioData
+  ): void {
+    const color = this.hslToHex(hue, 100, 60);
+    const glowColor = this.hslToHex(hue, 100, 70);
+    
+    // Draw glow
+    this.graphics.beginFill(glowColor, alpha * 0.3);
+    
+    switch (type) {
+      case 'circle':
+        this.graphics.drawCircle(x, y, size * 1.5);
         this.graphics.endFill();
-      }
+        this.graphics.beginFill(color, alpha);
+        this.graphics.drawCircle(x, y, size);
+        break;
+        
+      case 'triangle':
+        this.drawPolygon(x, y, size * 1.5, 3, rotation);
+        this.graphics.endFill();
+        this.graphics.beginFill(color, alpha);
+        this.drawPolygon(x, y, size, 3, rotation);
+        break;
+        
+      case 'square':
+        this.drawPolygon(x, y, size * 1.5, 4, rotation);
+        this.graphics.endFill();
+        this.graphics.beginFill(color, alpha);
+        this.drawPolygon(x, y, size, 4, rotation);
+        break;
+        
+      case 'star':
+        this.drawStar(x, y, size * 1.5, 5, rotation);
+        this.graphics.endFill();
+        this.graphics.beginFill(color, alpha);
+        this.drawStar(x, y, size, 5, rotation);
+        break;
     }
+    this.graphics.endFill();
+    
+    // Add bright center dot
+    this.graphics.beginFill(0xffffff, alpha * 0.6);
+    this.graphics.drawCircle(x, y, size * 0.3);
+    this.graphics.endFill();
+  }
+  
+  private drawPolygon(x: number, y: number, radius: number, sides: number, rotation: number): void {
+    const points: number[] = [];
+    for (let i = 0; i < sides; i++) {
+      const angle = (i / sides) * Math.PI * 2 + rotation;
+      points.push(x + Math.cos(angle) * radius);
+      points.push(y + Math.sin(angle) * radius);
+    }
+    this.graphics.drawPolygon(points);
+  }
+  
+  private drawStar(x: number, y: number, radius: number, points: number, rotation: number): void {
+    const path: number[] = [];
+    const innerRadius = radius * 0.5;
+    
+    for (let i = 0; i < points * 2; i++) {
+      const angle = (i / (points * 2)) * Math.PI * 2 + rotation;
+      const r = i % 2 === 0 ? radius : innerRadius;
+      path.push(x + Math.cos(angle) * r);
+      path.push(y + Math.sin(angle) * r);
+    }
+    
+    this.graphics.drawPolygon(path);
   }
 
   private hslToHex(h: number, s: number, l: number): number {
