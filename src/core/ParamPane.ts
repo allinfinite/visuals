@@ -32,6 +32,7 @@ export class ParamPane {
   private queuePositions: { [key: number]: number[] } = {}; // Stores array of queue positions for each pattern
   private queueButtons: any[] = [];
   private globalQueuePosition: number = 0; // Global counter for queue positions
+  private consumedPositions: number = 0; // Track how many positions have been consumed from the queue
 
   constructor(sceneManager: SceneManager, audio: Audio, app: App) {
     this.sceneManager = sceneManager;
@@ -302,19 +303,24 @@ export class ParamPane {
   }
 
   private updateQueueButtons(): void {
-    // Update button titles to show queue positions
+    // Update button titles to show queue positions (adjusted for consumed items)
     const patterns = this.sceneManager.getAllPatterns();
     this.queueButtons.forEach(({ button, index }) => {
       const positions = this.queuePositions[index] || [];
       const patternName = patterns[index].name;
       
-      if (positions.length === 0) {
+      // Filter out consumed positions and adjust remaining ones
+      const activePositions = positions
+        .filter(pos => pos > this.consumedPositions)
+        .map(pos => pos - this.consumedPositions);
+      
+      if (activePositions.length === 0) {
         button.title = patternName;
-      } else if (positions.length === 1) {
-        button.title = `${patternName} [${positions[0]}]`;
+      } else if (activePositions.length === 1) {
+        button.title = `${patternName} [${activePositions[0]}]`;
       } else {
         // Show all positions if multiple
-        button.title = `${patternName} [${positions.join(', ')}]`;
+        button.title = `${patternName} [${activePositions.join(', ')}]`;
       }
     });
     this.pane.refresh();
@@ -326,6 +332,14 @@ export class ParamPane {
       this.params.activeLayerCount = this.sceneManager.getActiveLayerCount();
       const names = this.sceneManager.getActiveLayerNames();
       this.params.activeLayerInfo = names.length > 0 ? names.join('\n') : 'None';
+      
+      // Update consumed positions based on queue length
+      const currentQueueLength = this.sceneManager.getQueueLength();
+      const totalQueued = this.globalQueuePosition;
+      this.consumedPositions = totalQueued - currentQueueLength;
+      
+      // Update button displays
+      this.updateQueueButtons();
     } else {
       this.params.activeLayerCount = 0;
       this.params.activeLayerInfo = 'Single pattern mode';

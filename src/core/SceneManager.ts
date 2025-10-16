@@ -18,6 +18,7 @@ export class SceneManager {
   private activeLayers: ActiveLayer[] = [];
   private patternPool: Set<number> = new Set(); // Indices of patterns available for mixing
   private timeSinceLastSpawn: number = 0;
+  private patternQueue: number[] = []; // Queue of pattern indices waiting to be spawned
   
   // Settings
   public compositionEnabled: boolean = true; // Enabled by default for dynamic multi-layer visuals
@@ -140,22 +141,29 @@ export class SceneManager {
       return true;
     });
 
-    // Spawn new layers
-    if (this.timeSinceLastSpawn >= this.spawnInterval && 
-        this.activeLayers.length < this.maxLayers &&
-        this.patternPool.size > 0) {
-      this.spawnRandomLayer();
-      this.timeSinceLastSpawn = 0;
+    // Process queue first (priority over random spawns)
+    if (this.activeLayers.length < this.maxLayers) {
+      this.processQueue();
     }
 
-    // Ensure we have at least one layer if pool is not empty
-    if (this.activeLayers.length === 0 && this.patternPool.size > 0) {
-      this.spawnRandomLayer();
+    // Spawn new layers randomly if queue is empty
+    if (this.patternQueue.length === 0) {
+      if (this.timeSinceLastSpawn >= this.spawnInterval && 
+          this.activeLayers.length < this.maxLayers &&
+          this.patternPool.size > 0) {
+        this.spawnRandomLayer();
+        this.timeSinceLastSpawn = 0;
+      }
+
+      // Ensure we have at least one layer if pool is not empty
+      if (this.activeLayers.length === 0 && this.patternPool.size > 0) {
+        this.spawnRandomLayer();
+      }
     }
   }
 
   public queueSpecificPattern(index: number): boolean {
-    // Manually queue a specific pattern for multi-layer mode
+    // Add pattern to queue for multi-layer mode
     if (!this.compositionEnabled) {
       console.warn('SceneManager: Cannot queue pattern when composition mode is disabled');
       return false;
@@ -171,29 +179,41 @@ export class SceneManager {
       return false;
     }
     
-    // Check if pattern is already active
+    // Add to queue (allow duplicates)
+    this.patternQueue.push(index);
+    console.log(`SceneManager: Added ${this.patterns[index].name} to queue (position ${this.patternQueue.length})`);
+    return true;
+  }
+  
+  public getQueueLength(): number {
+    return this.patternQueue.length;
+  }
+  
+  private processQueue(): void {
+    // Process queue if there's space and patterns waiting
+    if (this.patternQueue.length === 0) return;
+    if (this.activeLayers.length >= this.maxLayers) return;
+    
+    // Get next pattern from queue
+    const index = this.patternQueue.shift()!;
+    
+    // Check if pattern is already active (skip if so)
     const isAlreadyActive = this.activeLayers.some(
       layer => this.patterns.indexOf(layer.pattern) === index
     );
     
     if (isAlreadyActive) {
-      console.log(`SceneManager: Pattern ${this.patterns[index].name} is already active`);
-      return false;
-    }
-    
-    // If at max layers, remove oldest non-removing layer
-    if (this.activeLayers.length >= this.maxLayers) {
-      const oldestLayer = this.activeLayers.find(l => !l.isRemoving);
-      if (oldestLayer) {
-        oldestLayer.isRemoving = true;
-        console.log(`SceneManager: Marking oldest layer for removal to make room`);
+      console.log(`SceneManager: Pattern ${this.patterns[index].name} is already active, skipping`);
+      // Try next in queue
+      if (this.patternQueue.length > 0) {
+        this.processQueue();
       }
+      return;
     }
     
-    // Spawn the specific pattern
+    // Spawn the pattern
     this.spawnLayer(index);
-    console.log(`SceneManager: Queued pattern ${this.patterns[index].name}`);
-    return true;
+    console.log(`SceneManager: Spawned ${this.patterns[index].name} from queue (${this.patternQueue.length} remaining)`);
   }
 
   private spawnLayer(index: number): void {
