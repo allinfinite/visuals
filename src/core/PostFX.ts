@@ -16,7 +16,7 @@ export class PostFX {
     bloomIntensity: 0.3,
     
     // Film effects parameters (grain & vignette overlays)
-    analogEnabled: false, // Disabled by default, enable in UI
+    analogEnabled: true, // Enabled by default for beautiful analog aesthetic
     filmGrainIntensity: 0.12,
     vignetteStrength: 0.5, // 0-1, multiplied by 0.15 internally for subtle effect
     softness: 1.0, // Blur amount (0-3 pixels)

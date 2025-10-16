@@ -19,7 +19,7 @@ export class ParamPane {
     showFPS: true,
     
     // Composition mode
-    compositionMode: false,
+    compositionMode: true, // Enabled by default for dynamic visuals
     maxLayers: 2, // Reduced from 3 for performance
     layerDuration: 15,
     spawnInterval: 8, // Increased from 5 for performance
@@ -39,6 +39,11 @@ export class ParamPane {
     });
 
     this.setupUI();
+    
+    // Enable composition mode if it's set to true by default
+    if (this.params.compositionMode) {
+      this.sceneManager.enableCompositionMode();
+    }
   }
 
   private setupUI(): void {

@@ -20,7 +20,7 @@ export class SceneManager {
   private timeSinceLastSpawn: number = 0;
   
   // Settings
-  public compositionEnabled: boolean = false;
+  public compositionEnabled: boolean = true; // Enabled by default for dynamic multi-layer visuals
   public maxLayers: number = 2; // Reduced from 3 for performance
   public layerDuration: number = 15; // seconds
   public spawnInterval: number = 8; // seconds between new patterns (increased for performance)

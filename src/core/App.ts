@@ -31,11 +31,11 @@ export class App {
   public async init(): Promise<void> {
     await this.audio.init();
     
-    // Initialize analog look effects (disabled by default, enable in UI)
+    // Initialize analog look effects (enabled by default)
     this.postFX.createFilmGrain();
     this.postFX.createVignette();
     
-    console.log('App initialized (enable Film Effects in UI for grain, blur & vignette)');
+    console.log('🎞️ App initialized with Film Effects & Multi-Layer Mode enabled!');
   }
 
   public getSceneManager(): SceneManager {

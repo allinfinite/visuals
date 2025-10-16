@@ -187,10 +187,10 @@ async function main() {
   app.start();
 
   console.log('✨ Interactive Visual Canvas started');
-  console.log('🖱️  Move mouse and click to interact');
+  console.log('🎞️  Film Effects enabled by default (grain, blur, vignette)');
+  console.log('🎨 Multi-Layer Mode enabled by default (dynamic compositions)');
+  console.log('🖱️  Move mouse and click to interact with all layers');
   console.log('🎵 Enable microphone in the UI for audio reactivity');
-  console.log('🎨 Enable Multi-Layer for generative compositions');
-  console.log('🖱️  All layers respond to mouse/clicks simultaneously');
   console.log(`📊 ${sceneManager.getAllPatterns().length} patterns loaded`);
 }
 
