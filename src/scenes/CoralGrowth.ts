@@ -148,7 +148,7 @@ export class CoralGrowth implements Pattern {
       const saturation = 70 - depthFactor * 20; // Less saturated at tips
       
       const baseColor = this.hslToHex(branch.hue, saturation, lightness);
-      const tipColor = this.hslToHex(branch.hue + 10, saturation - 10, lightness + 15);
+      const tipColor = this.hslToHex(branch.hue + 10, Math.max(0, saturation - 10), Math.min(100, lightness + 15));
 
       // Draw branch with gradient effect (simulate with segments)
       const segments = Math.max(3, Math.floor(branch.length / 10));
