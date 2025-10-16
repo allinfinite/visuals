@@ -35,7 +35,7 @@ export class RainRipples implements Pattern {
         x: randomRange(0, this.context.width),
         y: randomRange(0, this.context.height),
         radius: 0,
-        maxRadius: randomRange(30, 80),
+        maxRadius: randomRange(60, 150), // Increased from 30-80 for larger ripples
         life: 1,
       });
     }
@@ -49,17 +49,17 @@ export class RainRipples implements Pattern {
             x: click.x + randomRange(-20, 20),
             y: click.y + randomRange(-20, 20),
             radius: 0,
-            maxRadius: randomRange(50, 120),
+            maxRadius: randomRange(100, 200), // Increased from 50-120 for much larger click ripples
             life: 1,
           });
         }
       }
     });
 
-    // Update ripples
+    // Update ripples (faster expansion)
     this.ripples = this.ripples.filter((ripple) => {
-      ripple.radius += 60 * dt * (1 + audio.bass * 0.5);
-      ripple.life -= dt * 0.8;
+      ripple.radius += 80 * dt * (1 + audio.bass * 0.5); // Increased from 60 to 80 for faster expansion
+      ripple.life -= dt * 0.6; // Decreased from 0.8 to 0.6 for longer lifetime
       return ripple.life > 0 && ripple.radius < ripple.maxRadius;
     });
 
@@ -67,29 +67,43 @@ export class RainRipples implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    // Don't clear - let trails build up
     this.graphics.clear();
 
     this.ripples.forEach((ripple) => {
       const progress = ripple.radius / ripple.maxRadius;
-      const alpha = ripple.life * (1 - progress) * 0.5;
+      const alpha = ripple.life * (1 - progress) * 0.9; // Increased from 0.5 to 0.9 for much brighter ripples
       
-      // Draw expanding circle
+      // Outer glow layer (new!)
       this.graphics.lineStyle(
-        2 - progress,
+        4 - progress * 2,
+        0x6699ff,
+        alpha * 0.3
+      );
+      this.graphics.drawCircle(ripple.x, ripple.y, ripple.radius);
+      
+      // Main expanding circle (brighter)
+      this.graphics.lineStyle(
+        3 - progress * 1.5, // Increased from 2 for thicker lines
         0x4499ff,
-        alpha * (0.5 + audio.mid * 0.5)
+        alpha * (0.7 + audio.mid * 0.3) // Increased base from 0.5 to 0.7
       );
       this.graphics.drawCircle(ripple.x, ripple.y, ripple.radius);
 
-      // Inner ripple
+      // Inner ripple (brighter)
       if (ripple.radius > 10) {
         this.graphics.lineStyle(
-          1.5 - progress * 0.5,
+          2 - progress * 0.5, // Increased from 1.5 for thicker inner ripple
           0x88bbff,
-          alpha * 0.6
+          alpha * 0.8 // Increased from 0.6 to 0.8 for brighter inner ripple
         );
         this.graphics.drawCircle(ripple.x, ripple.y, ripple.radius * 0.5);
+      }
+      
+      // Center splash highlight (new!)
+      if (ripple.radius < ripple.maxRadius * 0.3) {
+        this.graphics.beginFill(0xaaddff, alpha * 0.6);
+        this.graphics.drawCircle(ripple.x, ripple.y, 3);
+        this.graphics.endFill();
       }
     });
   }
