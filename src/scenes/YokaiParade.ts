@@ -31,7 +31,7 @@ export class YokaiParade implements Pattern {
     this.container.addChild(this.graphics);
 
     // Initialize yokai spirits
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 8; i++) {
       this.spawnYokai();
     }
   }
@@ -88,31 +88,29 @@ export class YokaiParade implements Pattern {
       }
     });
 
-    // Spawn more yokai on high energy
-    if (audio.beat && Math.random() < 0.3 && this.yokai.length < 25) {
+    // Spawn more yokai on high energy (less frequently)
+    if (audio.beat && Math.random() < 0.1 && this.yokai.length < 15) {
       this.spawnYokai();
     }
 
     // Click interaction - spawn yokai parading in from the left
     input.clicks.forEach((click) => {
       const age = this.time - click.time;
-      if (age < 0.05) {
-        // Spawn 3 yokai from the left side with varied positions
-        for (let i = 0; i < 3; i++) {
-          const newYokai: Yokai = {
-            x: -150 - i * 80, // Stagger them from the left edge
-            y: randomRange(this.context.height * 0.2, this.context.height * 0.8),
-            baseY: randomRange(this.context.height * 0.2, this.context.height * 0.8),
-            speed: randomRange(40, 80),
-            size: randomRange(50, 120),
-            type: Math.floor(randomRange(0, 5)),
-            phase: randomRange(0, Math.PI * 2),
-            floatOffset: 0,
-            hue: (this.time * 100 + i * 60) % 360,
-            alpha: 0.8,
-          };
-          this.yokai.push(newYokai);
-        }
+      if (age < 0.05 && this.yokai.length < 20) {
+        // Spawn only 1 yokai from the left side
+        const newYokai: Yokai = {
+          x: -150, // Start from the left edge
+          y: randomRange(this.context.height * 0.2, this.context.height * 0.8),
+          baseY: randomRange(this.context.height * 0.2, this.context.height * 0.8),
+          speed: randomRange(40, 80),
+          size: randomRange(50, 120),
+          type: Math.floor(randomRange(0, 5)),
+          phase: randomRange(0, Math.PI * 2),
+          floatOffset: 0,
+          hue: (this.time * 100) % 360,
+          alpha: 0.8,
+        };
+        this.yokai.push(newYokai);
       }
     });
 
