@@ -39,10 +39,13 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Mandala** - Radial instancing with symmetry
 - **Flower of Life** - Layered circles pattern
 - **Kaleidoscope** - Multi-segment mirrored patterns with noise offset
+- **Cymatics** - Chladni plate patterns with oscillating frequency modes
 
 ### Light & Energy
 - **Aurora Curtain** - Layered sine wave bands with spectral color shifts
 - **Plasma Arcs** - Perlin-displaced electrical arcs between nodes
+- **Strobe Halo** - Beat-reactive expanding ring pulses with ray bursts
+- **Radiant Grid** - Audio-driven point lights in grid formation
 
 ### Abstract Motion
 - **Vector Flow Field** - Visualized curl noise field with arrows
