@@ -78,6 +78,7 @@ import { FervidBloom } from './scenes/FervidBloom';
 import { TorridRush } from './scenes/TorridRush';
 import { CarnalGlow } from './scenes/CarnalGlow';
 import { AIKenBurns } from './scenes/AIKenBurns';
+import { MysticWords } from './scenes/MysticWords';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -171,6 +172,7 @@ async function main() {
   sceneManager.addPattern(new TorridRush(context));
   sceneManager.addPattern(new CarnalGlow(context));
   sceneManager.addPattern(new AIKenBurns(context));
+  sceneManager.addPattern(new MysticWords(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
@@ -191,6 +193,7 @@ async function main() {
   console.log('🎨 Multi-Layer Mode enabled by default (dynamic compositions)');
   console.log('🖱️  Move mouse and click to interact with all layers');
   console.log('🎵 Enable microphone in the UI for audio reactivity');
+  console.log('📜 NEW: Mystic Words - sacred text with ripples & disintegration');
   console.log(`📊 ${sceneManager.getAllPatterns().length} patterns loaded`);
 }
 
