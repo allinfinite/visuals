@@ -13,6 +13,7 @@ export class App {
   private sceneManager: SceneManager;
   private postFX: PostFX;
   private isRunning: boolean = false;
+  private frameCount: number = 0;
   
   // Feedback settings
   public feedbackEnabled: boolean = true;
@@ -29,7 +30,12 @@ export class App {
 
   public async init(): Promise<void> {
     await this.audio.init();
-    console.log('App initialized');
+    
+    // Initialize analog look effects
+    this.postFX.createFilmGrain();
+    this.postFX.createVignette();
+    
+    console.log('App initialized with analog look');
   }
 
   public getSceneManager(): SceneManager {
@@ -68,6 +74,8 @@ export class App {
   private loop = (): void => {
     if (!this.isRunning) return;
 
+    this.frameCount++;
+
     // Update
     const dt = this.clock.update();
     this.audio.update();
@@ -87,6 +95,15 @@ export class App {
     }
     
     this.sceneManager.update(dt, this.audio.data, this.input.state);
+
+    // Apply analog look (warm color grading, soft blur, desaturation)
+    const stage = this.renderer.app.stage;
+    this.postFX.applyAnalogLook(stage);
+    
+    // Regenerate film grain every 3 frames for animated grain effect
+    if (this.frameCount % 3 === 0) {
+      this.postFX.regenerateGrain();
+    }
 
     // Render happens automatically via PixiJS ticker
 
