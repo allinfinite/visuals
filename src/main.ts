@@ -70,6 +70,13 @@ import { WordRipples } from './scenes/WordRipples';
 import { FluidInk } from './scenes/FluidInk';
 import { SymmetryMirrors } from './scenes/SymmetryMirrors';
 import { LiquidColorBlobs } from './scenes/LiquidColorBlobs';
+import { LustfulCascade } from './scenes/LustfulCascade';
+import { ClimacticPulse } from './scenes/ClimacticPulse';
+import { TangledEmbrace } from './scenes/TangledEmbrace';
+import { SirensWrithe } from './scenes/SirensWrithe';
+import { FervidBloom } from './scenes/FervidBloom';
+import { TorridRush } from './scenes/TorridRush';
+import { CarnalGlow } from './scenes/CarnalGlow';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -155,6 +162,13 @@ async function main() {
   sceneManager.addPattern(new FluidInk(context));
   sceneManager.addPattern(new SymmetryMirrors(context));
   sceneManager.addPattern(new LiquidColorBlobs(context));
+  sceneManager.addPattern(new LustfulCascade(context));
+  sceneManager.addPattern(new ClimacticPulse(context));
+  sceneManager.addPattern(new TangledEmbrace(context));
+  sceneManager.addPattern(new SirensWrithe(context));
+  sceneManager.addPattern(new FervidBloom(context));
+  sceneManager.addPattern(new TorridRush(context));
+  sceneManager.addPattern(new CarnalGlow(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);

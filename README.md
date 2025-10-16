@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **68 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
+- **75 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, fluid dynamics, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
   - **🖱️ All layers respond to mouse/clicks**: Every active pattern reacts to your interactions
   - **Real-time monitoring**: See which patterns are currently active
@@ -51,6 +51,8 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Strobe Halo** - Beat-reactive expanding ring pulses with ray bursts
 - **Radiant Grid** - Audio-driven point lights in grid formation
 - **Lens Flares** - Additive bloom rings with rotating ray bursts and hexagonal aperture
+- **Climactic Pulse** - Radial distortion waves with contracting spasms and explosive epicenters
+- **Tangled Embrace** - Dual particle systems with coiling, intertwining trajectories
 
 ### Abstract Motion
 - **Vector Flow Field** - Visualized curl noise field with arrows
@@ -80,6 +82,11 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Watercolor Fade** - Paint strokes with blur feedback and pigment diffusion
 - **Audio Paint** - Interactive painting with audio-reactive brush width and auto-generation
 - **Liquid Color Blobs** - Enhanced metaballs with fluid attraction dynamics and color mixing
+- **Lustful Cascade** - SPH fluid simulation with dripping particles and viscosity control
+- **Siren's Writhe** - Bézier curves with glossy, trembling rendering
+- **Fervid Bloom** - Reaction-diffusion organic growth with audio-driven expansion
+- **Torrid Rush** - Enhanced fluid simulation with iridescent, chaotic surges
+- **Carnal Glow** - Additive gaussian blur sprites with feverish pulsing
 
 ### Emotional/Mood
 - **Minimal Dots** - Sparse particles drifting with breathing rhythm
