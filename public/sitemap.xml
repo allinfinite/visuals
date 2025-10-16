@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  
+  <!-- Main page -->
+  <url>
+    <loc>https://visuals.dnalevity.com/</loc>
+    <lastmod>2025-10-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://visuals.dnalevity.com/og-image.jpg</image:loc>
+      <image:title>Interactive Visual Canvas - Audio-Reactive Generative Art</image:title>
+      <image:caption>75 unique visual patterns powered by WebGL2</image:caption>
+    </image:image>
+  </url>
+  
+</urlset>
+
