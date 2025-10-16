@@ -25,8 +25,8 @@ export class LustfulCascade implements Pattern {
 
   // SPH parameters
   private readonly h: number = 30; // smoothing radius
-  private readonly restDensity: number = 1000;
-  private readonly gasConstant: number = 2000;
+  private readonly restDensity: number = 10; // Adjusted for proper alpha rendering
+  private readonly gasConstant: number = 20; // Adjusted proportionally
   private readonly gravity: number = 500;
   private baseViscosity: number = 0.5;
 
@@ -55,10 +55,10 @@ export class LustfulCascade implements Pattern {
       y,
       vx: randomRange(-50, 50),
       vy: randomRange(-20, 20),
-      density: this.restDensity,
+      density: this.restDensity, // Will be recalculated on first update
       pressure: 0,
       hue,
-      size: randomRange(4, 8),
+      size: randomRange(6, 12), // Increased size for better visibility
       viscosity: this.baseViscosity,
     });
   }
@@ -81,10 +81,18 @@ export class LustfulCascade implements Pattern {
       }
     }
 
-    // Autonomous spawning based on bass
-    if (Math.random() < audio.bass * 0.1) {
+    // Autonomous spawning based on audio (increased frequency)
+    if (Math.random() < 0.05 + audio.bass * 0.1) {
       const x = randomRange(this.context.width * 0.2, this.context.width * 0.8);
       this.spawnParticle(x, 50, (this.time * 50 + audio.rms * 180) % 360);
+    }
+    
+    // Additional spawning on beat
+    if (audio.beat && this.particles.length < this.maxParticles) {
+      for (let i = 0; i < 5; i++) {
+        const x = randomRange(this.context.width * 0.3, this.context.width * 0.7);
+        this.spawnParticle(x, randomRange(20, 100), (this.time * 30 + i * 72) % 360);
+      }
     }
 
     // SPH density calculation
@@ -191,7 +199,9 @@ export class LustfulCascade implements Pattern {
 
     // Draw particles with glistening, quivering effect
     this.particles.forEach((p) => {
-      const alpha = Math.min(1, p.density / this.restDensity) * 0.8;
+      // Better alpha calculation - clamp density ratio and ensure visibility
+      const densityRatio = p.density / this.restDensity;
+      const alpha = Math.min(1, Math.max(0.3, densityRatio)) * 0.9;
       const color = hslToHex(p.hue, 80 + audio.treble * 20, 50 + audio.rms * 20);
       const glowColor = hslToHex(p.hue, 100, 70);
 
