@@ -77,6 +77,7 @@ import { SirensWrithe } from './scenes/SirensWrithe';
 import { FervidBloom } from './scenes/FervidBloom';
 import { TorridRush } from './scenes/TorridRush';
 import { CarnalGlow } from './scenes/CarnalGlow';
+import { AIKenBurns } from './scenes/AIKenBurns';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -169,6 +170,7 @@ async function main() {
   sceneManager.addPattern(new FervidBloom(context));
   sceneManager.addPattern(new TorridRush(context));
   sceneManager.addPattern(new CarnalGlow(context));
+  sceneManager.addPattern(new AIKenBurns(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
