@@ -1,6 +1,13 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Pattern, AudioData, InputState, RendererContext } from '../types';
-import { hslToHex } from '../utils/color';
+
+interface ImpossibleShape {
+  type: 'penrose' | 'stairs' | 'ring' | 'cube' | 'triangle-grid';
+  rotation: number;
+  phase: number;
+  scale: number;
+  hue: number;
+}
 
 export class ImpossibleGeometry implements Pattern {
   public name = 'Impossible Geometry';
@@ -8,38 +15,59 @@ export class ImpossibleGeometry implements Pattern {
   private graphics: Graphics;
   private context: RendererContext;
   private time: number = 0;
-  private shapeType: number = 0; // 0-4 different impossible shapes
-  private rotation: number = 0;
-  private scale: number = 1;
-  private warpAmount: number = 0;
+  private shapes: ImpossibleShape[] = [];
+  private currentMode: number = 0; // 0-4 different impossible structures
+  private rotationSpeed: number = 0.3;
+  private globalRotation: number = 0;
 
   constructor(context: RendererContext) {
     this.context = context;
     this.container = new Container();
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
+    
+    // Initialize with multiple layered shapes
+    this.initShapes();
+  }
+  
+  private initShapes(): void {
+    const types: Array<'penrose' | 'stairs' | 'ring' | 'cube' | 'triangle-grid'> = 
+      ['penrose', 'stairs', 'ring', 'cube', 'triangle-grid'];
+    
+    for (let i = 0; i < 3; i++) {
+      this.shapes.push({
+        type: types[i % types.length],
+        rotation: (i / 3) * Math.PI * 2,
+        phase: i * Math.PI / 3,
+        scale: 0.6 + i * 0.2,
+        hue: i * 120,
+      });
+    }
   }
 
   public update(dt: number, audio: AudioData, input: InputState): void {
     this.time += dt;
-
-    // Click changes shape
+    
+    // Click cycles through modes
     input.clicks.forEach((click) => {
       const age = this.time - click.time;
       if (age < 0.05) {
-        this.shapeType = (this.shapeType + 1) % 5;
+        this.currentMode = (this.currentMode + 1) % 5;
+        this.initShapes(); // Reinitialize for new mode
       }
     });
-
-    // Slower, more contemplative rotation (reduced from 0.5 + treble*2)
-    this.rotation += dt * (0.1 + audio.treble * 0.4);
-
-    // Gentler scale pulses (reduced from 0.3/0.2)
-    const targetScale = 1 + audio.rms * 0.15 + (audio.beat ? 0.1 : 0);
-    this.scale += (targetScale - this.scale) * 3 * dt;
-
-    // Reduced warp amount for less chaos (was bass*50 + centroid*30)
-    this.warpAmount = audio.bass * 15 + audio.centroid * 10;
+    
+    // Audio-reactive rotation speed
+    this.rotationSpeed = 0.3 + audio.treble * 0.5;
+    this.globalRotation += dt * this.rotationSpeed;
+    
+    // Update each shape
+    this.shapes.forEach((shape, i) => {
+      shape.rotation += dt * (0.5 + i * 0.1) * (i % 2 === 0 ? 1 : -1);
+      shape.phase += dt * (1 + audio.mid);
+      shape.scale = 0.6 + i * 0.15 + audio.rms * 0.2 + (audio.beat ? 0.1 : 0);
+      shape.hue = (i * 120 + this.time * 20 + audio.centroid * 60) % 360;
+    });
 
     this.draw(audio);
   }
@@ -48,250 +76,425 @@ export class ImpossibleGeometry implements Pattern {
     this.graphics.clear();
 
     const { width, height } = this.context;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const size = Math.min(width, height) * 0.3 * this.scale;
-
-    // Slower color changes (reduced from time*50 to time*20)
-    const hue = (this.time * 20 + audio.centroid * 60) % 360;
-
-    switch (this.shapeType) {
+    const cx = width / 2;
+    const cy = height / 2;
+    
+    // Draw based on current mode
+    switch (this.currentMode) {
       case 0:
-        this.drawPenroseTriangle(centerX, centerY, size, this.rotation, hue, audio);
+        this.drawInfinitePenrose(cx, cy, audio);
         break;
       case 1:
-        this.drawImpossibleCube(centerX, centerY, size, this.rotation, hue, audio);
+        this.drawEscherStairwell(cx, cy, audio);
         break;
       case 2:
-        this.drawEscherStairs(centerX, centerY, size, this.rotation, hue, audio);
+        this.drawInterlockingRings(cx, cy, audio);
         break;
       case 3:
-        this.drawBlivetFork(centerX, centerY, size, this.rotation, hue, audio);
+        this.drawImpossibleLatice(cx, cy, audio);
         break;
       case 4:
-        this.drawNeckerCube(centerX, centerY, size, this.rotation, hue, audio);
+        this.drawMorphingCube(cx, cy, audio);
         break;
     }
-
-    // Draw subtle shape indicator (reduced size and opacity)
-    const indicatorColor = hslToHex(hue, 70, 50);
-    this.graphics.beginFill(indicatorColor, 0.3);
-    this.graphics.drawCircle(width - 30, 30, 6 + audio.rms * 2);
-    this.graphics.endFill();
-  }
-
-  private drawPenroseTriangle(x: number, y: number, size: number, rotation: number, hue: number, audio: AudioData): void {
-    const color1 = hslToHex(hue, 70, 40);
-    const color2 = hslToHex((hue + 120) % 360, 70, 50);
-    const color3 = hslToHex((hue + 240) % 360, 70, 60);
-
-    const r = size;
-    const innerR = r * 0.6;
-    const thickness = r * 0.15 + audio.rms * 5; // Reduced from 20 to 5
-
-    // Three corners of the triangle
-    const corners = [
-      { x: x + Math.cos(rotation) * r, y: y + Math.sin(rotation) * r },
-      { x: x + Math.cos(rotation + Math.PI * 2 / 3) * r, y: y + Math.sin(rotation + Math.PI * 2 / 3) * r },
-      { x: x + Math.cos(rotation + Math.PI * 4 / 3) * r, y: y + Math.sin(rotation + Math.PI * 4 / 3) * r },
-    ];
-
-    // Draw three bars with gradient shading to create illusion
-    for (let i = 0; i < 3; i++) {
-      const c1 = corners[i];
-      const c2 = corners[(i + 1) % 3];
-
-      // Calculate inner points
-      const angle1 = Math.atan2(c2.y - c1.y, c2.x - c1.x);
-
-      const inner1 = {
-        x: c1.x + Math.cos(angle1) * thickness,
-        y: c1.y + Math.sin(angle1) * thickness
-      };
-
-      // Draw one side of the bar
-      const colors = [color1, color2, color3];
-      this.graphics.beginFill(colors[i], 0.9);
-      this.graphics.moveTo(c1.x, c1.y);
-      this.graphics.lineTo(c2.x, c2.y);
-      this.graphics.lineTo(c2.x + Math.cos(angle1 + Math.PI / 2) * thickness, c2.y + Math.sin(angle1 + Math.PI / 2) * thickness);
-      this.graphics.lineTo(inner1.x + Math.cos(angle1) * (innerR - thickness), inner1.y + Math.sin(angle1) * (innerR - thickness));
-      this.graphics.closePath();
+    
+    // Draw mode indicator
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xffffff, 0.7);
+    
+    // Simple text rendering using shapes
+    const indicatorY = 30;
+    const indicatorX = 20;
+    for (let i = 0; i < 5; i++) {
+      const active = i === this.currentMode;
+      const size = active ? 8 : 4;
+      const alpha = active ? 0.9 : 0.3;
+      this.graphics.beginFill(0xffffff, alpha);
+      this.graphics.drawCircle(indicatorX + i * 20, indicatorY, size);
       this.graphics.endFill();
-
-      // Draw subtle glow (reduced opacity from 0.3 to 0.15)
-      this.graphics.lineStyle(2, colors[i], 0.15);
-      this.graphics.moveTo(c1.x, c1.y);
-      this.graphics.lineTo(c2.x, c2.y);
     }
   }
-
-  private drawImpossibleCube(x: number, y: number, size: number, _rotation: number, hue: number, audio: AudioData): void {
-    const s = size * 0.7;
-    const warp = this.warpAmount * 0.3;
-
-    const color1 = hslToHex(hue, 70, 50);
-    const color2 = hslToHex((hue + 60) % 360, 70, 40);
-    const color3 = hslToHex((hue + 120) % 360, 70, 60);
-
-    // Front face (shifted by warp)
-    this.graphics.beginFill(color1, 0.8);
-    this.graphics.moveTo(x - s + warp, y - s + warp);
-    this.graphics.lineTo(x + s + warp, y - s + warp);
-    this.graphics.lineTo(x + s + warp, y + s + warp);
-    this.graphics.lineTo(x - s + warp, y + s + warp);
+  
+  // Mode 0: Infinite Penrose Triangle with recursive patterns
+  private drawInfinitePenrose(cx: number, cy: number, audio: AudioData): void {
+    const baseSize = 200 + audio.bass * 100;
+    const layers = 5;
+    
+    for (let layer = 0; layer < layers; layer++) {
+      const layerScale = 1 - layer * 0.15;
+      const size = baseSize * layerScale;
+      const rotation = this.globalRotation + layer * 0.3;
+      const depth = layer / layers;
+      const hue = (this.time * 30 + layer * 60 + audio.centroid * 120) % 360;
+      
+      // Draw Penrose triangle
+      this.drawPenroseTriangle(cx, cy, size, rotation, hue, depth, audio);
+      
+      // Draw smaller orbiting Penrose triangles
+      const orbitCount = 3;
+      for (let i = 0; i < orbitCount; i++) {
+        const angle = (i / orbitCount) * Math.PI * 2 + this.time + layer;
+        const orbitRadius = size * 1.5;
+        const ox = cx + Math.cos(angle) * orbitRadius;
+        const oy = cy + Math.sin(angle) * orbitRadius;
+        const orbitSize = size * 0.3;
+        
+        this.drawPenroseTriangle(ox, oy, orbitSize, rotation * 2, (hue + i * 120) % 360, depth, audio);
+      }
+    }
+  }
+  
+  private drawPenroseTriangle(cx: number, cy: number, size: number, rotation: number, hue: number, depth: number, audio: AudioData): void {
+    const points = 3;
+    const angleStep = (Math.PI * 2) / points;
+    const innerRatio = 0.5;
+    
+    // Calculate vertices
+    const vertices: Array<{x: number, y: number}> = [];
+    const innerVertices: Array<{x: number, y: number}> = [];
+    
+    for (let i = 0; i < points; i++) {
+      const angle = i * angleStep + rotation;
+      vertices.push({
+        x: cx + Math.cos(angle) * size,
+        y: cy + Math.sin(angle) * size
+      });
+      
+      const innerAngle = (i + 0.5) * angleStep + rotation;
+      innerVertices.push({
+        x: cx + Math.cos(innerAngle) * size * innerRatio,
+        y: cy + Math.sin(innerAngle) * size * innerRatio
+      });
+    }
+    
+    // Draw the impossible connections
+    const baseAlpha = 0.7 - depth * 0.3;
+    const beatBoost = audio.beat ? 1.3 : 1;
+    
+    for (let i = 0; i < points; i++) {
+      const next = (i + 1) % points;
+      const innerCurr = innerVertices[i];
+      const innerNext = innerVertices[next];
+      const outerCurr = vertices[i];
+      const outerNext = vertices[next];
+      
+      // Draw faces with shading for 3D effect
+      const faceHue = (hue + i * 20) % 360;
+      const lightness = 40 + Math.sin(this.time + i) * 20 + audio.mid * 20;
+      
+      // Outer face
+      this.graphics.beginFill(this.hslToHex(faceHue, 80, lightness), baseAlpha);
+      this.graphics.moveTo(outerCurr.x, outerCurr.y);
+      this.graphics.lineTo(outerNext.x, outerNext.y);
+      this.graphics.lineTo(innerNext.x, innerNext.y);
+      this.graphics.lineTo(innerCurr.x, innerCurr.y);
+      this.graphics.closePath();
+      this.graphics.endFill();
+      
+      // Edge highlight
+      this.graphics.lineStyle(2 * beatBoost, this.hslToHex(faceHue, 100, 70), baseAlpha * 0.8);
+      this.graphics.moveTo(outerCurr.x, outerCurr.y);
+      this.graphics.lineTo(outerNext.x, outerNext.y);
+      this.graphics.lineStyle(0);
+      
+      // Impossible connection (creates the illusion)
+      this.graphics.lineStyle(3 * beatBoost, this.hslToHex((faceHue + 180) % 360, 100, 80), baseAlpha);
+      this.graphics.moveTo(innerCurr.x, innerCurr.y);
+      this.graphics.lineTo(outerNext.x, outerNext.y);
+      this.graphics.lineStyle(0);
+    }
+    
+    // Center glow
+    const glowSize = size * 0.2 * beatBoost;
+    this.graphics.beginFill(this.hslToHex(hue, 100, 80), baseAlpha * 0.5);
+    this.graphics.drawCircle(cx, cy, glowSize);
+    this.graphics.endFill();
+    
+    this.graphics.beginFill(0xffffff, baseAlpha * 0.8);
+    this.graphics.drawCircle(cx, cy, glowSize * 0.4);
+    this.graphics.endFill();
+  }
+  
+  // Mode 1: Escher-style infinite stairwell
+  private drawEscherStairwell(cx: number, cy: number, audio: AudioData): void {
+    const stepCount = 16;
+    const baseSize = 150;
+    const perspective = 0.7;
+    
+    for (let i = 0; i < stepCount; i++) {
+      const progress = (i + this.time * 0.5) % stepCount;
+      const depth = progress / stepCount;
+      const scale = 1 - depth * perspective;
+      const rotation = this.globalRotation;
+      
+      // Calculate position with spiral
+      const angle = (progress / stepCount) * Math.PI * 2;
+      const spiralRadius = 200 - depth * 100;
+      const x = cx + Math.cos(angle + rotation) * spiralRadius * scale;
+      const y = cy + Math.sin(angle + rotation) * spiralRadius * scale - progress * 10;
+      
+      const size = baseSize * scale;
+      const hue = (progress * 20 + audio.centroid * 180) % 360;
+      const alpha = 0.8 - depth * 0.5;
+      
+      this.drawStep(x, y, size, angle + rotation, hue, alpha, audio);
+    }
+  }
+  
+  private drawStep(x: number, y: number, size: number, _rotation: number, hue: number, alpha: number, audio: AudioData): void {
+    const stepWidth = size;
+    const stepHeight = size * 0.3;
+    const stepDepth = size * 0.5;
+    
+    // Top face
+    this.graphics.beginFill(this.hslToHex(hue, 70, 60), alpha);
+    this.graphics.drawRect(x - stepWidth / 2, y - stepHeight / 2, stepWidth, stepHeight);
+    this.graphics.endFill();
+    
+    // Front face (darker)
+    this.graphics.beginFill(this.hslToHex(hue, 70, 40), alpha * 0.8);
+    this.graphics.moveTo(x - stepWidth / 2, y + stepHeight / 2);
+    this.graphics.lineTo(x + stepWidth / 2, y + stepHeight / 2);
+    this.graphics.lineTo(x + stepWidth / 2, y + stepHeight / 2 + stepDepth);
+    this.graphics.lineTo(x - stepWidth / 2, y + stepHeight / 2 + stepDepth);
     this.graphics.closePath();
     this.graphics.endFill();
-
-    // Back face (creates impossibility)
-    this.graphics.beginFill(color2, 0.7);
-    this.graphics.moveTo(x - s - warp, y - s - warp);
-    this.graphics.lineTo(x + s - warp, y - s - warp);
-    this.graphics.lineTo(x + s - warp, y + s - warp);
-    this.graphics.lineTo(x - s - warp, y + s - warp);
+    
+    // Side face (darkest)
+    this.graphics.beginFill(this.hslToHex(hue, 70, 30), alpha * 0.6);
+    this.graphics.moveTo(x + stepWidth / 2, y - stepHeight / 2);
+    this.graphics.lineTo(x + stepWidth / 2 + stepDepth * 0.5, y);
+    this.graphics.lineTo(x + stepWidth / 2 + stepDepth * 0.5, y + stepHeight + stepDepth);
+    this.graphics.lineTo(x + stepWidth / 2, y + stepHeight / 2 + stepDepth);
     this.graphics.closePath();
     this.graphics.endFill();
-
-    // Connecting edges (create the paradox)
-    this.graphics.lineStyle(4 + audio.rms * 3, color3, 0.9);
-    this.graphics.moveTo(x - s + warp, y - s + warp);
-    this.graphics.lineTo(x - s - warp, y - s - warp);
-    this.graphics.moveTo(x + s + warp, y - s + warp);
-    this.graphics.lineTo(x + s - warp, y - s - warp);
-    this.graphics.moveTo(x + s + warp, y + s + warp);
-    this.graphics.lineTo(x + s - warp, y + s - warp);
-    this.graphics.moveTo(x - s + warp, y + s + warp);
-    this.graphics.lineTo(x - s - warp, y + s - warp);
+    
+    // Edge highlights
+    const beatBoost = audio.beat ? 1.5 : 1;
+    this.graphics.lineStyle(1 * beatBoost, this.hslToHex(hue, 100, 80), alpha);
+    this.graphics.drawRect(x - stepWidth / 2, y - stepHeight / 2, stepWidth, stepHeight);
+    this.graphics.lineStyle(0);
   }
-
-  private drawEscherStairs(x: number, y: number, size: number, rotation: number, hue: number, _audio: AudioData): void {
-    const steps = 4;
-    const stepSize = size / steps;
-    const thickness = stepSize * 0.8;
-
-    for (let i = 0; i < steps; i++) {
-      const angle = rotation + (i / steps) * Math.PI * 2;
-      const color = hslToHex((hue + i * 90) % 360, 70, 50 - i * 5);
+  
+  // Mode 2: Interlocking Borromean Rings (impossible linkage)
+  private drawInterlockingRings(cx: number, cy: number, audio: AudioData): void {
+    const ringCount = 3;
+    const baseRadius = 150 + audio.bass * 50;
+    const thickness = 30 + audio.rms * 20;
+    
+    for (let i = 0; i < ringCount; i++) {
+      const angle = (i / ringCount) * Math.PI * 2 + this.globalRotation;
+      const offset = 80;
+      const x = cx + Math.cos(angle) * offset;
+      const y = cy + Math.sin(angle) * offset;
+      const hue = (i * 120 + this.time * 30 + audio.treble * 60) % 360;
+      const rotation = angle + this.time * 0.5;
       
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      const dist = i * stepSize;
-
-      // Horizontal step
-      this.graphics.beginFill(color, 0.8);
-      this.graphics.moveTo(x + cos * dist, y + sin * dist);
-      this.graphics.lineTo(x + cos * dist + stepSize * Math.cos(angle + Math.PI / 2), y + sin * dist + stepSize * Math.sin(angle + Math.PI / 2));
-      this.graphics.lineTo(x + cos * (dist + stepSize) + stepSize * Math.cos(angle + Math.PI / 2), y + sin * (dist + stepSize) + stepSize * Math.sin(angle + Math.PI / 2));
-      this.graphics.lineTo(x + cos * (dist + stepSize), y + sin * (dist + stepSize));
-      this.graphics.closePath();
-      this.graphics.endFill();
-
-      // Vertical riser
-      const darkerColor = hslToHex((hue + i * 90) % 360, 70, 40 - i * 5);
-      this.graphics.beginFill(darkerColor, 0.8);
-      this.graphics.moveTo(x + cos * (dist + stepSize), y + sin * (dist + stepSize));
-      this.graphics.lineTo(x + cos * (dist + stepSize) + thickness * Math.cos(angle + Math.PI / 2), y + sin * (dist + stepSize) + thickness * Math.sin(angle + Math.PI / 2));
-      this.graphics.lineTo(x + cos * (dist + stepSize) + thickness * Math.cos(angle + Math.PI / 2) + stepSize * cos, y + sin * (dist + stepSize) + thickness * Math.sin(angle + Math.PI / 2) + stepSize * sin);
-      this.graphics.lineTo(x + cos * (dist + stepSize) + stepSize * cos, y + sin * (dist + stepSize) + stepSize * sin);
-      this.graphics.closePath();
-      this.graphics.endFill();
+      this.drawImpossibleRing(x, y, baseRadius, thickness, rotation, hue, i, audio);
     }
-
-    // Close the loop impossibly
-    this.graphics.lineStyle(3, hslToHex(hue, 80, 60), 0.6);
-    this.graphics.moveTo(x, y);
-    this.graphics.lineTo(x + Math.cos(rotation) * size, y + Math.sin(rotation) * size);
   }
-
-  private drawBlivetFork(x: number, y: number, size: number, _rotation: number, hue: number, _audio: AudioData): void {
-    const color1 = hslToHex(hue, 70, 50);
-    const color2 = hslToHex((hue + 60) % 360, 70, 60);
-    const prongWidth = size * 0.15;
-    const prongLength = size * 1.2;
-
-    // Three prongs at the top
-    for (let i = 0; i < 3; i++) {
-      const offsetX = (i - 1) * prongWidth * 1.5;
+  
+  private drawImpossibleRing(x: number, y: number, radius: number, thickness: number, rotation: number, hue: number, layer: number, audio: AudioData): void {
+    const segments = 32;
+    const twist = this.time + layer * Math.PI / 3;
+    
+    for (let i = 0; i < segments; i++) {
+      const angle1 = (i / segments) * Math.PI * 2 + rotation;
+      const angle2 = ((i + 1) / segments) * Math.PI * 2 + rotation;
       
-      this.graphics.beginFill(i % 2 === 0 ? color1 : color2, 0.8);
-      this.graphics.moveTo(x + offsetX - prongWidth / 2, y - prongLength / 2);
-      this.graphics.lineTo(x + offsetX + prongWidth / 2, y - prongLength / 2);
-      this.graphics.lineTo(x + offsetX + prongWidth / 2, y + prongLength / 2);
-      this.graphics.lineTo(x + offsetX - prongWidth / 2, y + prongLength / 2);
-      this.graphics.closePath();
-      this.graphics.endFill();
-    }
-
-    // Two prongs at the bottom (creating the impossibility)
-    for (let i = 0; i < 2; i++) {
-      const offsetX = (i - 0.5) * prongWidth * 2;
-      const warp = this.warpAmount * 0.2 * (i === 0 ? 1 : -1);
+      // Calculate 3D twist for impossible effect
+      const depth1 = Math.sin(twist + angle1 * 3);
+      const depth2 = Math.sin(twist + angle2 * 3);
       
-      this.graphics.beginFill(color1, 0.7);
-      this.graphics.moveTo(x + offsetX - prongWidth / 2 + warp, y);
-      this.graphics.lineTo(x + offsetX + prongWidth / 2 + warp, y);
-      this.graphics.lineTo(x + offsetX + prongWidth / 2 + warp, y + prongLength / 2);
-      this.graphics.lineTo(x + offsetX - prongWidth / 2 + warp, y + prongLength / 2);
-      this.graphics.closePath();
-      this.graphics.endFill();
+      const x1 = x + Math.cos(angle1) * radius;
+      const y1 = y + Math.sin(angle1) * radius + depth1 * 20;
+      const x2 = x + Math.cos(angle2) * radius;
+      const y2 = y + Math.sin(angle2) * radius + depth2 * 20;
+      
+      // Determine shading based on depth
+      const lightness = 50 + depth1 * 30 + audio.mid * 20;
+      const alpha = 0.7 + Math.abs(depth1) * 0.3;
+      
+      // Draw segment
+      const localThickness = thickness * (1 + Math.abs(depth1) * 0.3);
+      this.graphics.lineStyle(localThickness, this.hslToHex(hue, 80, lightness), alpha);
+      this.graphics.moveTo(x1, y1);
+      this.graphics.lineTo(x2, y2);
+      
+      // Add highlights on top half
+      if (depth1 > 0) {
+        this.graphics.lineStyle(localThickness * 0.3, this.hslToHex(hue, 100, 90), alpha * 0.6);
+        this.graphics.moveTo(x1, y1);
+        this.graphics.lineTo(x2, y2);
+      }
     }
-
-    // Connecting section (the paradox)
-    this.graphics.lineStyle(3, hslToHex(hue, 80, 70), 0.8);
-    this.graphics.moveTo(x - prongWidth, y - prongLength / 4);
-    this.graphics.lineTo(x + prongWidth, y);
+    
+    this.graphics.lineStyle(0);
   }
-
-  private drawNeckerCube(x: number, y: number, size: number, _rotation: number, hue: number, audio: AudioData): void {
-    const s = size * 0.6;
-    const offset = s * 0.4;
-    const color = hslToHex(hue, 70, 50);
-    const lineWidth = 4 + audio.rms * 3;
-
+  
+  // Mode 3: Impossible lattice with recursive depth
+  private drawImpossibleLatice(cx: number, cy: number, audio: AudioData): void {
+    const gridSize = 5;
+    const cellSize = 100 + audio.rms * 50;
+    const startX = cx - (gridSize * cellSize) / 2;
+    const startY = cy - (gridSize * cellSize) / 2;
+    
+    for (let row = 0; row < gridSize; row++) {
+      for (let col = 0; col < gridSize; col++) {
+        const x = startX + col * cellSize;
+        const y = startY + row * cellSize;
+        const distance = Math.hypot(col - gridSize / 2, row - gridSize / 2);
+        const phase = this.time + distance * 0.5;
+        const hue = (row * 72 + col * 51 + this.time * 20 + audio.centroid * 120) % 360;
+        
+        this.drawImpossibleCube(x, y, cellSize * 0.4, phase, hue, audio);
+      }
+    }
+  }
+  
+  private drawImpossibleCube(x: number, y: number, size: number, _phase: number, hue: number, audio: AudioData): void {
+    const beatBoost = audio.beat ? 1.2 : 1;
+    const s = size * beatBoost;
+    const d = s * 0.5; // Depth offset
+    
     // Front face
-    this.graphics.lineStyle(lineWidth, color, 0.9);
-    this.graphics.moveTo(x - s, y - s);
-    this.graphics.lineTo(x + s, y - s);
-    this.graphics.lineTo(x + s, y + s);
-    this.graphics.lineTo(x - s, y + s);
+    this.graphics.beginFill(this.hslToHex(hue, 70, 60), 0.7);
+    this.graphics.drawRect(x - s / 2, y - s / 2, s, s);
+    this.graphics.endFill();
+    
+    // Top face (impossible connection)
+    this.graphics.beginFill(this.hslToHex(hue, 70, 75), 0.6);
+    this.graphics.moveTo(x - s / 2, y - s / 2);
+    this.graphics.lineTo(x + s / 2, y - s / 2);
+    this.graphics.lineTo(x + s / 2 + d, y - s / 2 - d);
+    this.graphics.lineTo(x - s / 2 + d, y - s / 2 - d);
     this.graphics.closePath();
-
-    // Back face (offset)
-    this.graphics.lineStyle(lineWidth, color, 0.6);
-    this.graphics.moveTo(x - s + offset, y - s + offset);
-    this.graphics.lineTo(x + s + offset, y - s + offset);
-    this.graphics.lineTo(x + s + offset, y + s + offset);
-    this.graphics.lineTo(x - s + offset, y + s + offset);
+    this.graphics.endFill();
+    
+    // Right face (impossible connection)
+    this.graphics.beginFill(this.hslToHex(hue, 70, 45), 0.6);
+    this.graphics.moveTo(x + s / 2, y - s / 2);
+    this.graphics.lineTo(x + s / 2, y + s / 2);
+    this.graphics.lineTo(x + s / 2 + d, y + s / 2 - d);
+    this.graphics.lineTo(x + s / 2 + d, y - s / 2 - d);
     this.graphics.closePath();
-
-    // Connecting edges (ambiguous depth)
-    // Selectively draw edges to create ambiguity
-    const warp = Math.sin(this.time * 2) * 10 + this.warpAmount * 0.1;
+    this.graphics.endFill();
     
-    this.graphics.lineStyle(lineWidth, color, 0.8);
-    this.graphics.moveTo(x - s, y - s);
-    this.graphics.lineTo(x - s + offset + warp, y - s + offset);
+    // Draw edges
+    this.graphics.lineStyle(2, this.hslToHex((hue + 180) % 360, 100, 80), 0.8);
     
-    this.graphics.moveTo(x + s, y - s);
-    this.graphics.lineTo(x + s + offset - warp, y - s + offset);
+    // Impossible edge connections
+    this.graphics.moveTo(x - s / 2, y - s / 2);
+    this.graphics.lineTo(x + s / 2 + d, y + s / 2 - d);
     
-    this.graphics.moveTo(x + s, y + s);
-    this.graphics.lineTo(x + s + offset, y + s + offset);
+    this.graphics.moveTo(x + s / 2, y - s / 2);
+    this.graphics.lineTo(x - s / 2 + d, y + s / 2 - d);
     
-    this.graphics.moveTo(x - s, y + s);
-    this.graphics.lineTo(x - s + offset, y + s + offset);
-
-    // Add dots at corners to enhance ambiguity
-    const dotColor = hslToHex((hue + 180) % 360, 100, 70);
-    [
-      [x - s, y - s], [x + s, y - s], [x + s, y + s], [x - s, y + s],
-      [x - s + offset, y - s + offset], [x + s + offset, y - s + offset],
-      [x + s + offset, y + s + offset], [x - s + offset, y + s + offset]
-    ].forEach(([px, py]) => {
-      this.graphics.beginFill(dotColor, 0.8);
-      this.graphics.drawCircle(px, py, 6 + (audio.beat ? 3 : 0));
-      this.graphics.endFill();
+    this.graphics.lineStyle(0);
+  }
+  
+  // Mode 4: Morphing impossible cube with rotating faces
+  private drawMorphingCube(cx: number, cy: number, audio: AudioData): void {
+    const size = 250 + audio.bass * 100;
+    const layers = 4;
+    
+    for (let layer = 0; layer < layers; layer++) {
+      const layerScale = 1 - layer * 0.2;
+      const s = size * layerScale;
+      const rotation = this.globalRotation + layer * 0.5;
+      const hue = (layer * 90 + this.time * 30 + audio.centroid * 120) % 360;
+      const alpha = 0.8 - layer * 0.15;
+      
+      // Calculate morphing vertices
+      const morph = Math.sin(this.time + layer) * 0.3;
+      const vertices = this.calculateMorphingCubeVertices(cx, cy, s, rotation, morph);
+      
+      // Draw faces
+      this.drawCubeFace(vertices, [0, 1, 5, 4], hue, alpha, 60, audio); // Front
+      this.drawCubeFace(vertices, [1, 2, 6, 5], hue + 30, alpha, 75, audio); // Right
+      this.drawCubeFace(vertices, [0, 4, 7, 3], hue - 30, alpha, 45, audio); // Left
+      this.drawCubeFace(vertices, [4, 5, 6, 7], hue + 60, alpha, 80, audio); // Top
+      
+      // Draw impossible edges
+      this.graphics.lineStyle(3, this.hslToHex((hue + 180) % 360, 100, 90), alpha * 0.8);
+      this.drawCubeEdges(vertices);
+      this.graphics.lineStyle(0);
+    }
+  }
+  
+  private calculateMorphingCubeVertices(cx: number, cy: number, size: number, rotation: number, morph: number): Array<{x: number, y: number}> {
+    const s = size / 2;
+    const d = s * 0.7; // Isometric depth
+    
+    // 8 vertices of a cube in isometric projection
+    const baseVertices = [
+      {x: -s, y: s},      // 0: bottom-left-front
+      {x: s, y: s},       // 1: bottom-right-front
+      {x: s + d, y: d},   // 2: bottom-right-back
+      {x: -s + d, y: d},  // 3: bottom-left-back
+      {x: -s, y: -s},     // 4: top-left-front
+      {x: s, y: -s},      // 5: top-right-front
+      {x: s + d, y: -s - d}, // 6: top-right-back
+      {x: -s + d, y: -s - d}, // 7: top-left-back
+    ];
+    
+    // Apply morphing and rotation
+    return baseVertices.map(v => {
+      const angle = Math.atan2(v.y, v.x) + rotation;
+      const dist = Math.hypot(v.x, v.y) * (1 + morph * 0.3);
+      return {
+        x: cx + Math.cos(angle) * dist,
+        y: cy + Math.sin(angle) * dist
+      };
     });
+  }
+  
+  private drawCubeFace(vertices: Array<{x: number, y: number}>, indices: number[], hue: number, alpha: number, lightness: number, _audio: AudioData): void {
+    this.graphics.beginFill(this.hslToHex(hue, 70, lightness), alpha);
+    this.graphics.moveTo(vertices[indices[0]].x, vertices[indices[0]].y);
+    for (let i = 1; i < indices.length; i++) {
+      this.graphics.lineTo(vertices[indices[i]].x, vertices[indices[i]].y);
+    }
+    this.graphics.closePath();
+    this.graphics.endFill();
+  }
+  
+  private drawCubeEdges(vertices: Array<{x: number, y: number}>): void {
+    // Draw all 12 edges of the cube
+    const edges = [
+      [0, 1], [1, 2], [2, 3], [3, 0], // Bottom
+      [4, 5], [5, 6], [6, 7], [7, 4], // Top
+      [0, 4], [1, 5], [2, 6], [3, 7]  // Vertical
+    ];
+    
+    edges.forEach(([i, j]) => {
+      this.graphics.moveTo(vertices[i].x, vertices[i].y);
+      this.graphics.lineTo(vertices[j].x, vertices[j].y);
+    });
+  }
+
+  private hslToHex(h: number, s: number, l: number): number {
+    h = ((h % 360) + 360) % 360;
+    s = Math.max(0, Math.min(100, s));
+    l = Math.max(0, Math.min(100, l));
+    
+    const c = (1 - Math.abs(2 * (l / 100) - 1)) * (s / 100);
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l / 100 - c / 2;
+    let r = 0, g = 0, b = 0;
+
+    if (h < 60) { r = c; g = x; }
+    else if (h < 120) { r = x; g = c; }
+    else if (h < 180) { g = c; b = x; }
+    else if (h < 240) { g = x; b = c; }
+    else if (h < 300) { r = x; b = c; }
+    else { r = c; b = x; }
+
+    const red = Math.max(0, Math.min(255, Math.round((r + m) * 255)));
+    const green = Math.max(0, Math.min(255, Math.round((g + m) * 255)));
+    const blue = Math.max(0, Math.min(255, Math.round((b + m) * 255)));
+
+    return (red << 16) | (green << 8) | blue;
   }
 
   public destroy(): void {
@@ -299,4 +502,3 @@ export class ImpossibleGeometry implements Pattern {
     this.container.destroy();
   }
 }
-
