@@ -258,7 +258,7 @@ export class RotatingPolyhedra implements Pattern {
     }
 
     // Update polyhedra
-    this.polyhedra.forEach((poly) => {
+    this.polyhedra.forEach((poly, index) => {
       // BPM-synced rotation
       const bpmMultiplier = audio.bpm / 120;
       poly.rotation.x += poly.rotationSpeed.x * dt * bpmMultiplier * (1 + audio.treble);
@@ -272,11 +272,40 @@ export class RotatingPolyhedra implements Pattern {
       // Hue shifts
       poly.hue = (poly.hue + dt * 30 + audio.centroid * 50) % 360;
 
-      // Drift towards cursor
+      // Separation force - push away from other polyhedra
+      let separationX = 0;
+      let separationY = 0;
+      const separationRadius = 200; // Minimum distance to maintain
+      const separationStrength = 150; // How strongly they repel
+      
+      this.polyhedra.forEach((other, otherIndex) => {
+        if (index === otherIndex) return;
+        
+        const dx = poly.position.x - other.position.x;
+        const dy = poly.position.y - other.position.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < separationRadius && distance > 0) {
+          // Push away stronger when closer
+          const force = (1 - distance / separationRadius) * separationStrength;
+          separationX += (dx / distance) * force * dt;
+          separationY += (dy / distance) * force * dt;
+        }
+      });
+      
+      poly.position.x += separationX;
+      poly.position.y += separationY;
+
+      // Gentle drift towards cursor (reduced from 0.5 to 0.15)
       const dx = input.x - poly.position.x;
       const dy = input.y - poly.position.y;
-      poly.position.x += dx * 0.5 * dt;
-      poly.position.y += dy * 0.5 * dt;
+      poly.position.x += dx * 0.15 * dt;
+      poly.position.y += dy * 0.15 * dt;
+      
+      // Keep within bounds
+      const margin = 100;
+      poly.position.x = Math.max(margin, Math.min(this.context.width - margin, poly.position.x));
+      poly.position.y = Math.max(margin, Math.min(this.context.height - margin, poly.position.y));
     });
 
     // Limit polyhedra count
