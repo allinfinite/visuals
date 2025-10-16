@@ -33,8 +33,8 @@ export class OceanWaves implements Pattern {
       const depth = layer / layers; // 0 = front, 1 = back
       const yOffset = centerY + (layer - layers / 2) * 60;
       
-      // Wave parameters
-      const waveHeight = (30 + audio.bass * 80) * (1 - depth * 0.5);
+      // Wave parameters (more responsive)
+      const waveHeight = (40 + audio.bass * 140 + (audio.beat ? 30 : 0)) * (1 - depth * 0.5);
       const frequency = 0.002 + depth * 0.001;
       const speed = 0.3 + depth * 0.2;
       const timeOffset = this.time * speed;

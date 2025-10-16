@@ -18,10 +18,10 @@ export class GradientClouds implements Pattern {
   }
 
   public update(dt: number, audio: AudioData, _input: InputState): void {
-    this.time += dt * 0.3;
+    this.time += dt * (0.4 + audio.rms * 0.4);
     
-    // RMS drives hue rotation
-    this.hueOffset += audio.rms * dt * 50;
+    // RMS drives hue rotation (more responsive)
+    this.hueOffset += audio.rms * dt * 90 + audio.bass * dt * 30;
     
     this.draw(audio);
   }

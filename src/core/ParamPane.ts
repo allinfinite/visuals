@@ -12,6 +12,7 @@ export class ParamPane {
   public params = {
     pattern: 0,
     enableAudio: false,
+    audioSensitivity: 100, // 0-200, 100 = normal
     feedbackEnabled: true,
     trailLength: 30, // 1-100, inverse of clearAlpha (increased default for smoother look)
     showFPS: true,
@@ -129,6 +130,13 @@ export class ParamPane {
       if (ev.value) {
         this.audio.connectMicrophone();
       }
+    });
+
+    audioFolder.addBinding(this.params, 'audioSensitivity', {
+      label: 'Audio Sensitivity',
+      min: 0,
+      max: 200,
+      step: 10,
     });
 
     // Display settings

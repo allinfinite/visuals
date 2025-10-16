@@ -69,8 +69,8 @@ export class BlackHole implements Pattern {
       const orbitalSpeed = (1 / (p.radius * 0.01)) * p.speed;
       p.angle += orbitalSpeed * dt * (0.5 + audio.rms);
 
-      // Spiral inward
-      p.radius -= (50 + audio.bass * 100) * dt;
+      // Spiral inward (more responsive to bass)
+      p.radius -= (50 + audio.bass * 180 + (audio.beat ? 100 : 0)) * dt;
 
       // Wobble from audio
       p.radius += Math.sin(this.time * 3 + p.angle * 2) * audio.treble * 10;

@@ -52,8 +52,8 @@ export class MinimalDots implements Pattern {
   public update(dt: number, audio: AudioData, _input: InputState): void {
     this.time += dt;
 
-    // BPM-based breathing rate
-    const breathingRate = 0.8 + audio.rms * 0.4;
+    // BPM-based breathing rate (more dynamic)
+    const breathingRate = 0.9 + audio.rms * 0.8 + audio.bass * 0.3;
 
     // Update dots
     this.dots.forEach((dot) => {

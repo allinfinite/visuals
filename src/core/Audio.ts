@@ -7,8 +7,8 @@ export class Audio {
   private fftSize: number = 1024;
   private bandCount: number = 32;
   
-  // Smoothing for smoother visuals
-  private smoothingFactor: number = 0.7; // 0 = instant, 1 = no change
+  // Smoothing for smoother visuals (reduced for more audio responsiveness)
+  private smoothingFactor: number = 0.5; // 0 = instant, 1 = no change
   private prevData: AudioData = {
     spectrum: new Float32Array(32),
     rms: 0,
@@ -184,26 +184,26 @@ export class Audio {
   }
 
   private generateFakeData(): void {
-    // Generate smooth fake audio data for testing with more variation
+    // Generate dynamic fake audio data with more intensity for testing
     const time = performance.now() / 1000;
     const slowTime = time * 0.3;
-    
+
     for (let i = 0; i < this.bandCount; i++) {
-      this.data.spectrum[i] = 
-        (Math.sin(time * 2 + i * 0.3) * 0.3 + 0.3) * 
-        Math.exp(-i / 10) * 
-        (0.7 + Math.sin(slowTime + i * 0.1) * 0.3);
+      this.data.spectrum[i] =
+        (Math.sin(time * 2.5 + i * 0.3) * 0.4 + 0.4) *
+        Math.exp(-i / 10) *
+        (0.6 + Math.sin(slowTime + i * 0.1) * 0.4);
     }
-    
-    this.data.rms = 0.4 + Math.sin(time * 1.5) * 0.25;
-    this.data.bass = 0.45 + Math.sin(time * 1.2) * 0.3;
-    this.data.mid = 0.35 + Math.sin(time * 1.7) * 0.25;
-    this.data.treble = 0.25 + Math.sin(time * 2.3) * 0.2;
-    this.data.centroid = 0.4 + Math.sin(time * 0.8) * 0.3;
-    
-    // More frequent beats
-    const beatPhase = Math.sin(time * 2.2);
-    this.data.beat = beatPhase > 0.85;
+
+    this.data.rms = 0.5 + Math.sin(time * 1.8) * 0.35;
+    this.data.bass = 0.5 + Math.sin(time * 1.4) * 0.4;
+    this.data.mid = 0.4 + Math.sin(time * 2.0) * 0.35;
+    this.data.treble = 0.3 + Math.sin(time * 2.8) * 0.3;
+    this.data.centroid = 0.5 + Math.sin(time * 1.0) * 0.4;
+
+    // More frequent and dynamic beats
+    const beatPhase = Math.sin(time * 2.5);
+    this.data.beat = beatPhase > 0.8;
   }
 }
 

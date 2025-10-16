@@ -39,8 +39,8 @@ export class Supernova implements Pattern {
 
   private createExplosion(x: number, y: number, audio: AudioData): void {
     const particles: Particle[] = [];
-    const particleCount = 200 + audio.rms * 300;
-    const maxTime = 3 + audio.bass * 2;
+    const particleCount = 250 + audio.rms * 450 + (audio.beat ? 200 : 0);
+    const maxTime = 3 + audio.bass * 3;
 
     for (let i = 0; i < particleCount; i++) {
       const angle = randomRange(0, Math.PI * 2);

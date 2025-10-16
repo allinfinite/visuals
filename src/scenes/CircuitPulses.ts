@@ -81,8 +81,8 @@ export class CircuitPulses implements Pattern {
   public update(dt: number, audio: AudioData, input: InputState): void {
     this.time += dt;
 
-    // Trigger new pulses on beat
-    if (audio.beat && Math.random() < 0.7) {
+    // Trigger new pulses on beat (more responsive)
+    if (audio.beat || audio.rms > 0.7) {
       const randomEdge = this.edges[Math.floor(Math.random() * this.edges.length)];
       if (!randomEdge.active) {
         randomEdge.active = true;
@@ -99,8 +99,8 @@ export class CircuitPulses implements Pattern {
       }
     }
 
-    // Update pulses
-    const speed = 1.5 + audio.rms * 3;
+    // Update pulses (faster with audio)
+    const speed = 2 + audio.rms * 5 + audio.treble * 2;
     this.edges.forEach((edge) => {
       if (edge.active) {
         edge.pulse += dt * speed;
