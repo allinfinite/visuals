@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **40 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
+- **43 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
@@ -46,6 +46,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Plasma Arcs** - Perlin-displaced electrical arcs between nodes
 - **Strobe Halo** - Beat-reactive expanding ring pulses with ray bursts
 - **Radiant Grid** - Audio-driven point lights in grid formation
+- **Lens Flares** - Additive bloom rings with rotating ray bursts and hexagonal aperture
 
 ### Abstract Motion
 - **Vector Flow Field** - Visualized curl noise field with arrows
@@ -86,6 +87,8 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Butterfly Swarms** - Flocking butterflies with wing animation and swarm behavior
 - **Zooming Doves** - 3D perspective birds flying towards camera with motion blur
 - **Yokai Parade** - Japanese spirit procession with 5 different yokai types
+- **Coral Growth** - Branching reef structure with color gradients and polyps
+- **Neural Network** - Multi-layer network visualization with signal propagation
 
 ## Getting Started
 

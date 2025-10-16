@@ -42,6 +42,9 @@ import { ZoomingDoves } from './scenes/ZoomingDoves';
 import { Cymatics } from './scenes/Cymatics';
 import { StrobeHalo } from './scenes/StrobeHalo';
 import { RadiantGrid } from './scenes/RadiantGrid';
+import { LensFlares } from './scenes/LensFlares';
+import { CoralGrowth } from './scenes/CoralGrowth';
+import { NeuralNetwork } from './scenes/NeuralNetwork';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -99,6 +102,9 @@ async function main() {
   sceneManager.addPattern(new Cymatics(context));
   sceneManager.addPattern(new StrobeHalo(context));
   sceneManager.addPattern(new RadiantGrid(context));
+  sceneManager.addPattern(new LensFlares(context));
+  sceneManager.addPattern(new CoralGrowth(context));
+  sceneManager.addPattern(new NeuralNetwork(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
