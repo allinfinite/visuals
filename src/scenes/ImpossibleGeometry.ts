@@ -31,15 +31,15 @@ export class ImpossibleGeometry implements Pattern {
       }
     });
 
-    // Rotation driven by audio
-    this.rotation += dt * (0.5 + audio.treble * 2);
+    // Slower, more contemplative rotation (reduced from 0.5 + treble*2)
+    this.rotation += dt * (0.1 + audio.treble * 0.4);
 
-    // Scale pulses with audio
-    const targetScale = 1 + audio.rms * 0.3 + (audio.beat ? 0.2 : 0);
-    this.scale += (targetScale - this.scale) * 5 * dt;
+    // Gentler scale pulses (reduced from 0.3/0.2)
+    const targetScale = 1 + audio.rms * 0.15 + (audio.beat ? 0.1 : 0);
+    this.scale += (targetScale - this.scale) * 3 * dt;
 
-    // Warp amount from audio
-    this.warpAmount = audio.bass * 50 + audio.centroid * 30;
+    // Reduced warp amount for less chaos (was bass*50 + centroid*30)
+    this.warpAmount = audio.bass * 15 + audio.centroid * 10;
 
     this.draw(audio);
   }
@@ -52,7 +52,8 @@ export class ImpossibleGeometry implements Pattern {
     const centerY = height / 2;
     const size = Math.min(width, height) * 0.3 * this.scale;
 
-    const hue = (this.time * 50 + audio.centroid * 180) % 360;
+    // Slower color changes (reduced from time*50 to time*20)
+    const hue = (this.time * 20 + audio.centroid * 60) % 360;
 
     switch (this.shapeType) {
       case 0:
@@ -72,11 +73,10 @@ export class ImpossibleGeometry implements Pattern {
         break;
     }
 
-    // Draw shape name indicator
-    // Just draw a small indicator dot (since we can't render text)
+    // Draw subtle shape indicator (reduced size and opacity)
     const indicatorColor = hslToHex(hue, 70, 50);
-    this.graphics.beginFill(indicatorColor, 0.5);
-    this.graphics.drawCircle(width - 30, 30, 8 + audio.rms * 5);
+    this.graphics.beginFill(indicatorColor, 0.3);
+    this.graphics.drawCircle(width - 30, 30, 6 + audio.rms * 2);
     this.graphics.endFill();
   }
 
@@ -87,7 +87,7 @@ export class ImpossibleGeometry implements Pattern {
 
     const r = size;
     const innerR = r * 0.6;
-    const thickness = r * 0.15 + audio.rms * 20;
+    const thickness = r * 0.15 + audio.rms * 5; // Reduced from 20 to 5
 
     // Three corners of the triangle
     const corners = [
@@ -119,8 +119,8 @@ export class ImpossibleGeometry implements Pattern {
       this.graphics.closePath();
       this.graphics.endFill();
 
-      // Draw glow
-      this.graphics.lineStyle(3, colors[i], 0.3);
+      // Draw subtle glow (reduced opacity from 0.3 to 0.15)
+      this.graphics.lineStyle(2, colors[i], 0.15);
       this.graphics.moveTo(c1.x, c1.y);
       this.graphics.lineTo(c2.x, c2.y);
     }
