@@ -67,6 +67,9 @@ import { ImpossibleGeometry } from './scenes/ImpossibleGeometry';
 import { LatentMorphs } from './scenes/LatentMorphs';
 import { MirrorRoom } from './scenes/MirrorRoom';
 import { WordRipples } from './scenes/WordRipples';
+import { FluidInk } from './scenes/FluidInk';
+import { SymmetryMirrors } from './scenes/SymmetryMirrors';
+import { LiquidColorBlobs } from './scenes/LiquidColorBlobs';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -149,6 +152,9 @@ async function main() {
   sceneManager.addPattern(new LatentMorphs(context));
   sceneManager.addPattern(new MirrorRoom(context));
   sceneManager.addPattern(new WordRipples(context));
+  sceneManager.addPattern(new FluidInk(context));
+  sceneManager.addPattern(new SymmetryMirrors(context));
+  sceneManager.addPattern(new LiquidColorBlobs(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);

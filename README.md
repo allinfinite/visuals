@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **65 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
+- **68 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
@@ -34,11 +34,13 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Smoke Trails** - Alpha-blended particles with Perlin noise flow
 - **Magnetic Lines** - Field visualization with curl noise
 - **Fireflies** - Glowing sprites with sine wave flicker
+- **Fluid Ink** - Simplified Navier-Stokes fluid simulation with velocity fields and dye injection
 
 ### Sacred Geometry
 - **Mandala** - Radial instancing with symmetry
 - **Flower of Life** - Layered circles pattern
 - **Kaleidoscope** - Multi-segment mirrored patterns with noise offset
+- **Symmetry Mirrors** - Multi-axis reflection with rotational and horizontal/vertical symmetry
 - **Cymatics** - Chladni plate patterns with oscillating frequency modes
 
 ### Light & Energy
@@ -75,6 +77,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Metaballs** - SDF blending with organic liquid motion
 - **Watercolor Fade** - Paint strokes with blur feedback and pigment diffusion
 - **Audio Paint** - Interactive painting with audio-reactive brush width and auto-generation
+- **Liquid Color Blobs** - Enhanced metaballs with fluid attraction dynamics and color mixing
 
 ### Emotional/Mood
 - **Minimal Dots** - Sparse particles drifting with breathing rhythm
