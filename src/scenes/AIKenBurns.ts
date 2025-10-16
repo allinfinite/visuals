@@ -212,63 +212,102 @@ export class AIKenBurns implements Pattern {
 
   private async loadImageFromUrl(url: string, prompt: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // For OpenAI images, we need to fetch and convert to blob to avoid CORS issues
+      const isOpenAIUrl = url.includes('oaidalleapiprodscus.blob.core.windows.net');
+      
+      if (isOpenAIUrl) {
+        // Fetch the image and convert to blob URL
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Failed to fetch image: ${response.status}`);
+            }
+            return response.blob();
+          })
+          .then(blob => {
+            const blobUrl = URL.createObjectURL(blob);
+            this.loadImageFromBlobUrl(blobUrl, prompt)
+              .then(() => {
+                URL.revokeObjectURL(blobUrl);
+                resolve();
+              })
+              .catch(reject);
+          })
+          .catch(error => {
+            console.error('AIKenBurns: Failed to fetch image:', error);
+            reject(error);
+          });
+      } else {
+        // For local blob URLs, load directly
+        this.loadImageFromBlobUrl(url, prompt).then(resolve).catch(reject);
+      }
+    });
+  }
+
+  private async loadImageFromBlobUrl(url: string, prompt: string): Promise<void> {
+    return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
       
       img.onload = () => {
-        const texture = Texture.from(img);
-        const sprite = new Sprite(texture);
-        
-        // Fit image to screen (cover mode)
-        const screenAspect = this.context.width / this.context.height;
-        const imageAspect = img.width / img.height;
-        
-        if (screenAspect > imageAspect) {
-          // Screen is wider
-          sprite.width = this.context.width;
-          sprite.height = this.context.width / imageAspect;
-        } else {
-          // Screen is taller
-          sprite.height = this.context.height;
-          sprite.width = this.context.height * imageAspect;
+        try {
+          const texture = Texture.from(img);
+          const sprite = new Sprite(texture);
+          
+          // Fit image to screen (cover mode)
+          const screenAspect = this.context.width / this.context.height;
+          const imageAspect = img.width / img.height;
+          
+          if (screenAspect > imageAspect) {
+            // Screen is wider
+            sprite.width = this.context.width;
+            sprite.height = this.context.width / imageAspect;
+          } else {
+            // Screen is taller
+            sprite.height = this.context.height;
+            sprite.width = this.context.height * imageAspect;
+          }
+          
+          // Center image
+          sprite.anchor.set(0.5, 0.5);
+          
+          // Random Ken Burns parameters
+          const zoomDirection = Math.random() > 0.5 ? 1 : -1; // zoom in or out
+          const startScale = zoomDirection > 0 ? 1.0 : 1.2;
+          const endScale = zoomDirection > 0 ? 1.2 : 1.0;
+          
+          // Random pan direction
+          const panX = (Math.random() - 0.5) * 0.1; // -5% to +5%
+          const panY = (Math.random() - 0.5) * 0.1;
+          
+          const imageState: ImageState = {
+            sprite,
+            texture,
+            startTime: this.time,
+            duration: this.imageDuration,
+            startScale,
+            endScale,
+            startX: this.context.width / 2 - panX * this.context.width,
+            startY: this.context.height / 2 - panY * this.context.height,
+            endX: this.context.width / 2 + panX * this.context.width,
+            endY: this.context.height / 2 + panY * this.context.height,
+            prompt,
+          };
+          
+          sprite.alpha = 0;
+          this.container.addChild(sprite);
+          this.images.push(imageState);
+          
+          console.log(`AIKenBurns: Image loaded (${this.images.length}/${this.maxImages})`);
+          resolve();
+        } catch (error) {
+          console.error('AIKenBurns: Error creating sprite:', error);
+          reject(error);
         }
-        
-        // Center image
-        sprite.anchor.set(0.5, 0.5);
-        
-        // Random Ken Burns parameters
-        const zoomDirection = Math.random() > 0.5 ? 1 : -1; // zoom in or out
-        const startScale = zoomDirection > 0 ? 1.0 : 1.2;
-        const endScale = zoomDirection > 0 ? 1.2 : 1.0;
-        
-        // Random pan direction
-        const panX = (Math.random() - 0.5) * 0.1; // -5% to +5%
-        const panY = (Math.random() - 0.5) * 0.1;
-        
-        const imageState: ImageState = {
-          sprite,
-          texture,
-          startTime: this.time,
-          duration: this.imageDuration,
-          startScale,
-          endScale,
-          startX: this.context.width / 2 - panX * this.context.width,
-          startY: this.context.height / 2 - panY * this.context.height,
-          endX: this.context.width / 2 + panX * this.context.width,
-          endY: this.context.height / 2 + panY * this.context.height,
-          prompt,
-        };
-        
-        sprite.alpha = 0;
-        this.container.addChild(sprite);
-        this.images.push(imageState);
-        
-        console.log(`AIKenBurns: Image loaded (${this.images.length}/${this.maxImages})`);
-        resolve();
       };
       
-      img.onerror = () => {
-        reject(new Error('Failed to load image'));
+      img.onerror = (error) => {
+        console.error('AIKenBurns: Image load error:', error);
+        reject(new Error(`Failed to load image from ${url.substring(0, 50)}...`));
       };
       
       img.src = url;
