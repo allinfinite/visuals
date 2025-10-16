@@ -24,6 +24,9 @@ export class GlyphOrbit implements Pattern {
   private time: number = 0;
   private centerX: number;
   private centerY: number;
+  private spawnQueue: number = 0; // Number of glyphs queued to spawn gradually
+  private spawnTimer: number = 0; // Timer for gradual spawning
+  private spawnInterval: number = 0.1; // Spawn one glyph every 0.1 seconds
 
   constructor(context: RendererContext) {
     this.centerX = context.width / 2;
@@ -32,10 +35,8 @@ export class GlyphOrbit implements Pattern {
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
 
-    // Start with some glyphs
-    for (let i = 0; i < 20; i++) {
-      this.spawnGlyph();
-    }
+    // Start with queued glyphs that will spawn gradually
+    this.spawnQueue = 20;
   }
 
   private spawnGlyph(): void {
@@ -59,6 +60,20 @@ export class GlyphOrbit implements Pattern {
     // Update center to follow cursor smoothly
     this.centerX += (input.x - this.centerX) * 3 * dt;
     this.centerY += (input.y - this.centerY) * 3 * dt;
+
+    // Process spawn queue gradually
+    if (this.spawnQueue > 0) {
+      this.spawnTimer += dt;
+      
+      // Spawn one glyph at each interval
+      while (this.spawnTimer >= this.spawnInterval && this.spawnQueue > 0) {
+        this.spawnGlyph();
+        this.spawnQueue--;
+        this.spawnTimer -= this.spawnInterval;
+      }
+    } else {
+      this.spawnTimer = 0;
+    }
 
     // Update glyphs
     this.glyphs.forEach((glyph) => {
@@ -85,21 +100,17 @@ export class GlyphOrbit implements Pattern {
       glyph.targetDistance = Math.min(300, glyph.targetDistance);
     });
 
-    // Click adds new glyphs
+    // Click queues new glyphs to spawn gradually (15 glyphs over ~1.5 seconds)
     input.clicks.forEach((click) => {
       const age = this.time - click.time;
       if (age < 0.05) {
-        for (let i = 0; i < 5; i++) {
-          this.spawnGlyph();
-        }
+        this.spawnQueue += 15;
       }
     });
 
-    // Beat spawns glyphs
+    // Beat queues glyphs gradually
     if (audio.beat && this.glyphs.length < 100) {
-      for (let i = 0; i < 3; i++) {
-        this.spawnGlyph();
-      }
+      this.spawnQueue += 5;
     }
 
     // Remove distant glyphs
