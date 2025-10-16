@@ -72,7 +72,7 @@ export class LSystem implements Pattern {
     });
     
     // Autonomous spawning - grow new plants from bottom
-    if (this.plants.length < 15 && Math.random() < 0.01 + audio.beat * 0.05) {
+    if (this.plants.length < 15 && Math.random() < 0.01 + (audio.beat ? 0.05 : 0)) {
       const x = randomRange(this.context.width * 0.2, this.context.width * 0.8);
       const y = this.context.height - randomRange(50, 150);
       this.spawnPlant(x, y);

@@ -4,6 +4,7 @@ export class SeededRandom {
   private prng: () => number;
 
   constructor(seed: number | string = Date.now()) {
+    // @ts-ignore - Alea returns a PRNG function
     this.prng = new Alea(seed);
   }
 

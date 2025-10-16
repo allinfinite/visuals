@@ -2,6 +2,7 @@ import { createNoise2D, createNoise3D, createNoise4D } from 'simplex-noise';
 import Alea from 'alea';
 
 // Create seeded noise generators
+// @ts-ignore - Alea returns a PRNG function
 const prng = new Alea(12345);
 export const noise2D = createNoise2D(prng);
 export const noise3D = createNoise3D(prng);

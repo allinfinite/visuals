@@ -15,7 +15,7 @@ export class FlowerOfLife implements Pattern {
     this.container.addChild(this.graphics);
   }
 
-  public update(dt: number, audio: AudioData, input: InputState): void {
+  public update(dt: number, audio: AudioData, _input: InputState): void {
     this.time += dt;
     this.draw(audio);
   }

@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Pattern, AudioData, InputState, RendererContext } from '../types';
-import { randomRange, clamp } from '../utils/math';
+import { randomRange } from '../utils/math';
 
 interface Boid {
   x: number;

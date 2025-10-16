@@ -49,7 +49,7 @@ export class MinimalDots implements Pattern {
     });
   }
 
-  public update(dt: number, audio: AudioData, input: InputState): void {
+  public update(dt: number, audio: AudioData, _input: InputState): void {
     this.time += dt;
 
     // BPM-based breathing rate

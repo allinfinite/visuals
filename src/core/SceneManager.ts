@@ -27,7 +27,7 @@ export class SceneManager {
   public fadeInDuration: number = 2; // seconds
   public fadeOutDuration: number = 3; // seconds
 
-  constructor(private context: RendererContext) {
+  constructor(context: RendererContext) {
     this.container = new Container();
     this.fadeGraphics = new Graphics();
     context.app.stage.addChild(this.fadeGraphics);

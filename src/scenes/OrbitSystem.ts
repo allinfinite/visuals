@@ -24,14 +24,12 @@ export class OrbitSystem implements Pattern {
   public name = 'Orbit System';
   public container: Container;
   private graphics: Graphics;
-  private context: RendererContext;
   private planets: Planet[] = [];
   private time: number = 0;
   private centerX: number;
   private centerY: number;
 
   constructor(context: RendererContext) {
-    this.context = context;
     this.centerX = context.width / 2;
     this.centerY = context.height / 2;
     this.container = new Container();

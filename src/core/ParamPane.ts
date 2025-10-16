@@ -4,7 +4,7 @@ import type { Audio } from './Audio';
 import type { App } from './App';
 
 export class ParamPane {
-  private pane: Pane;
+  private pane: any; // Using any to handle Tweakpane v4 API differences
   private sceneManager: SceneManager;
   private audio: Audio;
   private app: App;
@@ -44,7 +44,7 @@ export class ParamPane {
 
     compositionFolder.addBinding(this.params, 'compositionMode', {
       label: 'Enable Multi-Layer',
-    }).on('change', (ev) => {
+    }).on('change', (ev: any) => {
       if (ev.value) {
         this.sceneManager.enableCompositionMode();
       } else {
@@ -57,7 +57,7 @@ export class ParamPane {
       min: 1,
       max: 5,
       step: 1,
-    }).on('change', (ev) => {
+    }).on('change', (ev: any) => {
       this.sceneManager.maxLayers = ev.value;
     });
 
@@ -66,7 +66,7 @@ export class ParamPane {
       min: 5,
       max: 60,
       step: 1,
-    }).on('change', (ev) => {
+    }).on('change', (ev: any) => {
       this.sceneManager.layerDuration = ev.value;
     });
 
@@ -75,7 +75,7 @@ export class ParamPane {
       min: 2,
       max: 30,
       step: 1,
-    }).on('change', (ev) => {
+    }).on('change', (ev: any) => {
       this.sceneManager.spawnInterval = ev.value;
     });
 
@@ -96,7 +96,7 @@ export class ParamPane {
         label: 'Pattern',
         options: patternNames,
       })
-      .on('change', (ev) => {
+      .on('change', (ev: any) => {
         this.sceneManager.setActivePattern(ev.value);
       });
 
@@ -112,7 +112,7 @@ export class ParamPane {
       
       poolFolder.addBinding(param, 'enabled', {
         label: pattern.name,
-      }).on('change', (ev) => {
+      }).on('change', (ev: any) => {
         this.sceneManager.togglePatternInPool(index, ev.value);
       });
     });
@@ -125,7 +125,7 @@ export class ParamPane {
 
     audioFolder.addBinding(this.params, 'enableAudio', {
       label: 'Enable Microphone',
-    }).on('change', (ev) => {
+    }).on('change', (ev: any) => {
       if (ev.value) {
         this.audio.connectMicrophone();
       }
@@ -139,7 +139,7 @@ export class ParamPane {
 
     displayFolder.addBinding(this.params, 'feedbackEnabled', {
       label: 'Enable Trails',
-    }).on('change', (ev) => {
+    }).on('change', (ev: any) => {
       this.app.feedbackEnabled = ev.value;
     });
 
@@ -148,7 +148,7 @@ export class ParamPane {
       min: 1,
       max: 100,
       step: 1,
-    }).on('change', (ev) => {
+    }).on('change', (ev: any) => {
       // Convert 1-100 to alpha (inverse relationship)
       // Higher trail length = lower alpha = longer trails
       // Adjusted for smoother motion blur effect

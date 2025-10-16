@@ -1,4 +1,4 @@
-import { Container, Graphics, RenderTexture, Sprite } from 'pixi.js';
+import { Container, RenderTexture, Sprite } from 'pixi.js';
 import type { RendererContext } from '../types';
 
 export class PostFX {
@@ -43,17 +43,13 @@ export class PostFX {
     this.feedbackSprite.alpha = this.params.feedbackAlpha;
     this.feedbackSprite.scale.set(this.params.feedbackScale);
 
-    // Render to texture
-    this.context.app.renderer.render({
-      container: this.feedbackSprite,
-      target: this.feedbackTexture,
-    });
+    // Render to texture (PixiJS v7 API)
+    this.context.app.renderer.render(this.feedbackSprite, { renderTexture: this.feedbackTexture });
 
     // Render current frame on top
-    this.context.app.renderer.render({
-      container: source,
-      target: this.feedbackTexture,
-      clear: false,
+    this.context.app.renderer.render(source, { 
+      renderTexture: this.feedbackTexture,
+      clear: false 
     });
 
     // Update sprite
@@ -63,10 +59,9 @@ export class PostFX {
 
   public clear(): void {
     if (!this.feedbackTexture) return;
-    this.context.app.renderer.render({
-      container: new Container(),
-      target: this.feedbackTexture,
-      clear: true,
+    this.context.app.renderer.render(new Container(), { 
+      renderTexture: this.feedbackTexture,
+      clear: true 
     });
   }
 

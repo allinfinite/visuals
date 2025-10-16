@@ -36,7 +36,7 @@ export class Starfield implements Pattern {
     }
   }
 
-  public update(dt: number, audio: AudioData, input: InputState): void {
+  public update(_dt: number, audio: AudioData, _input: InputState): void {
     // Speed controlled by tempo/audio
     this.speed = 2 + audio.rms * 8;
     

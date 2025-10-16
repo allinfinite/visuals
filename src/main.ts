@@ -72,7 +72,7 @@ async function main() {
   sceneManager.setActivePattern(0);
 
   // Setup UI
-  const paramPane = new ParamPane(sceneManager, app.getAudio(), app);
+  new ParamPane(sceneManager, app.getAudio(), app);
 
   // Start the app
   app.start();

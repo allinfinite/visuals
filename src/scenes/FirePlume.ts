@@ -120,7 +120,7 @@ export class FirePlume implements Pattern {
         alpha *= 0.5;
       }
 
-      const size = p.size * p.life * (0.8 + audio.beat ? 0.4 : 0);
+      const size = p.size * p.life * (0.8 + (audio.beat ? 0.4 : 0));
 
       // Glow
       this.graphics.beginFill(color, alpha * 0.3);

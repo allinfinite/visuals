@@ -3,7 +3,7 @@ import type { AudioData } from '../types';
 export class Audio {
   private audioContext: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
-  private dataArray: Uint8Array | null = null;
+  private dataArray: Uint8Array<ArrayBuffer> | null = null;
   private fftSize: number = 1024;
   private bandCount: number = 32;
   
@@ -45,8 +45,8 @@ export class Audio {
     try {
       this.audioContext = new AudioContext();
       this.analyser = this.audioContext.createAnalyser();
-      this.analyser.fftSize = this.fftSize;
-      this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+    this.analyser.fftSize = this.fftSize;
+    this.dataArray = new Uint8Array(this.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
     } catch (error) {
       console.warn('Audio context not available:', error);
     }

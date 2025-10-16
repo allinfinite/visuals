@@ -15,7 +15,7 @@ export class WaveCurves implements Pattern {
     this.container.addChild(this.graphics);
   }
 
-  public update(dt: number, audio: AudioData, input: InputState): void {
+  public update(dt: number, audio: AudioData, _input: InputState): void {
     this.time += dt;
     this.draw(audio);
   }
@@ -58,7 +58,7 @@ export class WaveCurves implements Pattern {
 
       // Draw wave as smooth curve
       this.graphics.lineStyle(
-        2 + audio.beat ? 1 : 0,
+        2 + (audio.beat ? 1 : 0),
         this.hslToHex(hue, 80, 50 + audio.mid * 30),
         alpha
       );

@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Pattern, AudioData, InputState, RendererContext } from '../types';
 import { curlNoise2D } from '../utils/noise';
-import { clamp, lerp } from '../utils/math';
+import { lerp } from '../utils/math';
 
 interface Particle {
   x: number;
@@ -67,7 +67,7 @@ export class ParticleSwarm implements Pattern {
     }
   }
 
-  public update(dt: number, audio: AudioData, input: InputState): void {
+  public update(_dt: number, audio: AudioData, input: InputState): void {
     const time = performance.now() / 1000;
 
     this.particles.forEach((p) => {
