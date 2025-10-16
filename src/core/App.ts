@@ -31,11 +31,11 @@ export class App {
   public async init(): Promise<void> {
     await this.audio.init();
     
-    // Initialize analog look effects
+    // Initialize analog look effects (disabled by default, enable in UI)
     this.postFX.createFilmGrain();
     this.postFX.createVignette();
     
-    console.log('App initialized with analog look');
+    console.log('App initialized (enable Analog Look in UI for film-like visuals)');
   }
 
   public getSceneManager(): SceneManager {
@@ -100,8 +100,8 @@ export class App {
     const stage = this.renderer.app.stage;
     this.postFX.applyAnalogLook(stage);
     
-    // Regenerate film grain every 3 frames for animated grain effect
-    if (this.frameCount % 3 === 0) {
+    // Regenerate film grain every 3 frames for animated grain effect (only when enabled)
+    if (this.postFX.params.analogEnabled && this.frameCount % 3 === 0) {
       this.postFX.regenerateGrain();
     }
 

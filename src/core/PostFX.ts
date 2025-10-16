@@ -16,7 +16,7 @@ export class PostFX {
     bloomIntensity: 0.3,
     
     // Analog look parameters
-    analogEnabled: true,
+    analogEnabled: false, // Disabled by default to not break existing visuals
     filmGrainIntensity: 0.12,
     warmth: 1.08,
     desaturation: 0.15,
@@ -132,7 +132,20 @@ export class PostFX {
   }
 
   public applyAnalogLook(container: Container): void {
-    if (!this.params.analogEnabled) return;
+    if (!this.params.analogEnabled) {
+      // Remove filters and overlays when disabled
+      container.filters = null;
+      
+      if (this.grainSprite && this.grainSprite.parent) {
+        this.grainSprite.parent.removeChild(this.grainSprite);
+      }
+      
+      if (this.vignetteGraphics && this.vignetteGraphics.parent) {
+        this.vignetteGraphics.parent.removeChild(this.vignetteGraphics);
+      }
+      
+      return;
+    }
     
     const filters: any[] = [];
     
