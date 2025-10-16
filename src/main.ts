@@ -54,6 +54,9 @@ import { RecursiveTiles } from './scenes/RecursiveTiles';
 import { ShadowTrails } from './scenes/ShadowTrails';
 import { TerrainMorph } from './scenes/TerrainMorph';
 import { WeatherSync } from './scenes/WeatherSync';
+import { GlyphOrbit } from './scenes/GlyphOrbit';
+import { ChromaticBloom } from './scenes/ChromaticBloom';
+import { FacesInNoise } from './scenes/FacesInNoise';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -123,6 +126,9 @@ async function main() {
   sceneManager.addPattern(new ShadowTrails(context));
   sceneManager.addPattern(new TerrainMorph(context));
   sceneManager.addPattern(new WeatherSync(context));
+  sceneManager.addPattern(new GlyphOrbit(context));
+  sceneManager.addPattern(new ChromaticBloom(context));
+  sceneManager.addPattern(new FacesInNoise(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);

@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-This project features **52 unique visual patterns** that react to audio and mouse input.
+This project features **55 unique visual patterns** that react to audio and mouse input.
 
 ## Installation & Running
 
@@ -20,7 +20,7 @@ Open your browser to `http://localhost:3000`
 2. **Move your mouse** - Influence particle flow and interactions
 3. **Click anywhere** - Spawn bursts, change patterns, trigger effects
 4. **Drag** - Paint trails and create smoke effects
-5. **Open Tweakpane** (top-right) - Switch between 52 patterns
+5. **Open Tweakpane** (top-right) - Switch between 55 patterns
 6. **Adjust Trail Length** - Control how long visual elements persist (1-100)
 7. **Enable Audio** - Grant microphone access to make visuals react to sound
 
