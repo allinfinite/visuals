@@ -144,53 +144,172 @@ export class YokaiParade implements Pattern {
   }
 
   private drawLanternSpirit(y: Yokai, glowSize: number, _audio: AudioData): void {
-    // Glow
-    this.graphics.beginFill(this.hslToHex(y.hue, 80, 50), y.alpha * 0.3);
-    this.graphics.drawCircle(y.x, y.y, glowSize * 1.5);
+    // Outer ethereal glow
+    this.graphics.beginFill(this.hslToHex(y.hue, 90, 60), y.alpha * 0.15);
+    this.graphics.drawCircle(y.x, y.y, glowSize * 2);
+    this.graphics.endFill();
+    
+    // Inner glow
+    this.graphics.beginFill(this.hslToHex(y.hue, 95, 70), y.alpha * 0.4);
+    this.graphics.drawCircle(y.x, y.y, glowSize * 1.2);
     this.graphics.endFill();
 
-    // Lantern body
-    this.graphics.beginFill(this.hslToHex(y.hue, 70, 60), y.alpha * 0.8);
-    this.graphics.drawRect(y.x - glowSize * 0.3, y.y - glowSize * 0.5, glowSize * 0.6, glowSize);
+    // Lantern shadow/depth
+    this.graphics.beginFill(this.hslToHex(y.hue, 60, 30), y.alpha * 0.6);
+    this.graphics.drawEllipse(y.x, y.y - glowSize * 0.5, glowSize * 0.35, glowSize * 1.1);
     this.graphics.endFill();
 
-    // Lantern bands
-    this.graphics.lineStyle(2, 0x000000, y.alpha * 0.6);
-    this.graphics.moveTo(y.x - glowSize * 0.3, y.y - glowSize * 0.2);
-    this.graphics.lineTo(y.x + glowSize * 0.3, y.y - glowSize * 0.2);
-    this.graphics.moveTo(y.x - glowSize * 0.3, y.y + glowSize * 0.2);
-    this.graphics.lineTo(y.x + glowSize * 0.3, y.y + glowSize * 0.2);
+    // Main lantern body with gradient effect
+    this.graphics.beginFill(this.hslToHex(y.hue, 70, 55), y.alpha * 0.9);
+    this.graphics.drawEllipse(y.x - 2, y.y - glowSize * 0.5, glowSize * 0.32, glowSize * 1.05);
+    this.graphics.endFill();
 
-    // Eye
-    const eyeOpen = Math.sin(this.time * 3 + y.phase) > -0.5;
-    if (eyeOpen) {
-      this.graphics.beginFill(0x000000, y.alpha);
-      this.graphics.drawCircle(y.x, y.y, glowSize * 0.1);
-      this.graphics.endFill();
+    // Bright lantern surface
+    this.graphics.beginFill(this.hslToHex(y.hue, 85, 75), y.alpha * 0.85);
+    this.graphics.drawEllipse(y.x - 5, y.y - glowSize * 0.5, glowSize * 0.28, glowSize);
+    this.graphics.endFill();
+
+    // Top cap
+    this.graphics.beginFill(0x2a1810, y.alpha * 0.9);
+    this.graphics.drawEllipse(y.x, y.y - glowSize, glowSize * 0.35, glowSize * 0.15);
+    this.graphics.endFill();
+    
+    // Bottom cap
+    this.graphics.beginFill(0x2a1810, y.alpha * 0.9);
+    this.graphics.drawEllipse(y.x, y.y + glowSize * 0.5, glowSize * 0.35, glowSize * 0.15);
+    this.graphics.endFill();
+
+    // Decorative bands with shading
+    this.graphics.lineStyle(3, 0x8b4513, y.alpha * 0.8);
+    for (let i = -0.3; i <= 0.3; i += 0.3) {
+      this.graphics.moveTo(y.x - glowSize * 0.35, y.y + glowSize * i);
+      this.graphics.lineTo(y.x + glowSize * 0.35, y.y + glowSize * i);
+    }
+
+    // Scary face - angry eye
+    const eyeOpen = Math.sin(this.time * 3 + y.phase);
+    const eyeSize = glowSize * (0.12 + eyeOpen * 0.03);
+    
+    // Eye white
+    this.graphics.beginFill(0xffffff, y.alpha * 0.9);
+    this.graphics.drawEllipse(y.x, y.y - glowSize * 0.2, eyeSize * 1.2, eyeSize);
+    this.graphics.endFill();
+    
+    // Angry pupil
+    this.graphics.beginFill(0x000000, y.alpha);
+    this.graphics.drawCircle(y.x + eyeSize * 0.3, y.y - glowSize * 0.2, eyeSize * 0.6);
+    this.graphics.endFill();
+    
+    // Angry eyebrow
+    this.graphics.lineStyle(3, 0x000000, y.alpha * 0.8);
+    this.graphics.moveTo(y.x - eyeSize, y.y - glowSize * 0.35);
+    this.graphics.lineTo(y.x + eyeSize, y.y - glowSize * 0.25);
+    
+    // Menacing mouth
+    this.graphics.lineStyle(3, 0x000000, y.alpha * 0.9);
+    this.graphics.arc(y.x, y.y + glowSize * 0.1, glowSize * 0.2, Math.PI, 0, true);
+    
+    // Sharp teeth
+    for (let i = 0; i < 5; i++) {
+      const tx = y.x - glowSize * 0.2 + i * glowSize * 0.1;
+      this.graphics.moveTo(tx, y.y + glowSize * 0.1);
+      this.graphics.lineTo(tx, y.y + glowSize * 0.18);
+    }
+    
+    // Paper texture lines
+    this.graphics.lineStyle(1, 0xffffff, y.alpha * 0.2);
+    for (let i = 0; i < 8; i++) {
+      const lineY = y.y - glowSize + i * glowSize * 0.25;
+      this.graphics.moveTo(y.x - glowSize * 0.25, lineY);
+      this.graphics.lineTo(y.x + glowSize * 0.25, lineY);
     }
   }
 
   private drawMaskSpirit(y: Yokai, glowSize: number, _audio: AudioData): void {
-    // Glow
-    this.graphics.beginFill(0xffffff, y.alpha * 0.2);
-    this.graphics.drawCircle(y.x, y.y, glowSize * 1.3);
+    // Ethereal aura
+    this.graphics.beginFill(0xccffff, y.alpha * 0.15);
+    this.graphics.drawCircle(y.x, y.y, glowSize * 1.6);
+    this.graphics.endFill();
+    
+    // Inner glow
+    this.graphics.beginFill(0xeeffff, y.alpha * 0.3);
+    this.graphics.drawCircle(y.x, y.y, glowSize * 1.1);
     this.graphics.endFill();
 
-    // Mask face
-    this.graphics.beginFill(0xffffff, y.alpha * 0.9);
-    this.graphics.drawCircle(y.x, y.y, glowSize * 0.6);
+    // Mask shadow (left side)
+    this.graphics.beginFill(0xdddde8, y.alpha * 0.7);
+    this.graphics.drawEllipse(y.x + 3, y.y, glowSize * 0.62, glowSize * 0.75);
     this.graphics.endFill();
 
-    // Eyes
-    const eyeY = y.y - glowSize * 0.15;
-    this.graphics.beginFill(0x000000, y.alpha);
-    this.graphics.drawCircle(y.x - glowSize * 0.2, eyeY, glowSize * 0.08);
-    this.graphics.drawCircle(y.x + glowSize * 0.2, eyeY, glowSize * 0.08);
+    // Main mask face (pale)
+    this.graphics.beginFill(0xfffffA, y.alpha * 0.95);
+    this.graphics.drawEllipse(y.x, y.y, glowSize * 0.6, glowSize * 0.75);
+    this.graphics.endFill();
+    
+    // Face highlight
+    this.graphics.beginFill(0xffffff, y.alpha * 0.6);
+    this.graphics.drawEllipse(y.x - glowSize * 0.15, y.y - glowSize * 0.1, glowSize * 0.3, glowSize * 0.4);
     this.graphics.endFill();
 
-    // Smile
-    this.graphics.lineStyle(3, 0xff0000, y.alpha * 0.8);
-    this.graphics.arc(y.x, y.y + glowSize * 0.1, glowSize * 0.3, 0, Math.PI);
+    // Eyebrows (thin, arched)
+    this.graphics.lineStyle(2, 0x000000, y.alpha * 0.8);
+    // Left eyebrow
+    this.graphics.arc(y.x - glowSize * 0.25, y.y - glowSize * 0.25, glowSize * 0.15, -Math.PI * 0.2, Math.PI * 0.3, false);
+    // Right eyebrow
+    this.graphics.arc(y.x + glowSize * 0.25, y.y - glowSize * 0.25, glowSize * 0.15, Math.PI * 0.7, Math.PI * 1.2, false);
+
+    // Eyes (narrow, eerie)
+    const eyeY = y.y - glowSize * 0.12;
+    const eyeBlink = Math.sin(this.time * 2 + y.phase);
+    const eyeHeight = glowSize * (0.12 - eyeBlink * 0.05);
+    
+    // Left eye
+    this.graphics.beginFill(0x000000, y.alpha * 0.9);
+    this.graphics.drawEllipse(y.x - glowSize * 0.25, eyeY, glowSize * 0.1, eyeHeight);
+    this.graphics.endFill();
+    
+    // Right eye
+    this.graphics.beginFill(0x000000, y.alpha * 0.9);
+    this.graphics.drawEllipse(y.x + glowSize * 0.25, eyeY, glowSize * 0.1, eyeHeight);
+    this.graphics.endFill();
+    
+    // Eye gleam
+    this.graphics.beginFill(0xffffff, y.alpha * 0.6);
+    this.graphics.drawCircle(y.x - glowSize * 0.23, eyeY - eyeHeight * 0.2, glowSize * 0.03);
+    this.graphics.drawCircle(y.x + glowSize * 0.27, eyeY - eyeHeight * 0.2, glowSize * 0.03);
+    this.graphics.endFill();
+
+    // Nose shadow
+    this.graphics.lineStyle(2, 0x000000, y.alpha * 0.4);
+    this.graphics.moveTo(y.x, y.y - glowSize * 0.05);
+    this.graphics.lineTo(y.x + glowSize * 0.05, y.y + glowSize * 0.05);
+
+    // Unsettling smile (Hannya-inspired)
+    this.graphics.lineStyle(4, 0x8b0000, y.alpha * 0.9);
+    // Smile curve
+    this.graphics.arc(y.x, y.y + glowSize * 0.15, glowSize * 0.35, 0, Math.PI, false);
+    
+    // Smile corners (upturned)
+    this.graphics.moveTo(y.x - glowSize * 0.35, y.y + glowSize * 0.15);
+    this.graphics.lineTo(y.x - glowSize * 0.4, y.y + glowSize * 0.1);
+    this.graphics.moveTo(y.x + glowSize * 0.35, y.y + glowSize * 0.15);
+    this.graphics.lineTo(y.x + glowSize * 0.4, y.y + glowSize * 0.1);
+    
+    // Teeth
+    this.graphics.lineStyle(2, 0xffffff, y.alpha * 0.8);
+    for (let i = 0; i < 6; i++) {
+      const tx = y.x - glowSize * 0.25 + i * glowSize * 0.1;
+      const angle = (i / 5 - 0.5) * Math.PI;
+      const ty = y.y + glowSize * 0.15 + Math.sin(angle) * glowSize * 0.35;
+      this.graphics.moveTo(tx, ty);
+      this.graphics.lineTo(tx, ty + glowSize * 0.08);
+    }
+    
+    // Cheek blush marks (traditional)
+    this.graphics.beginFill(0xff6b9d, y.alpha * 0.3);
+    this.graphics.drawEllipse(y.x - glowSize * 0.35, y.y + glowSize * 0.05, glowSize * 0.12, glowSize * 0.08);
+    this.graphics.drawEllipse(y.x + glowSize * 0.35, y.y + glowSize * 0.05, glowSize * 0.12, glowSize * 0.08);
+    this.graphics.endFill();
   }
 
   private drawWispSpirit(y: Yokai, glowSize: number, _audio: AudioData): void {
@@ -240,50 +359,175 @@ export class YokaiParade implements Pattern {
   }
 
   private drawFoxSpirit(y: Yokai, glowSize: number, _audio: AudioData): void {
-    // Ethereal glow
-    this.graphics.beginFill(0xffa500, y.alpha * 0.2);
-    this.graphics.drawCircle(y.x, y.y, glowSize * 1.4);
+    // Outer mystical aura
+    this.graphics.beginFill(0xff8800, y.alpha * 0.1);
+    this.graphics.drawCircle(y.x, y.y, glowSize * 2.2);
+    this.graphics.endFill();
+    
+    // Middle aura
+    this.graphics.beginFill(0xffa500, y.alpha * 0.25);
+    this.graphics.drawCircle(y.x, y.y, glowSize * 1.5);
     this.graphics.endFill();
 
-    // Fox head
-    this.graphics.beginFill(0xffa500, y.alpha * 0.8);
-    this.graphics.drawCircle(y.x, y.y, glowSize * 0.5);
-    this.graphics.endFill();
-
-    // Ears
-    this.graphics.beginFill(0xffa500, y.alpha * 0.8);
-    this.graphics.moveTo(y.x - glowSize * 0.4, y.y - glowSize * 0.3);
-    this.graphics.lineTo(y.x - glowSize * 0.2, y.y - glowSize * 0.7);
-    this.graphics.lineTo(y.x - glowSize * 0.1, y.y - glowSize * 0.3);
-    this.graphics.endFill();
-
-    this.graphics.beginFill(0xffa500, y.alpha * 0.8);
-    this.graphics.moveTo(y.x + glowSize * 0.4, y.y - glowSize * 0.3);
-    this.graphics.lineTo(y.x + glowSize * 0.2, y.y - glowSize * 0.7);
-    this.graphics.lineTo(y.x + glowSize * 0.1, y.y - glowSize * 0.3);
-    this.graphics.endFill();
-
-    // Eyes (glowing)
-    const eyeGlow = 0.5 + Math.sin(this.time * 4 + y.phase) * 0.5;
-    this.graphics.beginFill(0xffff00, y.alpha * eyeGlow);
-    this.graphics.drawCircle(y.x - glowSize * 0.2, y.y - glowSize * 0.1, glowSize * 0.1);
-    this.graphics.drawCircle(y.x + glowSize * 0.2, y.y - glowSize * 0.1, glowSize * 0.1);
-    this.graphics.endFill();
-
-    // Tails (multiple)
-    for (let i = 0; i < 3; i++) {
-      const tailAngle = Math.sin(this.time * 2 + y.phase + i) * 0.5;
-      const tailX = y.x - glowSize * 0.8 - i * glowSize * 0.2;
-      const tailY = y.y + Math.sin(this.time + i) * glowSize * 0.3;
-
-      this.graphics.lineStyle(8 - i * 2, 0xffa500, y.alpha * (0.6 - i * 0.1));
-      this.graphics.moveTo(y.x, y.y + glowSize * 0.3);
+    // Draw tails first (behind body) - 9 tails for powerful kitsune
+    for (let i = 0; i < 9; i++) {
+      const tailSpread = (i - 4) * 0.3;
+      const tailAngle = Math.sin(this.time * 2 + y.phase + i * 0.5) * 0.4;
+      const tailX = y.x - glowSize * (0.5 + i * 0.15);
+      const tailY = y.y + Math.sin(this.time * 1.5 + i * 0.3) * glowSize * 0.4 + tailSpread * glowSize * 0.3;
+      
+      // Tail glow
+      this.graphics.lineStyle(12 - i * 0.8, 0xff6600, y.alpha * (0.3 - i * 0.025));
+      this.graphics.moveTo(y.x, y.y + glowSize * 0.4);
       this.graphics.quadraticCurveTo(
-        tailX,
-        tailY,
-        tailX - glowSize * 0.3,
-        tailY + tailAngle * 20
+        tailX * 0.7, tailY,
+        tailX - glowSize * 0.5,
+        tailY + tailAngle * 25 + tailSpread * 15
       );
+      
+      // Main tail
+      this.graphics.lineStyle(9 - i * 0.7, 0xffa500, y.alpha * (0.7 - i * 0.05));
+      this.graphics.moveTo(y.x, y.y + glowSize * 0.4);
+      this.graphics.quadraticCurveTo(
+        tailX * 0.7, tailY,
+        tailX - glowSize * 0.5,
+        tailY + tailAngle * 25 + tailSpread * 15
+      );
+      
+      // Tail highlight
+      this.graphics.lineStyle(4 - i * 0.3, 0xffcc88, y.alpha * (0.5 - i * 0.04));
+      this.graphics.moveTo(y.x, y.y + glowSize * 0.4);
+      this.graphics.quadraticCurveTo(
+        tailX * 0.7, tailY - glowSize * 0.05,
+        tailX - glowSize * 0.5,
+        tailY + tailAngle * 25 + tailSpread * 15 - glowSize * 0.08
+      );
+      
+      // Tail tip glow
+      const tipX = tailX - glowSize * 0.5;
+      const tipY = tailY + tailAngle * 25 + tailSpread * 15;
+      this.graphics.beginFill(0xffffff, y.alpha * (0.4 - i * 0.03));
+      this.graphics.drawCircle(tipX, tipY, glowSize * 0.12);
+      this.graphics.endFill();
+    }
+
+    // Body/neck
+    this.graphics.beginFill(0xff9933, y.alpha * 0.75);
+    this.graphics.drawEllipse(y.x, y.y + glowSize * 0.25, glowSize * 0.35, glowSize * 0.45);
+    this.graphics.endFill();
+
+    // Head shadow
+    this.graphics.beginFill(0xcc7722, y.alpha * 0.6);
+    this.graphics.drawEllipse(y.x + 2, y.y, glowSize * 0.52, glowSize * 0.58);
+    this.graphics.endFill();
+
+    // Fox head (main)
+    this.graphics.beginFill(0xffa033, y.alpha * 0.9);
+    this.graphics.drawEllipse(y.x, y.y, glowSize * 0.5, glowSize * 0.58);
+    this.graphics.endFill();
+    
+    // Face highlight
+    this.graphics.beginFill(0xffcc88, y.alpha * 0.6);
+    this.graphics.drawEllipse(y.x - glowSize * 0.12, y.y - glowSize * 0.08, glowSize * 0.25, glowSize * 0.3);
+    this.graphics.endFill();
+    
+    // White muzzle
+    this.graphics.beginFill(0xffffff, y.alpha * 0.8);
+    this.graphics.drawEllipse(y.x, y.y + glowSize * 0.15, glowSize * 0.25, glowSize * 0.2);
+    this.graphics.endFill();
+
+    // Ears (triangular with inner ear detail)
+    // Left ear
+    this.graphics.beginFill(0xff8800, y.alpha * 0.85);
+    this.graphics.moveTo(y.x - glowSize * 0.42, y.y - glowSize * 0.38);
+    this.graphics.lineTo(y.x - glowSize * 0.18, y.y - glowSize * 0.82);
+    this.graphics.lineTo(y.x - glowSize * 0.08, y.y - glowSize * 0.38);
+    this.graphics.closePath();
+    this.graphics.endFill();
+    
+    // Left inner ear
+    this.graphics.beginFill(0xffddaa, y.alpha * 0.7);
+    this.graphics.moveTo(y.x - glowSize * 0.35, y.y - glowSize * 0.42);
+    this.graphics.lineTo(y.x - glowSize * 0.18, y.y - glowSize * 0.68);
+    this.graphics.lineTo(y.x - glowSize * 0.15, y.y - glowSize * 0.42);
+    this.graphics.closePath();
+    this.graphics.endFill();
+    
+    // Right ear
+    this.graphics.beginFill(0xff8800, y.alpha * 0.85);
+    this.graphics.moveTo(y.x + glowSize * 0.42, y.y - glowSize * 0.38);
+    this.graphics.lineTo(y.x + glowSize * 0.18, y.y - glowSize * 0.82);
+    this.graphics.lineTo(y.x + glowSize * 0.08, y.y - glowSize * 0.38);
+    this.graphics.closePath();
+    this.graphics.endFill();
+    
+    // Right inner ear
+    this.graphics.beginFill(0xffddaa, y.alpha * 0.7);
+    this.graphics.moveTo(y.x + glowSize * 0.35, y.y - glowSize * 0.42);
+    this.graphics.lineTo(y.x + glowSize * 0.18, y.y - glowSize * 0.68);
+    this.graphics.lineTo(y.x + glowSize * 0.15, y.y - glowSize * 0.42);
+    this.graphics.closePath();
+    this.graphics.endFill();
+
+    // Eyes (mystical, glowing)
+    const eyeGlow = 0.6 + Math.sin(this.time * 3 + y.phase) * 0.4;
+    const eyeY = y.y - glowSize * 0.12;
+    
+    // Eye glow aura
+    this.graphics.beginFill(0xffff00, y.alpha * eyeGlow * 0.3);
+    this.graphics.drawEllipse(y.x - glowSize * 0.22, eyeY, glowSize * 0.16, glowSize * 0.18);
+    this.graphics.drawEllipse(y.x + glowSize * 0.22, eyeY, glowSize * 0.16, glowSize * 0.18);
+    this.graphics.endFill();
+    
+    // Eye whites
+    this.graphics.beginFill(0xffffaa, y.alpha * eyeGlow);
+    this.graphics.drawEllipse(y.x - glowSize * 0.22, eyeY, glowSize * 0.12, glowSize * 0.14);
+    this.graphics.drawEllipse(y.x + glowSize * 0.22, eyeY, glowSize * 0.12, glowSize * 0.14);
+    this.graphics.endFill();
+    
+    // Vertical slitted pupils
+    this.graphics.lineStyle(3, 0x000000, y.alpha * 0.95);
+    this.graphics.moveTo(y.x - glowSize * 0.22, eyeY - glowSize * 0.1);
+    this.graphics.lineTo(y.x - glowSize * 0.22, eyeY + glowSize * 0.1);
+    this.graphics.moveTo(y.x + glowSize * 0.22, eyeY - glowSize * 0.1);
+    this.graphics.lineTo(y.x + glowSize * 0.22, eyeY + glowSize * 0.1);
+    
+    // Eye gleam
+    this.graphics.beginFill(0xffffff, y.alpha * eyeGlow * 0.8);
+    this.graphics.drawCircle(y.x - glowSize * 0.20, eyeY - glowSize * 0.06, glowSize * 0.04);
+    this.graphics.drawCircle(y.x + glowSize * 0.24, eyeY - glowSize * 0.06, glowSize * 0.04);
+    this.graphics.endFill();
+
+    // Nose
+    this.graphics.beginFill(0x000000, y.alpha * 0.9);
+    this.graphics.drawCircle(y.x, y.y + glowSize * 0.08, glowSize * 0.06);
+    this.graphics.endFill();
+    
+    // Whisker dots
+    this.graphics.beginFill(0x000000, y.alpha * 0.7);
+    for (let side = -1; side <= 1; side += 2) {
+      for (let row = 0; row < 3; row++) {
+        const dotX = y.x + side * glowSize * 0.28;
+        const dotY = y.y + glowSize * (0.05 + row * 0.06);
+        this.graphics.drawCircle(dotX, dotY, glowSize * 0.02);
+      }
+    }
+    this.graphics.endFill();
+    
+    // Whiskers
+    this.graphics.lineStyle(1, 0xffffff, y.alpha * 0.6);
+    for (let side = -1; side <= 1; side += 2) {
+      for (let row = 0; row < 3; row++) {
+        const startX = y.x + side * glowSize * 0.28;
+        const startY = y.y + glowSize * (0.05 + row * 0.06);
+        const whiskerLength = glowSize * (0.5 + row * 0.1);
+        const whiskerAngle = side * (0.2 - row * 0.15);
+        this.graphics.moveTo(startX, startY);
+        this.graphics.lineTo(
+          startX + side * whiskerLength * Math.cos(whiskerAngle),
+          startY + whiskerLength * Math.sin(whiskerAngle)
+        );
+      }
     }
   }
 
