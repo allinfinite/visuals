@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **34 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, and more
+- **37 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
@@ -80,6 +80,9 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 - **Mycelium Growth** - Branching network with recursive growth
 - **L-System Plants** - Procedural vegetation using string rewriting
 - **Flocking Creatures** - Boids algorithm with autonomous behavior
+- **Butterfly Swarms** - Flocking butterflies with wing animation and swarm behavior
+- **Zooming Doves** - 3D perspective birds flying towards camera with motion blur
+- **Yokai Parade** - Japanese spirit procession with 5 different yokai types
 
 ## Getting Started
 
