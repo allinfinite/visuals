@@ -178,7 +178,7 @@ export class FeedbackFractal implements Pattern {
     const hue = (baseHue + depth * 25) % 360;
     const color = hslToHex(hue, 80, 60);
     const lineWidth = Math.max(1, 10 - depth * 1.5);
-    const alpha = Math.min(1, 1 - depthProgress * 0.3 + audio.beat ? 0.2 : 0);
+    const alpha = Math.min(1, 1 - depthProgress * 0.3 + (audio.beat ? 0.2 : 0));
     
     this.graphics.lineStyle(lineWidth, color, alpha);
     this.graphics.moveTo(x, y);
