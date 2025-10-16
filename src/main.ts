@@ -62,6 +62,9 @@ import { RotatingPolyhedra } from './scenes/RotatingPolyhedra';
 import { PointCloudMorph } from './scenes/PointCloudMorph';
 import { WireframeTunnel } from './scenes/WireframeTunnel';
 import { FeedbackFractal } from './scenes/FeedbackFractal';
+import { AudioPoetry } from './scenes/AudioPoetry';
+import { ImpossibleGeometry } from './scenes/ImpossibleGeometry';
+import { LatentMorphs } from './scenes/LatentMorphs';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -139,6 +142,9 @@ async function main() {
   sceneManager.addPattern(new PointCloudMorph(context));
   sceneManager.addPattern(new WireframeTunnel(context));
   sceneManager.addPattern(new FeedbackFractal(context));
+  sceneManager.addPattern(new AudioPoetry(context));
+  sceneManager.addPattern(new ImpossibleGeometry(context));
+  sceneManager.addPattern(new LatentMorphs(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);

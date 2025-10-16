@@ -8,7 +8,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **60 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
+- **63 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
@@ -102,12 +102,17 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 ### Visual Illusions
 - **Moiré Rotation** - Overlapping line patterns creating interference effects
 - **Recursive Tiles** - Fractal subdivision with dynamic zoom and rotation
+- **Impossible Geometry** - Optical illusions (Penrose triangle, impossible cube, Escher stairs, Blivet fork, Necker cube)
 
 ### 3D Geometry
 - **Rotating Polyhedra** - 2D-projected 3D shapes (cube, tetrahedron, octahedron, icosahedron, dodecahedron)
 - **Point Cloud Morph** - 500 particles morphing between 8 formations (sphere, cube, torus, spiral, wave, DNA helix, lattice, galaxy)
 - **Wireframe Tunnel** - 3D perspective tunnel with polygon rings moving through depth
 - **Feedback Fractal** - Recursive layered geometry with 5 concentric shape formations
+
+### Text & Glyphs
+- **Audio Poetry** - Abstract geometric "letters" appearing on beat with spectrum-based colors
+- **Latent Morphs** - Procedural texture crossfading with 6 generation types (radial gradient, noise field, concentric rings, Voronoi-like, Perlin blobs, spectral bands)
 
 ### Environmental/Temporal
 - **Day Night Cycle** - Animated sky with sun/moon transitions and audio-driven timing
