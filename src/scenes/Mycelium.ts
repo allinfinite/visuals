@@ -28,14 +28,16 @@ export class Mycelium implements Pattern {
   }
 
   private initGrowth(): void {
-    // Start from center
-    this.branches.push({
-      x: this.context.width / 2,
-      y: this.context.height / 2,
-      angle: Math.random() * Math.PI * 2,
-      length: 10,
-      generation: 0,
-    });
+    // Start from center with multiple initial branches for immediate visibility
+    for (let i = 0; i < 5; i++) {
+      this.branches.push({
+        x: this.context.width / 2,
+        y: this.context.height / 2,
+        angle: (i / 5) * Math.PI * 2 + Math.random() * 0.3,
+        length: 15, // Increased from 10 for more visible growth
+        generation: 0,
+      });
+    }
   }
 
   public update(dt: number, audio: AudioData, input: InputState): void {
@@ -45,12 +47,12 @@ export class Mycelium implements Pattern {
     input.clicks.forEach((click) => {
       const age = (performance.now() - click.time) / 1000;
       if (age < 0.05 && this.branches.length < this.maxBranches) {
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 5; i++) { // Increased from 3 to 5 branches per click
           this.branches.push({
             x: click.x,
             y: click.y,
             angle: Math.random() * Math.PI * 2,
-            length: 8,
+            length: 12, // Increased from 8 for more visibility
             generation: 0,
           });
         }
@@ -96,17 +98,28 @@ export class Mycelium implements Pattern {
 
       // Color based on generation
       const hue = (branch.generation * 20 + this.time * 10) % 120 + 200; // Blue-green
-      const alpha = 0.3 + audio.mid * 0.4;
-      const width = Math.max(1, 3 - branch.generation * 0.1) * (audio.beat ? 1.5 : 1);
+      const alpha = 0.5 + audio.mid * 0.4; // Increased from 0.3 to 0.5 for visibility
+      const width = Math.max(1.5, 4 - branch.generation * 0.1) * (audio.beat ? 1.5 : 1); // Thicker branches (3→4, 1→1.5)
 
       this.graphics.lineStyle(width, this.hslToHex(hue, 60, 50), alpha);
       this.graphics.moveTo(branch.x, branch.y);
       this.graphics.lineTo(endX, endY);
 
-      // Nodes at branch points
-      if (index % 5 === 0) {
-        this.graphics.beginFill(this.hslToHex(hue, 80, 70), 0.6);
-        this.graphics.drawCircle(branch.x, branch.y, 2 + audio.treble * 2);
+      // Larger, more frequent nodes at branch points (every 3rd instead of 5th)
+      if (index % 3 === 0) {
+        // Glow layer (larger, more transparent)
+        this.graphics.beginFill(this.hslToHex(hue, 90, 60), 0.3);
+        this.graphics.drawCircle(branch.x, branch.y, 8 + audio.treble * 4);
+        this.graphics.endFill();
+        
+        // Core node (much larger - was 2-4px, now 5-9px)
+        this.graphics.beginFill(this.hslToHex(hue, 80, 70), 0.8);
+        this.graphics.drawCircle(branch.x, branch.y, 5 + audio.treble * 4);
+        this.graphics.endFill();
+        
+        // Bright center
+        this.graphics.beginFill(0xffffff, 0.6);
+        this.graphics.drawCircle(branch.x, branch.y, 2 + audio.treble * 1);
         this.graphics.endFill();
       }
     });

@@ -31,6 +31,11 @@ export class ChromaticBloom implements Pattern {
     this.container = new Container();
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
+    
+    // Initialize with some blooms so pattern is immediately visible
+    for (let i = 0; i < 8; i++) {
+      this.spawnBloom();
+    }
   }
 
   private spawnBloom(x?: number, y?: number, audio?: AudioData): void {
@@ -142,41 +147,45 @@ export class ChromaticBloom implements Pattern {
   }
 
   private draw(audio: AudioData): void {
-    this.graphics.clear(); // Commented for feedback trails
+    this.graphics.clear();
 
     this.blooms.forEach((bloom) => {
       const progress = bloom.life / bloom.maxLife;
-      const alpha = Math.sin(progress * Math.PI) * 0.6 * bloom.intensity;
+      // Increased base alpha for visibility (0.6 → 0.9)
+      const alpha = Math.sin(progress * Math.PI) * 0.9 * (0.5 + bloom.intensity * 0.5);
 
       const size = bloom.size * (1 + Math.sin(this.time * 3 + bloom.x * 0.1) * 0.2);
-      const beatBoost = audio.beat ? 1.2 : 1;
+      const beatBoost = audio.beat ? 1.3 : 1;
 
       // Chromatic aberration: draw RGB channels with offset
       const baseX = bloom.x;
       const baseY = bloom.y;
 
-      // Red channel (offset left/up)
-      const redX = baseX - bloom.offsetX * 0.5;
-      const redY = baseY - bloom.offsetY * 0.5;
-      this.graphics.beginFill(0xff0000, alpha * 0.8);
+      // Increased RGB offset for more visible effect
+      const offsetMultiplier = 1.2;
+
+      // Red channel (offset left/up) - increased alpha (0.8 → 1.0)
+      const redX = baseX - bloom.offsetX * offsetMultiplier;
+      const redY = baseY - bloom.offsetY * offsetMultiplier;
+      this.graphics.beginFill(0xff0000, Math.min(1, alpha * 1.0));
       this.graphics.drawCircle(redX, redY, size * beatBoost);
       this.graphics.endFill();
 
-      // Green channel (center)
-      this.graphics.beginFill(0x00ff00, alpha * 0.8);
+      // Green channel (center) - increased alpha
+      this.graphics.beginFill(0x00ff00, Math.min(1, alpha * 1.0));
       this.graphics.drawCircle(baseX, baseY, size * beatBoost);
       this.graphics.endFill();
 
-      // Blue channel (offset right/down)
-      const blueX = baseX + bloom.offsetX * 0.5;
-      const blueY = baseY + bloom.offsetY * 0.5;
-      this.graphics.beginFill(0x0000ff, alpha * 0.8);
+      // Blue channel (offset right/down) - increased alpha
+      const blueX = baseX + bloom.offsetX * offsetMultiplier;
+      const blueY = baseY + bloom.offsetY * offsetMultiplier;
+      this.graphics.beginFill(0x0000ff, Math.min(1, alpha * 1.0));
       this.graphics.drawCircle(blueX, blueY, size * beatBoost);
       this.graphics.endFill();
 
-      // Core white bloom
-      this.graphics.beginFill(0xffffff, alpha * 0.3);
-      this.graphics.drawCircle(baseX, baseY, size * 0.5 * beatBoost);
+      // Core white bloom (brighter)
+      this.graphics.beginFill(0xffffff, Math.min(1, alpha * 0.5));
+      this.graphics.drawCircle(baseX, baseY, size * 0.6 * beatBoost);
       this.graphics.endFill();
     });
 
