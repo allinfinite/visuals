@@ -122,8 +122,14 @@ export class ParamPane {
     });
 
     const patterns = this.sceneManager.getAllPatterns();
+    
+    // Create sorted pattern list with original indices
+    const sortedPatterns = patterns
+      .map((pattern, index) => ({ pattern, index }))
+      .sort((a, b) => a.pattern.name.localeCompare(b.pattern.name));
+    
     const patternNames: { [key: string]: number } = {};
-    patterns.forEach((pattern, index) => {
+    sortedPatterns.forEach(({ pattern, index }) => {
       patternNames[pattern.name] = index;
     });
 
@@ -151,8 +157,8 @@ export class ParamPane {
       format: (v: string) => String(v),
     } as any);
 
-    // Create clickable buttons for each pattern
-    patterns.forEach((pattern, index) => {
+    // Create clickable buttons for each pattern (sorted alphabetically)
+    sortedPatterns.forEach(({ pattern, index }) => {
       // Initialize queue count
       this.queueCounts[index] = 0;
       
@@ -181,7 +187,7 @@ export class ParamPane {
       expanded: true,
     });
 
-    patterns.forEach((pattern, index) => {
+    sortedPatterns.forEach(({ pattern, index }) => {
       const enabled = this.sceneManager.isPatternInPool(index);
       const param = { enabled };
       
@@ -298,7 +304,8 @@ export class ParamPane {
     const patterns = this.sceneManager.getAllPatterns();
     this.queueButtons.forEach(({ button, index }) => {
       const count = this.queueCounts[index] || 0;
-      button.title = `${patterns[index].name} [${count}]`;
+      const patternName = patterns[index].name;
+      button.title = `${patternName} [${count}]`;
     });
     this.pane.refresh();
   }
