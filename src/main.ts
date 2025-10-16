@@ -45,6 +45,9 @@ import { RadiantGrid } from './scenes/RadiantGrid';
 import { LensFlares } from './scenes/LensFlares';
 import { CoralGrowth } from './scenes/CoralGrowth';
 import { NeuralNetwork } from './scenes/NeuralNetwork';
+import { MoireRotation } from './scenes/MoireRotation';
+import { SigilGlyphs } from './scenes/SigilGlyphs';
+import { AudioPaint } from './scenes/AudioPaint';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -105,6 +108,9 @@ async function main() {
   sceneManager.addPattern(new LensFlares(context));
   sceneManager.addPattern(new CoralGrowth(context));
   sceneManager.addPattern(new NeuralNetwork(context));
+  sceneManager.addPattern(new MoireRotation(context));
+  sceneManager.addPattern(new SigilGlyphs(context));
+  sceneManager.addPattern(new AudioPaint(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
