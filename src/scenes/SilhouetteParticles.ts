@@ -27,6 +27,9 @@ export class SilhouetteParticles implements Pattern {
   private silhouetteType: number = 0; // 0-4 different silhouettes
   private disintegrateDirection: number = 1; // 1 = disintegrating, -1 = reforming
   private clickCooldown: number = 0; // Prevent click spam
+  private zoomScale: number = 1; // Scale that changes as particles morph
+  private centerX: number = 0;
+  private centerY: number = 0;
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -40,8 +43,8 @@ export class SilhouetteParticles implements Pattern {
   private generateSilhouette(): void {
     this.particles = [];
     const { width, height } = this.context;
-    const centerX = width / 2;
-    const centerY = height / 2;
+    this.centerX = width / 2;
+    this.centerY = height / 2;
 
     const shapes = [
       this.generateHumanoid,
@@ -51,7 +54,7 @@ export class SilhouetteParticles implements Pattern {
       this.generateTree,
     ];
 
-    shapes[this.silhouetteType % shapes.length].call(this, centerX, centerY);
+    shapes[this.silhouetteType % shapes.length].call(this, this.centerX, this.centerY);
   }
 
   private generateHumanoid(centerX: number, centerY: number): void {
@@ -238,6 +241,13 @@ export class SilhouetteParticles implements Pattern {
     if (audio.beat && Math.random() < 0.3) {
       this.disintegrateDirection *= -1;
     }
+    
+    // Calculate average disintegration for zoom
+    const avgDisintegration = this.particles.reduce((sum, p) => sum + p.disintegration, 0) / Math.max(1, this.particles.length);
+    
+    // Zoom increases as particles disintegrate (1.0x to 1.8x)
+    const targetZoom = 1 + avgDisintegration * 0.8 + audio.bass * 0.2;
+    this.zoomScale += (targetZoom - this.zoomScale) * 4 * dt; // Smooth zoom transition
 
     this.particles.forEach((p) => {
       // Slower, smoother disintegration (reduced from 1.5)
@@ -297,29 +307,53 @@ export class SilhouetteParticles implements Pattern {
       const color = hslToHex(p.hue, 70, 50);
       const glowColor = hslToHex(p.hue, 100, 70);
       
+      // Apply zoom from center
+      const dx = p.x - this.centerX;
+      const dy = p.y - this.centerY;
+      const zoomedX = this.centerX + dx * this.zoomScale;
+      const zoomedY = this.centerY + dy * this.zoomScale;
+      const zoomedSize = p.size * this.zoomScale;
+      
       // Glow
       this.graphics.beginFill(glowColor, p.alpha * 0.3 * (1 + audio.rms * 0.5));
-      this.graphics.drawCircle(p.x, p.y, p.size * 2);
+      this.graphics.drawCircle(zoomedX, zoomedY, zoomedSize * 2);
       this.graphics.endFill();
       
       // Core particle
       this.graphics.beginFill(color, p.alpha);
-      this.graphics.drawCircle(p.x, p.y, p.size);
+      this.graphics.drawCircle(zoomedX, zoomedY, zoomedSize);
       this.graphics.endFill();
     });
 
     // Draw silhouette outline when intact
     const avgDisintegration = this.particles.reduce((sum, p) => sum + p.disintegration, 0) / this.particles.length;
     if (avgDisintegration < 0.3) {
-      this.graphics.lineStyle(2, 0xffffff, 0.3 * (1 - avgDisintegration));
+      this.graphics.lineStyle(2 * this.zoomScale, 0xffffff, 0.3 * (1 - avgDisintegration));
       
-      // Draw convex hull or bounding shape (simplified)
+      // Draw convex hull or bounding shape (simplified) with zoom applied
       const minX = Math.min(...this.particles.map(p => p.x));
       const maxX = Math.max(...this.particles.map(p => p.x));
       const minY = Math.min(...this.particles.map(p => p.y));
       const maxY = Math.max(...this.particles.map(p => p.y));
       
-      this.graphics.drawRect(minX - 10, minY - 10, maxX - minX + 20, maxY - minY + 20);
+      // Apply zoom to bounding box
+      const dx1 = minX - this.centerX;
+      const dy1 = minY - this.centerY;
+      const dx2 = maxX - this.centerX;
+      const dy2 = maxY - this.centerY;
+      
+      const zoomedMinX = this.centerX + dx1 * this.zoomScale;
+      const zoomedMinY = this.centerY + dy1 * this.zoomScale;
+      const zoomedMaxX = this.centerX + dx2 * this.zoomScale;
+      const zoomedMaxY = this.centerY + dy2 * this.zoomScale;
+      
+      const padding = 10 * this.zoomScale;
+      this.graphics.drawRect(
+        zoomedMinX - padding, 
+        zoomedMinY - padding, 
+        zoomedMaxX - zoomedMinX + padding * 2, 
+        zoomedMaxY - zoomedMinY + padding * 2
+      );
     }
   }
 
