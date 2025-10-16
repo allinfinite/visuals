@@ -285,7 +285,7 @@ export class StealYourFace implements Pattern {
 
     // Lightning bolt color alternates with audio
     const boltHue = (skull.hue + 60) % 360;
-    const boltGlow = 0.7 + Math.sin(skull.lightningPhase) * 0.3 + audio.beat ? 0.3 : 0;
+    const boltGlow = 0.7 + Math.sin(skull.lightningPhase) * 0.3 + (audio.beat ? 0.3 : 0);
 
     // Create zigzag lightning bolt path
     const boltPoints = [
