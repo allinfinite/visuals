@@ -1,4 +1,5 @@
 import type { InputState, ClickEvent } from '../types';
+import { WebcamInput } from './WebcamInput';
 
 export class Input {
   public state: InputState = {
@@ -7,24 +8,37 @@ export class Input {
     isDown: false,
     isDragging: false,
     clicks: [],
+    webcam: undefined,
   };
 
   private clickRetentionTime: number = 2000; // Keep clicks for 2 seconds
   private dragThreshold: number = 5; // Pixels
   private lastDownPosition: { x: number; y: number } = { x: 0, y: 0 };
+  private webcamInput: WebcamInput;
+  private screenWidth: number = window.innerWidth;
+  private screenHeight: number = window.innerHeight;
+  private mouseX: number = 0;
+  private mouseY: number = 0;
 
   constructor(element: HTMLElement) {
     this.setupListeners(element);
+    this.webcamInput = new WebcamInput();
+    
+    // Track window resize
+    window.addEventListener('resize', () => {
+      this.screenWidth = window.innerWidth;
+      this.screenHeight = window.innerHeight;
+    });
   }
 
   private setupListeners(element: HTMLElement): void {
     element.addEventListener('pointermove', (e) => {
-      this.state.x = e.clientX;
-      this.state.y = e.clientY;
+      this.mouseX = e.clientX;
+      this.mouseY = e.clientY;
 
       if (this.state.isDown) {
-        const dx = this.state.x - this.lastDownPosition.x;
-        const dy = this.state.y - this.lastDownPosition.y;
+        const dx = this.mouseX - this.lastDownPosition.x;
+        const dy = this.mouseY - this.lastDownPosition.y;
         if (Math.sqrt(dx * dx + dy * dy) > this.dragThreshold) {
           this.state.isDragging = true;
         }
@@ -33,13 +47,13 @@ export class Input {
 
     element.addEventListener('pointerdown', (e) => {
       this.state.isDown = true;
-      this.state.x = e.clientX;
-      this.state.y = e.clientY;
-      this.lastDownPosition = { x: this.state.x, y: this.state.y };
+      this.mouseX = e.clientX;
+      this.mouseY = e.clientY;
+      this.lastDownPosition = { x: this.mouseX, y: this.mouseY };
       
       this.state.clicks.push({
-        x: this.state.x,
-        y: this.state.y,
+        x: this.mouseX,
+        y: this.mouseY,
         time: performance.now(),
       });
     });
@@ -55,7 +69,32 @@ export class Input {
     });
   }
 
-  public update(): void {
+  public update(dt: number = 0.016): void {
+    // Update webcam
+    this.webcamInput.update(dt);
+    const webcamData = this.webcamInput.getWebcamData();
+    this.state.webcam = webcamData;
+    
+    // Merge webcam and mouse positions
+    if (webcamData.enabled && webcamData.hasMotion) {
+      // Use webcam position when motion is detected
+      this.state.x = webcamData.x * this.screenWidth;
+      this.state.y = webcamData.y * this.screenHeight;
+    } else {
+      // Fall back to mouse position
+      this.state.x = this.mouseX;
+      this.state.y = this.mouseY;
+    }
+    
+    // Check for webcam click gesture
+    if (this.webcamInput.shouldTriggerClick()) {
+      this.state.clicks.push({
+        x: this.state.x,
+        y: this.state.y,
+        time: performance.now(),
+      });
+    }
+    
     // Remove old clicks
     const now = performance.now();
     this.state.clicks = this.state.clicks.filter(
@@ -71,6 +110,10 @@ export class Input {
 
   public clearClicks(): void {
     this.state.clicks = [];
+  }
+  
+  public getWebcamInput(): WebcamInput {
+    return this.webcamInput;
   }
 }
 

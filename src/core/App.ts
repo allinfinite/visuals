@@ -79,7 +79,7 @@ export class App {
     // Update
     const dt = this.clock.update();
     this.audio.update();
-    this.input.update();
+    this.input.update(dt);
     
     // Apply feedback fade (trails effect)
     if (this.feedbackEnabled) {

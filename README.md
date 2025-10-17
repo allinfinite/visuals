@@ -8,10 +8,16 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
 
 ## Features
 
-- **75 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, fluid dynamics, and more
+- **78 Visual Patterns**: Particle systems, sacred geometry, cosmic effects, nature & creatures, fluid dynamics, and more
 - **Multi-Layer Composition System**: Randomly mix and blend multiple patterns simultaneously
   - **🖱️ All layers respond to mouse/clicks**: Every active pattern reacts to your interactions
   - **Real-time monitoring**: See which patterns are currently active
+- **📹 Webcam Interactive Controls**: Control visuals with body movement
+  - **Motion tracking**: Move in front of your camera to control the cursor
+  - **Gesture detection**: Quick movements trigger clicks
+  - **Works simultaneously with mouse**: Both inputs active at the same time
+  - **All 78 scenes supported**: No modifications needed
+  - See [WEBCAM_GUIDE.md](./WEBCAM_GUIDE.md) for detailed usage
 - **Feedback Trails System**: Beautiful layering effect where visuals gradually fade, creating ambient compositions
 - **Pattern Pool Selection**: Choose which patterns are available for the composition system
 - **Autonomous Animation**: All patterns animate continuously without user interaction
@@ -26,6 +32,7 @@ A unified canvas architecture for TeamLabs-style generative visuals built with T
   - Layer duration and spawn intervals
   - Max simultaneous layers
   - Pattern pool toggles
+  - Webcam sensitivity and gesture thresholds
 - **60 FPS Performance**: Optimized WebGL rendering with high-performance GPU mode
 - **Ambient Mode**: Perfect for display installations - run for hours with evolving visuals
 
@@ -170,6 +177,18 @@ The dev server will start at `http://localhost:3000`. The page will hot-reload a
 - **Click**: Spawns bursts, changes seeds, triggers effects
 - **Drag**: Creates trails in smoke/paint systems
 
+### Webcam Interaction
+1. Open the Tweakpane UI
+2. Find "📹 Webcam Input" section
+3. Enable "Enable Webcam"
+4. Grant camera permissions
+5. **Move in front of camera**: Controls cursor position via motion tracking
+6. **Quick movements**: Trigger click gestures
+7. **Adjust sensitivity**: Tune motion detection and click threshold
+8. **Debug overlay**: Enable to see motion detection in real-time
+
+See [WEBCAM_GUIDE.md](./WEBCAM_GUIDE.md) for detailed instructions and tips.
+
 ### Audio Reactivity
 1. Open the Tweakpane UI (top-right)
 2. Enable "Enable Microphone" in the Audio section
@@ -255,6 +274,7 @@ src/
 │   ├── Renderer.ts         # WebGL renderer context
 │   ├── Audio.ts            # Audio analysis (FFT, beat detection)
 │   ├── Input.ts            # Mouse/pointer input handling
+│   ├── WebcamInput.ts      # Webcam motion tracking and gesture detection
 │   ├── Clock.ts            # Delta time and BPM sync
 │   ├── SceneManager.ts     # Pattern lifecycle management
 │   ├── ParamPane.ts        # Tweakpane UI
@@ -303,7 +323,10 @@ export class MyPattern implements Pattern {
     // Update logic here
     // - dt: delta time in seconds
     // - audio: spectrum, RMS, bass, mid, treble, beat, BPM
-    // - input: x, y, isDown, isDragging, clicks
+    // - input: x, y, isDown, isDragging, clicks, webcam (optional)
+    //   - webcam.x, webcam.y: normalized webcam position (0-1)
+    //   - webcam.motionIntensity: amount of motion detected (0-1)
+    //   - webcam.enabled: whether webcam is active
     
     this.draw(audio);
   }

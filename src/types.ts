@@ -17,6 +17,15 @@ export interface InputState {
   isDown: boolean;
   isDragging: boolean;
   clicks: ClickEvent[];
+  webcam?: WebcamData;
+}
+
+export interface WebcamData {
+  x: number;              // Centroid X position (normalized 0-1)
+  y: number;              // Centroid Y position (normalized 0-1)
+  motionIntensity: number; // 0-1 motion amount
+  hasMotion: boolean;     // Motion detected
+  enabled: boolean;       // Webcam active
 }
 
 export interface ClickEvent {

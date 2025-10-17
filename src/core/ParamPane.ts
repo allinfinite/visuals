@@ -222,6 +222,90 @@ export class ParamPane {
       step: 10,
     });
 
+    // Webcam controls
+    const webcamFolder = this.pane.addFolder({
+      title: '📹 Webcam Input',
+      expanded: true,
+    });
+
+    const webcamInput = this.app.getInput().getWebcamInput();
+    
+    const webcamParams = {
+      enabled: false,
+      motionSensitivity: webcamInput.motionSensitivity * 100,
+      clickThreshold: webcamInput.clickThreshold * 100,
+      smoothing: webcamInput.smoothingFactor * 100,
+      showDebug: webcamInput.showDebug,
+      status: 'Not initialized',
+    };
+
+    webcamFolder.addBinding(webcamParams, 'enabled', {
+      label: 'Enable Webcam',
+    }).on('change', async (ev: any) => {
+      if (ev.value) {
+        webcamParams.status = 'Initializing...';
+        this.pane.refresh();
+        const success = await webcamInput.init();
+        if (success) {
+          webcamInput.setEnabled(true);
+          webcamParams.status = '✓ Active';
+        } else {
+          webcamParams.enabled = false;
+          webcamParams.status = '✗ Failed - check permissions';
+        }
+      } else {
+        webcamInput.setEnabled(false);
+        webcamParams.status = 'Disabled';
+      }
+      this.pane.refresh();
+    });
+
+    webcamFolder.addBinding(webcamParams, 'status', {
+      label: 'Status',
+      readonly: true,
+    });
+
+    webcamFolder.addBlade({
+      view: 'text',
+      label: 'Info',
+      value: '📹 Move in frame to control cursor\n💥 Quick motion = click',
+      parse: (v: string) => String(v),
+      format: (v: string) => String(v),
+    } as any);
+
+    webcamFolder.addBinding(webcamParams, 'motionSensitivity', {
+      label: 'Motion Sensitivity',
+      min: 0,
+      max: 100,
+      step: 5,
+    }).on('change', (ev: any) => {
+      webcamInput.motionSensitivity = ev.value / 100;
+    });
+
+    webcamFolder.addBinding(webcamParams, 'clickThreshold', {
+      label: 'Click Threshold',
+      min: 0,
+      max: 100,
+      step: 5,
+    }).on('change', (ev: any) => {
+      webcamInput.clickThreshold = ev.value / 100;
+    });
+
+    webcamFolder.addBinding(webcamParams, 'smoothing', {
+      label: 'Position Smoothing',
+      min: 0,
+      max: 100,
+      step: 5,
+    }).on('change', (ev: any) => {
+      webcamInput.smoothingFactor = ev.value / 100;
+    });
+
+    webcamFolder.addBinding(webcamParams, 'showDebug', {
+      label: 'Show Debug Overlay',
+    }).on('change', (ev: any) => {
+      webcamInput.showDebug = ev.value;
+    });
+
     // Display settings
     const displayFolder = this.pane.addFolder({
       title: 'Display',
