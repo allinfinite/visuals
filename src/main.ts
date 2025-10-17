@@ -197,7 +197,14 @@ async function main() {
       // Toggle the Tweakpane visibility using class
       const tweakpane = document.querySelector('.tp-dfwv') as HTMLElement;
       if (tweakpane) {
-        tweakpane.classList.toggle('menu-open');
+        const isOpen = tweakpane.classList.contains('menu-open');
+        if (isOpen) {
+          tweakpane.classList.remove('menu-open');
+        } else {
+          tweakpane.classList.add('menu-open');
+          // Ensure the pane is expanded when shown
+          paramPane.pane.expanded = true;
+        }
       }
     });
   }
