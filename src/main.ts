@@ -86,6 +86,10 @@ import { AuraVision } from './scenes/AuraVision';
 import { PixelDisintegration } from './scenes/PixelDisintegration';
 import { NeonContour } from './scenes/NeonContour';
 import { TimeDisplacement } from './scenes/TimeDisplacement';
+import { WireframeMesh } from './scenes/WireframeMesh';
+import { ColorExtractionPaint } from './scenes/ColorExtractionPaint';
+import { InfinityMirror } from './scenes/InfinityMirror';
+import { PointillismPortrait } from './scenes/PointillismPortrait';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -187,6 +191,10 @@ async function main() {
   sceneManager.addPattern(new PixelDisintegration(context));
   sceneManager.addPattern(new NeonContour(context));
   sceneManager.addPattern(new TimeDisplacement(context));
+  sceneManager.addPattern(new WireframeMesh(context));
+  sceneManager.addPattern(new ColorExtractionPaint(context));
+  sceneManager.addPattern(new InfinityMirror(context));
+  sceneManager.addPattern(new PointillismPortrait(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
@@ -256,15 +264,19 @@ async function main() {
   console.log('🎞️  Film Effects enabled by default (grain, blur, vignette)');
   console.log('🎨 Multi-Layer Mode enabled by default (dynamic compositions)');
   console.log('🖱️  Move mouse and click to interact with all layers');
-  console.log('📹 Enable webcam for 6 new interactive visual modes!');
+  console.log('📹 Enable webcam for 10 interactive visual modes!');
   console.log('🎵 Enable microphone in the UI for audio reactivity');
-  console.log('🌈 NEW WEBCAM VISUALS:');
+  console.log('🌈 WEBCAM VISUALS:');
   console.log('   • Rainbow Echo - trippy silhouettes with rainbow tracers');
   console.log('   • Particle Puppeteer - particles orbit your body outline');
   console.log('   • Aura Vision - colorful energy fields around you');
   console.log('   • Pixel Disintegration - body dissolves and rebuilds');
   console.log('   • Neon Contour - glowing 80s neon outlines');
   console.log('   • Time Displacement - see your past movements');
+  console.log('   • Wireframe Mesh - 3D rotating mesh from your silhouette');
+  console.log('   • Color Extraction Paint - paint with your actual colors');
+  console.log('   • Infinity Mirror - recursive tunnel effect');
+  console.log('   • Pointillism Portrait - impressionist dot painting');
   console.log(`📊 ${sceneManager.getAllPatterns().length} patterns loaded`);
 }
 
