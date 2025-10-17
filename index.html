@@ -149,10 +149,15 @@
       display: none !important;
     }
 
-    .tp-fldv[data-folded="true"] .tp-fldv_b img {
-      width: 24px !important;
-      height: 24px !important;
-      margin: 0 !important;
+    /* Add icon after the title */
+    .tp-fldv[data-folded="true"] .tp-fldv_b::after {
+      content: '';
+      width: 24px;
+      height: 24px;
+      background-image: url('/stealy.svg');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
     }
 
     /* Fullscreen button styling */
