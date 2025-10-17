@@ -20,27 +20,24 @@ export class FeedbackFractal implements Pattern {
   private maxDepth: number = 6; // Increased depth for more detail
   private branchAngle: number = Math.PI / 6; // 30 degrees
   private growthPhase: number = 0; // For animated growth
-  private zoomPhase: number = 1; // Start at normal scale
+  private zoomLevel: number = 1; // Camera zoom level
+  private targetZoom: number = 1;
+  private panX: number = 0; // Camera pan X offset
+  private panY: number = 0; // Camera pan Y offset
+  private targetPanX: number = 0;
+  private targetPanY: number = 0;
   private rotationPhase: number = 0; // For rotation
   private expansionSteps: number = 8; // More steps for smoother expansion
   private clickCooldown: number = 0; // Prevent rapid clicking
   private newNodes: FractalNode[] = []; // Track newly created nodes
-  private zoomTargetX: number = 0; // Zoom target position
-  private zoomTargetY: number = 0;
-  private currentZoomX: number = 0; // Current zoom position
-  private currentZoomY: number = 0;
+  private panSpeed: number = 0.5; // Pan movement speed
+  private zoomSpeed: number = 0.8; // Zoom speed
 
   constructor(context: RendererContext) {
     this.context = context;
     this.container = new Container();
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
-    
-    // Initialize zoom to center
-    this.zoomTargetX = context.width / 2;
-    this.zoomTargetY = context.height / 2;
-    this.currentZoomX = this.zoomTargetX;
-    this.currentZoomY = this.zoomTargetY;
   }
 
   public update(dt: number, audio: AudioData, input: InputState): void {
@@ -60,13 +57,13 @@ export class FeedbackFractal implements Pattern {
         }
         this.fractalType = newType;
         this.growthPhase = 0; // Reset growth animation
-        this.zoomPhase = 1; // Reset zoom to normal
         this.clickCooldown = 0.5; // 0.5 second cooldown
         this.newNodes = []; // Clear tracked nodes
         
-        // Reset zoom to center for new fractal
-        this.zoomTargetX = this.context.width / 2;
-        this.zoomTargetY = this.context.height / 2;
+        // Reset camera for new fractal
+        this.targetZoom = 1;
+        this.targetPanX = 0;
+        this.targetPanY = 0;
       }
     });
 
@@ -74,35 +71,44 @@ export class FeedbackFractal implements Pattern {
     if (this.growthPhase < 1) {
       this.growthPhase = Math.min(1, this.growthPhase + dt * 0.8); // Slower, smoother expansion
       
-      // Update zoom target to newest node as fractal grows
+      // Update pan and zoom targets to follow newest nodes as fractal grows
       if (this.newNodes.length > 0) {
         // Find the node at the current growth frontier
         const currentDepthTarget = Math.floor(this.growthPhase * this.maxDepth);
         const frontierNodes = this.newNodes.filter(node => node.depth === currentDepthTarget);
         
         if (frontierNodes.length > 0) {
-          // Pick a random frontier node to zoom towards
+          // Pick a random frontier node to pan towards
           const targetNode = frontierNodes[Math.floor(Math.random() * frontierNodes.length)];
-          this.zoomTargetX = targetNode.x;
-          this.zoomTargetY = targetNode.y;
+          const { width, height } = this.context;
+          
+          // Calculate pan offset to center this node
+          this.targetPanX = (width / 2 - targetNode.x) * this.targetZoom;
+          this.targetPanY = (height / 2 - targetNode.y) * this.targetZoom;
         }
       }
+      
+      // Zoom in as fractal grows
+      this.targetZoom = 1 + this.growthPhase * 2; // Zoom from 1x to 3x
     } else {
       // Once fully expanded, continue growing but slower
       this.growthPhase = 1 + (this.time * 0.1) % 0.2; // Slight pulsing when fully grown
+      
+      // Gentle drift when fully grown
+      this.targetPanX += Math.sin(this.time * 0.3) * dt * 30;
+      this.targetPanY += Math.cos(this.time * 0.2) * dt * 30;
     }
 
-    // Smoothly interpolate current zoom position towards target
-    const zoomSpeed = dt * 3;
-    this.currentZoomX += (this.zoomTargetX - this.currentZoomX) * zoomSpeed;
-    this.currentZoomY += (this.zoomTargetY - this.currentZoomY) * zoomSpeed;
+    // Smoothly interpolate camera pan towards target
+    this.panX += (this.targetPanX - this.panX) * this.panSpeed * dt;
+    this.panY += (this.targetPanY - this.panY) * this.panSpeed * dt;
 
-    // Zoom phase: zoom in as fractal expands
-    const targetZoom = 1 + this.growthPhase * 1.5; // Zoom from 1x to 2.5x as it grows
-    this.zoomPhase = this.zoomPhase + (targetZoom - this.zoomPhase) * dt * 2; // Smooth interpolation
+    // Smoothly interpolate zoom level towards target
+    this.zoomLevel += (this.targetZoom - this.zoomLevel) * this.zoomSpeed * dt;
     
     // Add audio boost to zoom
-    this.zoomPhase *= 1 + audio.rms * 0.2;
+    const audioZoomBoost = 1 + audio.rms * 0.2;
+    const finalZoom = this.zoomLevel * audioZoomBoost;
 
     // Continuous rotation (slow spin)
     this.rotationPhase = this.time * 0.05 + audio.bass * 0.3;
@@ -122,12 +128,16 @@ export class FeedbackFractal implements Pattern {
     const centerY = height / 2;
     
     const baseHue = (this.time * 20) % 360;
-    const initialLength = Math.min(width, height) * 0.25 * this.zoomPhase; // Apply zoom to base size
+    
+    // Calculate final zoom with audio boost
+    const audioZoomBoost = 1 + audio.rms * 0.2;
+    const finalZoom = this.zoomLevel * audioZoomBoost;
+    const initialLength = Math.min(width, height) * 0.25;
 
     // Clear nodes list at the start of each frame
     this.newNodes = [];
 
-    // Store transform state for drawing fractal with zoom and rotation
+    // Store transform state for drawing fractal with zoom, pan, and rotation
     const originalTransform = {
       x: this.graphics.x,
       y: this.graphics.y,
@@ -136,13 +146,14 @@ export class FeedbackFractal implements Pattern {
       rotation: this.graphics.rotation,
     };
 
-    // Apply zoom and rotation around the current zoom position
-    this.graphics.pivot.set(this.currentZoomX, this.currentZoomY);
-    this.graphics.position.set(centerX, centerY);
-    this.graphics.scale.set(this.zoomPhase, this.zoomPhase);
+    // Apply camera transform: pan, zoom, and rotation
+    // Pan shifts the entire view, zoom scales around center, rotation spins
+    this.graphics.position.set(centerX + this.panX, centerY + this.panY);
+    this.graphics.scale.set(finalZoom, finalZoom);
     this.graphics.rotation = this.rotationPhase;
+    this.graphics.pivot.set(centerX, centerY);
 
-    // Adjust coordinates to account for pivot
+    // Coordinates for fractal drawing (in world space)
     const adjustedCenterX = centerX;
     const adjustedCenterY = centerY;
 
@@ -194,7 +205,7 @@ export class FeedbackFractal implements Pattern {
     this.graphics.lineStyle(2, 0xffffff, 0.3);
     this.graphics.drawRect(zoomBarX, zoomBarY - 5, zoomBarWidth, 10);
     
-    const zoomProgress = Math.min(1, (this.zoomPhase - 1) / 1.5); // Normalize to 0-1 (1x to 2.5x)
+    const zoomProgress = Math.min(1, (finalZoom - 1) / 2); // Normalize to 0-1 (1x to 3x)
     this.graphics.beginFill(hslToHex(baseHue, 70, 50), 0.7);
     this.graphics.drawRect(zoomBarX, zoomBarY - 5, zoomBarWidth * zoomProgress, 10);
     this.graphics.endFill();
