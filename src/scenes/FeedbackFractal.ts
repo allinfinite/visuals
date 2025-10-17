@@ -94,10 +94,18 @@ export class FeedbackFractal implements Pattern {
     // Always aim camera at the most recently created node (from last draw)
     if (this.lastNewNode) {
       // Jump directly to the node for testing
+      console.log(`Zooming to node: x=${this.lastNewNode.x}, y=${this.lastNewNode.y}, size=${this.lastNewNode.size}`);
       this.cameraX = this.lastNewNode.x;
       this.cameraY = this.lastNewNode.y;
       this.targetCameraX = this.lastNewNode.x;
       this.targetCameraY = this.lastNewNode.y;
+    } else {
+      // Test transform by moving to a known position (off-center)
+      console.log('No lastNewNode - testing transform with fixed position');
+      this.cameraX = 200; // Move to an offset position to test if transform works
+      this.cameraY = 100;
+      this.targetCameraX = 200;
+      this.targetCameraY = 100;
     }
 
     // Continuous rotation (slow spin)
@@ -226,6 +234,7 @@ export class FeedbackFractal implements Pattern {
     const node: FractalNode = { x: x2, y: y2, depth, angle, size: length };
     this.newNodes.push(node);
     this.lastNewNode = node;
+    console.log(`Generated tree node: x=${x2}, y=${y2}, depth=${depth}`);
     
     const hue = (baseHue + depth * 25) % 360;
     const color = hslToHex(hue, 80, 60);
