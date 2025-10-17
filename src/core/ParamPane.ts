@@ -55,7 +55,7 @@ export class ParamPane {
     // Composition Mode
     const compositionFolder = this.pane.addFolder({
       title: 'Composition Mode',
-      expanded: true,
+      expanded: false,
     });
 
     compositionFolder.addBinding(this.params, 'compositionMode', {
@@ -147,7 +147,7 @@ export class ParamPane {
     // Queue specific pattern (for multi-layer mode) - Clickable list
     const queueFolder = this.pane.addFolder({
       title: '➕ Click to Queue Patterns',
-      expanded: true,
+      expanded: false,
     });
 
     // Add info text
@@ -187,7 +187,7 @@ export class ParamPane {
     // Pattern pool selector
     const poolFolder = this.pane.addFolder({
       title: 'Pattern Pool (Multi-Layer)',
-      expanded: true,
+      expanded: false,
     });
 
     sortedPatterns.forEach(({ pattern, index }) => {
@@ -225,7 +225,7 @@ export class ParamPane {
     // Webcam controls
     const webcamFolder = this.pane.addFolder({
       title: '📹 Webcam Input',
-      expanded: true,
+      expanded: false,
     });
 
     const webcamInput = this.app.getInput().getWebcamInput();
@@ -309,7 +309,7 @@ export class ParamPane {
     // Display settings
     const displayFolder = this.pane.addFolder({
       title: 'Display',
-      expanded: true,
+      expanded: false,
     });
 
     displayFolder.addBinding(this.params, 'feedbackEnabled', {
@@ -321,7 +321,7 @@ export class ParamPane {
     // Analog Look controls
     const analogFolder = this.pane.addFolder({
       title: '🎞️ Film Effects',
-      expanded: true,
+      expanded: false,
     });
 
     const postFX = this.app.getPostFX();
