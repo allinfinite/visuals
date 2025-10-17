@@ -132,25 +132,35 @@
       overflow-x: hidden !important;
     }
 
-    /* Style collapsed menu as small square with hamburger icon */
-    .tp-fldv[data-folded="true"] .tp-fldv_b {
-      width: 40px !important;
-      height: 40px !important;
-      padding: 8px !important;
-      border-radius: 4px !important;
-      background: rgba(0, 0, 0, 0.8) !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      margin-right: 48px !important; /* Space for fullscreen button */
-    }
-
-    .tp-fldv[data-folded="true"] .tp-fldv_b .tp-fldv_t {
+    /* Hide the entire Tweakpane bar when collapsed */
+    .tp-fldv[data-folded="true"] {
       display: none !important;
     }
 
-    /* Add hamburger menu icon */
-    .tp-fldv[data-folded="true"] .tp-fldv_b::after {
+    /* Menu button styling */
+    .menu-btn {
+      width: 40px;
+      height: 40px;
+      background: rgba(0, 0, 0, 0.8);
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+      position: fixed;
+      top: 10px;
+      right: 58px; /* Position next to fullscreen button */
+      z-index: 1000;
+    }
+
+    .menu-btn:hover {
+      background: rgba(0, 0, 0, 0.9);
+    }
+
+    .menu-btn::before {
       content: '';
       width: 20px;
       height: 16px;
@@ -177,7 +187,7 @@
       transition: background-color 0.2s;
       position: fixed;
       top: 10px;
-      right: 58px; /* Position next to menu button (40px + 8px margin + 10px) */
+      right: 10px;
       z-index: 1000;
     }
 
@@ -222,6 +232,7 @@
 </head>
 <body>
   <canvas id="canvas"></canvas>
+  <button id="menu-btn" class="menu-btn" title="Toggle Menu"></button>
   <button id="fullscreen-btn" class="fullscreen-btn" title="Toggle Fullscreen"></button>
   <script type="module" src="/src/main.ts"></script>
 </body>

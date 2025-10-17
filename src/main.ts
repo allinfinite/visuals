@@ -190,6 +190,14 @@ async function main() {
   // Start the app
   app.start();
 
+  // Setup menu button
+  const menuBtn = document.getElementById('menu-btn') as HTMLButtonElement;
+  if (menuBtn) {
+    menuBtn.addEventListener('click', () => {
+      paramPane.pane.expanded = !paramPane.pane.expanded;
+    });
+  }
+
   // Setup fullscreen button
   const fullscreenBtn = document.getElementById('fullscreen-btn') as HTMLButtonElement;
   if (fullscreenBtn) {
