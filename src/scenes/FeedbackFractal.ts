@@ -30,7 +30,6 @@ export class FeedbackFractal implements Pattern {
   private clickCooldown: number = 0; // Prevent rapid clicking
   private newNodes: FractalNode[] = []; // Track newly created nodes
   private panSpeed: number = 0.5; // Pan movement speed
-  private zoomSpeed: number = 0.8; // Zoom speed
   private minVisibleSize: number = 0.5; // Minimum pixel size to render
 
   constructor(context: RendererContext) {
