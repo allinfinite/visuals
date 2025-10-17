@@ -39,10 +39,11 @@ export class FeedbackFractal implements Pattern {
 
     // Initialize with root node at origin
     this.currentRootNode = { x: 0, y: 0, depth: 0, angle: 0, size: 100 };
+    // Camera stays at origin - fractal is drawn centered relative to root
     this.cameraX = 0;
     this.cameraY = 0;
-    this.targetCameraX = this.cameraX;
-    this.targetCameraY = this.cameraY;
+    this.targetCameraX = 0;
+    this.targetCameraY = 0;
   }
 
   public update(dt: number, audio: AudioData, input: InputState): void {
@@ -70,6 +71,7 @@ export class FeedbackFractal implements Pattern {
           this.currentRootNode = { x: 0, y: 0, depth: 0, angle: 0, size: 100 };
           this.targetZoom = 1;
           this.zoomLevel = 1;
+          // Camera stays at origin
           this.cameraX = 0;
           this.cameraY = 0;
           this.targetCameraX = 0;
@@ -92,21 +94,18 @@ export class FeedbackFractal implements Pattern {
       const newRoot = this.findSmallestNode(this.currentRootNode);
       if (newRoot) {
         this.currentRootNode = newRoot;
-        // Camera jumps to the new root
-        this.cameraX = newRoot.x;
-        this.cameraY = newRoot.y;
-        this.targetCameraX = newRoot.x;
-        this.targetCameraY = newRoot.y;
       }
     }
+
+    // Camera stays fixed at origin (0,0) - fractal is drawn centered
+    this.cameraX = 0;
+    this.cameraY = 0;
+    this.targetCameraX = 0;
+    this.targetCameraY = 0;
 
     // Continuously zoom in
     this.targetZoom = 1 + this.growthPhase * 2;
     this.zoomLevel += (this.targetZoom - this.zoomLevel) * 2 * dt;
-
-    // Camera stays at current root position
-    this.cameraX += (this.targetCameraX - this.cameraX) * 2 * dt;
-    this.cameraY += (this.targetCameraY - this.cameraY) * 2 * dt;
 
     // Continuous rotation (slow spin)
     this.rotationPhase = this.time * 0.05 + audio.bass * 0.3;
@@ -118,7 +117,6 @@ export class FeedbackFractal implements Pattern {
   }
 
   private findSmallestNode(root: FractalNode): FractalNode | null {
-    console.log(`Finding smallest node from root depth=${root.depth}`);
     // Explore the fractal from the root and find the smallest/deepest node
     let smallest: FractalNode = root;
     const exploreQueue: FractalNode[] = [root];
@@ -134,7 +132,6 @@ export class FeedbackFractal implements Pattern {
       // Update smallest if this node is smaller
       if (current.size < smallest.size) {
         smallest = current;
-        console.log(`New smallest: size=${smallest.size}, depth=${smallest.depth}`);
       }
 
       // Generate child nodes based on fractal type
@@ -148,21 +145,23 @@ export class FeedbackFractal implements Pattern {
       }
 
       // Limit exploration to prevent infinite loops
-      if (visited.size > 20) {  // Reduced limit
-        console.log(`Hit exploration limit at ${visited.size} nodes`);
-        break;
-      }
+      if (visited.size > 20) break;
     }
 
-    const result = smallest !== root ? smallest : null;
-    console.log(`Found smallest node: ${result ? `size=${result.size}, depth=${result.depth}` : 'none'}`);
-    return result;
+    return smallest !== root ? smallest : null;
   }
 
   private drawFractalFromNode(root: FractalNode, baseHue: number, audio: AudioData): void {
-    console.log(`Starting drawFractalFromNode with root depth=${root.depth}`);
     // Draw the fractal starting from this root node
-    const drawQueue: FractalNode[] = [root];
+    // Offset all coordinates so root appears at (0,0)
+    const offsetX = root.x;
+    const offsetY = root.y;
+
+    const drawQueue: FractalNode[] = [{
+      ...root,
+      x: 0,  // Root appears at origin after offset
+      y: 0
+    }];
     const visited = new Set<string>();
 
     while (drawQueue.length > 0) {
@@ -172,26 +171,29 @@ export class FeedbackFractal implements Pattern {
       if (visited.has(key)) continue;
       visited.add(key);
 
-      console.log(`Drawing node: depth=${current.depth}, size=${current.size}`);
       // Draw this node based on fractal type
       this.drawNode(current, baseHue, audio);
 
-      // Generate and queue children
-      const children = this.generateChildNodes(current);
-      console.log(`Generated ${children.length} children for depth=${current.depth}`);
+      // Generate and queue children (with offset applied)
+      const children = this.generateChildNodes({
+        ...current,
+        x: current.x + offsetX,  // Convert back to world coords for generation
+        y: current.y + offsetY
+      });
       for (const child of children) {
-        if (child.depth <= this.baseDepth) {  // Removed size check temporarily
-          drawQueue.push(child);
+        if (child.depth <= this.baseDepth) {
+          // Apply offset to child coordinates
+          drawQueue.push({
+            ...child,
+            x: child.x - offsetX,
+            y: child.y - offsetY
+          });
         }
       }
 
       // Limit drawing to prevent performance issues
-      if (visited.size > 50) {  // Reduced limit temporarily
-        console.log(`Hit drawing limit at ${visited.size} nodes`);
-        break;
-      }
+      if (visited.size > 200) break;
     }
-    console.log(`Finished drawing ${visited.size} nodes`);
   }
 
   private drawNode(node: FractalNode, baseHue: number, audio: AudioData): void {
@@ -227,8 +229,7 @@ export class FeedbackFractal implements Pattern {
     switch (this.fractalType) {
       case 0: // Tree - generate branches
         const length = node.size * 0.65;
-        console.log(`Generating children for node depth=${node.depth}, size=${node.size}, length=${length}`);
-        if (length > 1) {  // Lower threshold
+        if (length > 1) {
           const angle1 = node.angle - this.branchAngle;
           const angle2 = node.angle + this.branchAngle;
 
@@ -241,9 +242,6 @@ export class FeedbackFractal implements Pattern {
             { x: x1, y: y1, depth: node.depth + 1, angle: angle1, size: length },
             { x: x2, y: y2, depth: node.depth + 1, angle: angle2, size: length }
           );
-          console.log(`Generated 2 children at depth ${node.depth + 1}`);
-        } else {
-          console.log(`Length ${length} too small, no children generated`);
         }
         break;
 
@@ -285,10 +283,7 @@ export class FeedbackFractal implements Pattern {
 
     // Draw fractal starting from current root node
     if (this.currentRootNode) {
-      console.log(`Drawing fractal from root: x=${this.currentRootNode.x}, y=${this.currentRootNode.y}, depth=${this.currentRootNode.depth}`);
       this.drawFractalFromNode(this.currentRootNode, baseHue, audio);
-    } else {
-      console.log('No currentRootNode to draw');
     }
 
     // Reset transform
