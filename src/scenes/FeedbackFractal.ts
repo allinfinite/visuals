@@ -88,27 +88,56 @@ export class FeedbackFractal implements Pattern {
     // Apply zoom by scaling drawing coordinates
     const scaledLength = initialLength / this.zoomLevel;
 
+    // Secondary fractal angle offset (rotates over time)
+    const secondaryAngleOffset = this.time * 0.1; // Slowly rotating
+    const secondaryHueOffset = 180; // Complementary color
+
     switch (this.fractalType) {
       case 0: // Fractal Tree
+        // Primary tree
         this.drawTree(drawX, drawY + scaledLength * 0.5, -Math.PI / 2, scaledLength, 0, baseHue, audio);
+        // Secondary tree (rotated)
+        this.drawTree(drawX, drawY + scaledLength * 0.5, -Math.PI / 2 + secondaryAngleOffset, scaledLength * 0.8, 0, baseHue + secondaryHueOffset, audio);
         break;
       case 1: // Sierpinski Triangle
         const size = scaledLength * 2;
+        // Primary triangle
         this.drawSierpinski(
           drawX, drawY - size * 0.6,
           drawX - size, drawY + size * 0.4,
           drawX + size, drawY + size * 0.4,
           0, baseHue, audio
         );
+        // Secondary triangle (rotated and scaled)
+        const angle = secondaryAngleOffset;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const s = size * 0.7;
+        this.drawSierpinski(
+          drawX + (-s * 0.6) * cos - 0 * sin, drawY + (-s * 0.6) * sin + 0 * cos,
+          drawX + (-s) * cos - (s * 0.4) * sin, drawY + (-s) * sin + (s * 0.4) * cos,
+          drawX + s * cos - (s * 0.4) * sin, drawY + s * sin + (s * 0.4) * cos,
+          0, baseHue + secondaryHueOffset, audio
+        );
         break;
       case 2: // Koch Snowflake
         this.drawKochSnowflake(drawX, drawY, scaledLength * 1.5, baseHue, audio);
+        // Secondary snowflake (rotated)
+        this.graphics.pivot.set(drawX, drawY);
+        this.graphics.rotation = secondaryAngleOffset;
+        this.drawKochSnowflake(drawX, drawY, scaledLength * 1.2, baseHue + secondaryHueOffset, audio);
+        this.graphics.rotation = 0;
+        this.graphics.pivot.set(0, 0);
         break;
       case 3: // Recursive Circles
         this.drawRecursiveCircles(drawX, drawY, scaledLength, 0, baseHue, audio);
+        // Secondary circles (offset phase)
+        this.drawRecursiveCircles(drawX, drawY, scaledLength * 0.85, 0, baseHue + secondaryHueOffset, audio);
         break;
       case 4: // Pythagoras Tree
         this.drawPythagorasTree(drawX, drawY + scaledLength * 0.4, scaledLength, -Math.PI / 2, 0, baseHue, audio);
+        // Secondary tree (rotated)
+        this.drawPythagorasTree(drawX, drawY + scaledLength * 0.4, -Math.PI / 2 + secondaryAngleOffset, scaledLength * 0.8, 0, baseHue + secondaryHueOffset, audio);
         break;
     }
 
