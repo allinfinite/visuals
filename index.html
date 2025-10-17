@@ -132,7 +132,7 @@
       overflow-x: hidden !important;
     }
 
-    /* Style collapsed menu as small square with icon */
+    /* Style collapsed menu as small square with hamburger icon */
     .tp-fldv[data-folded="true"] .tp-fldv_b {
       width: 40px !important;
       height: 40px !important;
@@ -149,13 +149,14 @@
       display: none !important;
     }
 
-    /* Add icon after the title */
+    /* Add hamburger menu icon */
     .tp-fldv[data-folded="true"] .tp-fldv_b::after {
       content: '';
-      width: 24px;
-      height: 24px;
-      background-image: url('/stealy.svg');
-      background-size: contain;
+      width: 20px;
+      height: 16px;
+      background-image: 
+        linear-gradient(to bottom, transparent 0%, transparent 3px, white 3px, white 5px, transparent 5px, transparent 8px, white 8px, white 10px, transparent 10px, transparent 13px, white 13px, white 15px, transparent 15px);
+      background-size: 20px 16px;
       background-repeat: no-repeat;
       background-position: center;
     }
