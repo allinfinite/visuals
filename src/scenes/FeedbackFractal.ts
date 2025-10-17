@@ -17,9 +17,9 @@ export class FeedbackFractal implements Pattern {
   private context: RendererContext;
   private time: number = 0;
   private fractalType: number = 0; // 0: Tree, 1: Sierpinski, 2: Koch, 3: Recursive Circles, 4: Pythagoras Tree
-  private maxDepth: number = 6; // Increased depth for more detail
+  private baseDepth: number = 12; // Base depth for visibility culling
   private branchAngle: number = Math.PI / 6; // 30 degrees
-  private growthPhase: number = 0; // For animated growth
+  private growthPhase: number = 0; // For animated growth (continues indefinitely)
   private zoomLevel: number = 1; // Camera zoom level
   private targetZoom: number = 1;
   private panX: number = 0; // Camera pan X offset
@@ -27,11 +27,11 @@ export class FeedbackFractal implements Pattern {
   private targetPanX: number = 0;
   private targetPanY: number = 0;
   private rotationPhase: number = 0; // For rotation
-  private expansionSteps: number = 8; // More steps for smoother expansion
   private clickCooldown: number = 0; // Prevent rapid clicking
   private newNodes: FractalNode[] = []; // Track newly created nodes
   private panSpeed: number = 0.5; // Pan movement speed
   private zoomSpeed: number = 0.8; // Zoom speed
+  private minVisibleSize: number = 0.5; // Minimum pixel size to render
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -67,37 +67,44 @@ export class FeedbackFractal implements Pattern {
       }
     });
 
-    // Growth phase for animated expansion (0 to 1, smooth expansion)
-    if (this.growthPhase < 1) {
-      this.growthPhase = Math.min(1, this.growthPhase + dt * 0.8); // Slower, smoother expansion
+    // Growth phase continues indefinitely (never stops)
+    this.growthPhase += dt * 0.3; // Continuous growth
+    
+    // Update pan and zoom targets to follow newest nodes as fractal grows
+    if (this.newNodes.length > 0 && this.time % 2 < 0.1) {
+      // Every 2 seconds, pick a new node to follow
+      // Pick a random visible node (prefer ones with larger size = more interesting)
+      const visibleNodes = this.newNodes.filter(node => node.size * this.zoomLevel > 5);
       
-      // Update pan and zoom targets to follow newest nodes as fractal grows
-      if (this.newNodes.length > 0) {
-        // Find the node at the current growth frontier
-        const currentDepthTarget = Math.floor(this.growthPhase * this.maxDepth);
-        const frontierNodes = this.newNodes.filter(node => node.depth === currentDepthTarget);
+      if (visibleNodes.length > 0) {
+        // Weight selection towards larger nodes (more interesting branches)
+        const weights = visibleNodes.map(node => node.size);
+        const totalWeight = weights.reduce((a, b) => a + b, 0);
+        let random = Math.random() * totalWeight;
+        let targetNode = visibleNodes[0];
         
-        if (frontierNodes.length > 0) {
-          // Pick a random frontier node to pan towards
-          const targetNode = frontierNodes[Math.floor(Math.random() * frontierNodes.length)];
-          const { width, height } = this.context;
-          
-          // Calculate pan offset to center this node
-          this.targetPanX = (width / 2 - targetNode.x) * this.targetZoom;
-          this.targetPanY = (height / 2 - targetNode.y) * this.targetZoom;
+        for (let i = 0; i < visibleNodes.length; i++) {
+          random -= weights[i];
+          if (random <= 0) {
+            targetNode = visibleNodes[i];
+            break;
+          }
         }
+        
+        const { width, height } = this.context;
+        
+        // Calculate pan offset to center this node
+        this.targetPanX = (width / 2 - targetNode.x) * this.targetZoom;
+        this.targetPanY = (height / 2 - targetNode.y) * this.targetZoom;
       }
-      
-      // Zoom in as fractal grows
-      this.targetZoom = 1 + this.growthPhase * 2; // Zoom from 1x to 3x
-    } else {
-      // Once fully expanded, continue growing but slower
-      this.growthPhase = 1 + (this.time * 0.1) % 0.2; // Slight pulsing when fully grown
-      
-      // Gentle drift when fully grown
-      this.targetPanX += Math.sin(this.time * 0.3) * dt * 30;
-      this.targetPanY += Math.cos(this.time * 0.2) * dt * 30;
     }
+    
+    // Continuously zoom in as fractal grows
+    this.targetZoom = 1 + this.growthPhase * 0.5; // Continuous zoom
+    
+    // Gentle drift for organic movement
+    this.targetPanX += Math.sin(this.time * 0.3) * dt * 10;
+    this.targetPanY += Math.cos(this.time * 0.2) * dt * 10;
 
     // Smoothly interpolate camera pan towards target
     this.panX += (this.targetPanX - this.panX) * this.panSpeed * dt;
@@ -115,7 +122,6 @@ export class FeedbackFractal implements Pattern {
 
     // Audio controls fractal parameters
     this.branchAngle = (Math.PI / 6) * (1 + audio.treble * 0.4); // 30-42 degrees
-    this.maxDepth = Math.floor(5 + audio.rms * 2); // 5-7 levels based on volume
 
     this.draw(audio);
   }
@@ -225,14 +231,13 @@ export class FeedbackFractal implements Pattern {
 
   // Fractal Tree - classic recursive branching
   private drawFractalTree(x: number, y: number, angle: number, length: number, depth: number, baseHue: number, audio: AudioData): void {
-    if (depth > this.maxDepth || length < 2) return;
+    // Check if branch is visible (size in screen space)
+    const screenSize = length * this.zoomLevel;
+    if (screenSize < this.minVisibleSize || depth > this.baseDepth) return;
     
-    // More granular expansion steps
-    const depthProgress = depth / this.maxDepth;
-    const expansionStep = Math.floor(this.growthPhase * this.expansionSteps);
-    const currentStep = Math.floor(depthProgress * this.expansionSteps);
-    
-    if (currentStep > expansionStep) return; // Animated growth with more steps
+    // Animated growth based on continuous growth phase
+    const depthProgress = depth / this.baseDepth;
+    if (depthProgress > this.growthPhase && this.growthPhase < 1) return; // Initial growth animation
     
     const x2 = x + Math.cos(angle) * length;
     const y2 = y + Math.sin(angle) * length;
@@ -265,13 +270,14 @@ export class FeedbackFractal implements Pattern {
 
   // Sierpinski Triangle - recursive triangle subdivision
   private drawSierpinski(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, depth: number, baseHue: number, audio: AudioData): void {
-    if (depth > this.maxDepth) return;
+    // Check if triangle is visible
+    const size = Math.abs(x2 - x1);
+    const screenSize = size * this.zoomLevel;
+    if (screenSize < this.minVisibleSize || depth > this.baseDepth) return;
     
-    const depthProgress = depth / this.maxDepth;
-    const expansionStep = Math.floor(this.growthPhase * this.expansionSteps);
-    const currentStep = Math.floor(depthProgress * this.expansionSteps);
-    
-    if (currentStep > expansionStep) return;
+    // Animated growth based on continuous growth phase
+    const depthProgress = depth / this.baseDepth;
+    if (depthProgress > this.growthPhase && this.growthPhase < 1) return;
     
     const hue = (baseHue + depth * 35) % 360;
     const color = hslToHex(hue, 80, 60);
@@ -318,8 +324,14 @@ export class FeedbackFractal implements Pattern {
   }
 
   private drawKochLine(x1: number, y1: number, x2: number, y2: number, depth: number, baseHue: number, audio: AudioData): void {
-    const maxKochDepth = Math.min(5, this.maxDepth);
-    if (depth > maxKochDepth) {
+    // Check if line is visible
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const screenSize = length * this.zoomLevel;
+    
+    const maxKochDepth = Math.min(8, this.baseDepth);
+    if (screenSize < this.minVisibleSize || depth > maxKochDepth) {
       const hue = (baseHue + depth * 30) % 360;
       const color = hslToHex(hue, 80, 60);
       this.graphics.lineStyle(Math.max(1, 3 - depth * 0.4), color, 0.8);
@@ -328,11 +340,9 @@ export class FeedbackFractal implements Pattern {
       return;
     }
     
+    // Animated growth based on continuous growth phase
     const depthProgress = depth / maxKochDepth;
-    const expansionStep = Math.floor(this.growthPhase * this.expansionSteps);
-    const currentStep = Math.floor(depthProgress * this.expansionSteps);
-    
-    if (currentStep > expansionStep) {
+    if (depthProgress > this.growthPhase && this.growthPhase < 1) {
       const hue = (baseHue + depth * 30) % 360;
       const color = hslToHex(hue, 80, 60);
       this.graphics.lineStyle(Math.max(1, 3 - depth * 0.4), color, 0.8);
@@ -342,8 +352,6 @@ export class FeedbackFractal implements Pattern {
     }
     
     // Divide line into thirds
-    const dx = x2 - x1;
-    const dy = y2 - y1;
     const x3 = x1 + dx / 3;
     const y3 = y1 + dy / 3;
     const x5 = x1 + dx * 2 / 3;
@@ -367,13 +375,13 @@ export class FeedbackFractal implements Pattern {
 
   // Recursive Circles - Apollonian gasket style
   private drawRecursiveCircles(x: number, y: number, radius: number, depth: number, baseHue: number, audio: AudioData): void {
-    if (depth > this.maxDepth || radius < 3) return;
+    // Check if circle is visible
+    const screenSize = radius * this.zoomLevel;
+    if (screenSize < this.minVisibleSize || depth > this.baseDepth) return;
     
-    const depthProgress = depth / this.maxDepth;
-    const expansionStep = Math.floor(this.growthPhase * this.expansionSteps);
-    const currentStep = Math.floor(depthProgress * this.expansionSteps);
-    
-    if (currentStep > expansionStep) return;
+    // Animated growth based on continuous growth phase
+    const depthProgress = depth / this.baseDepth;
+    if (depthProgress > this.growthPhase && this.growthPhase < 1) return;
     
     const hue = (baseHue + depth * 40) % 360;
     const color = hslToHex(hue, 80, 60);
@@ -402,13 +410,13 @@ export class FeedbackFractal implements Pattern {
 
   // Pythagoras Tree - recursive squares
   private drawPythagorasTree(x: number, y: number, size: number, angle: number, depth: number, baseHue: number, audio: AudioData): void {
-    if (depth > this.maxDepth || size < 3) return;
+    // Check if square is visible
+    const screenSize = size * this.zoomLevel;
+    if (screenSize < this.minVisibleSize || depth > this.baseDepth) return;
     
-    const depthProgress = depth / this.maxDepth;
-    const expansionStep = Math.floor(this.growthPhase * this.expansionSteps);
-    const currentStep = Math.floor(depthProgress * this.expansionSteps);
-    
-    if (currentStep > expansionStep) return;
+    // Animated growth based on continuous growth phase
+    const depthProgress = depth / this.baseDepth;
+    if (depthProgress > this.growthPhase && this.growthPhase < 1) return;
     
     const hue = (baseHue + depth * 35) % 360;
     const color = hslToHex(hue, 80, 60);
