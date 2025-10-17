@@ -70,41 +70,35 @@ export class FeedbackFractal implements Pattern {
     // Growth phase continues indefinitely (never stops)
     this.growthPhase += dt * 0.3; // Continuous growth
     
-    // Update pan and zoom targets to follow newest nodes as fractal grows
-    if (this.newNodes.length > 0 && this.time % 2 < 0.1) {
-      // Every 2 seconds, pick a new node to follow
-      // Pick a random visible node (prefer ones with larger size = more interesting)
-      const visibleNodes = this.newNodes.filter(node => node.size * this.zoomLevel > 5);
-      
-      if (visibleNodes.length > 0) {
-        // Weight selection towards larger nodes (more interesting branches)
-        const weights = visibleNodes.map(node => node.size);
-        const totalWeight = weights.reduce((a, b) => a + b, 0);
-        let random = Math.random() * totalWeight;
-        let targetNode = visibleNodes[0];
-        
-        for (let i = 0; i < visibleNodes.length; i++) {
-          random -= weights[i];
-          if (random <= 0) {
-            targetNode = visibleNodes[i];
-            break;
-          }
-        }
-        
-        const { width, height } = this.context;
-        
-        // Calculate pan offset to center this node
-        this.targetPanX = (width / 2 - targetNode.x) * this.targetZoom;
-        this.targetPanY = (height / 2 - targetNode.y) * this.targetZoom;
-      }
-    }
-    
     // Continuously zoom in as fractal grows
     this.targetZoom = 1 + this.growthPhase * 0.5; // Continuous zoom
     
+    // Update pan target to follow the newest/smallest nodes (the frontier)
+    if (this.newNodes.length > 0) {
+      // Find the smallest nodes (newest generation at the frontier)
+      const sortedBySize = [...this.newNodes].sort((a, b) => a.size - b.size);
+      
+      // Take the smallest 20% of nodes (the newest generation)
+      const frontierCount = Math.max(5, Math.floor(sortedBySize.length * 0.2));
+      const frontierNodes = sortedBySize.slice(0, frontierCount);
+      
+      // Pick a random frontier node to follow
+      const targetNode = frontierNodes[Math.floor(Math.random() * frontierNodes.length)];
+      
+      const { width, height } = this.context;
+      
+      // Smoothly pan towards this node (more responsive to follow new growth)
+      const targetPanXNew = (width / 2 - targetNode.x) * this.targetZoom;
+      const targetPanYNew = (height / 2 - targetNode.y) * this.targetZoom;
+      
+      // Interpolate towards new target more aggressively
+      this.targetPanX += (targetPanXNew - this.targetPanX) * dt * 2;
+      this.targetPanY += (targetPanYNew - this.targetPanY) * dt * 2;
+    }
+    
     // Gentle drift for organic movement
-    this.targetPanX += Math.sin(this.time * 0.3) * dt * 10;
-    this.targetPanY += Math.cos(this.time * 0.2) * dt * 10;
+    this.targetPanX += Math.sin(this.time * 0.3) * dt * 5;
+    this.targetPanY += Math.cos(this.time * 0.2) * dt * 5;
 
     // Smoothly interpolate camera pan towards target
     this.panX += (this.targetPanX - this.panX) * this.panSpeed * dt;
