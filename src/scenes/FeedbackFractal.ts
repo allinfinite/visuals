@@ -91,40 +91,36 @@ export class FeedbackFractal implements Pattern {
     const baseHue = (this.time * 20) % 360;
     const initialLength = Math.min(width, height) * 0.2;
 
-    // Apply zoom and pan transform
-    this.graphics.position.set(centerX, centerY);
-    this.graphics.scale.set(this.zoomLevel, this.zoomLevel);
-    this.graphics.pivot.set(-this.panX, -this.panY);
+    // Calculate transformed center position with zoom and pan
+    const drawX = centerX + this.panX;
+    const drawY = centerY + this.panY;
 
-    // Draw from origin (will be transformed by above settings)
+    // Apply zoom by scaling drawing coordinates
+    const scaledLength = initialLength / this.zoomLevel;
+
     switch (this.fractalType) {
       case 0: // Fractal Tree
-        this.drawTree(0, initialLength * 0.5, -Math.PI / 2, initialLength, 0, baseHue, audio);
+        this.drawTree(drawX, drawY + scaledLength * 0.5, -Math.PI / 2, scaledLength, 0, baseHue, audio);
         break;
       case 1: // Sierpinski Triangle
-        const size = initialLength * 2;
+        const size = scaledLength * 2;
         this.drawSierpinski(
-          0, -size * 0.6,
-          -size, size * 0.4,
-          size, size * 0.4,
+          drawX, drawY - size * 0.6,
+          drawX - size, drawY + size * 0.4,
+          drawX + size, drawY + size * 0.4,
           0, baseHue, audio
         );
         break;
       case 2: // Koch Snowflake
-        this.drawKochSnowflake(0, 0, initialLength * 1.5, baseHue, audio);
+        this.drawKochSnowflake(drawX, drawY, scaledLength * 1.5, baseHue, audio);
         break;
       case 3: // Recursive Circles
-        this.drawRecursiveCircles(0, 0, initialLength, 0, baseHue, audio);
+        this.drawRecursiveCircles(drawX, drawY, scaledLength, 0, baseHue, audio);
         break;
       case 4: // Pythagoras Tree
-        this.drawPythagorasTree(0, initialLength * 0.4, initialLength, -Math.PI / 2, 0, baseHue, audio);
+        this.drawPythagorasTree(drawX, drawY + scaledLength * 0.4, scaledLength, -Math.PI / 2, 0, baseHue, audio);
         break;
     }
-
-    // Reset transform for UI
-    this.graphics.position.set(0, 0);
-    this.graphics.scale.set(1, 1);
-    this.graphics.pivot.set(0, 0);
 
     // Draw indicators
     const indicatorY = 30;
