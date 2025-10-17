@@ -2,6 +2,14 @@ import { Container, Graphics } from 'pixi.js';
 import type { Pattern, AudioData, InputState, RendererContext } from '../types';
 import { hslToHex } from '../utils/color';
 
+interface FractalNode {
+  x: number;
+  y: number;
+  depth: number;
+  angle: number;
+  size: number;
+}
+
 export class FeedbackFractal implements Pattern {
   public name = 'Feedback Fractal';
   public container: Container;
@@ -16,12 +24,23 @@ export class FeedbackFractal implements Pattern {
   private rotationPhase: number = 0; // For rotation
   private expansionSteps: number = 8; // More steps for smoother expansion
   private clickCooldown: number = 0; // Prevent rapid clicking
+  private newNodes: FractalNode[] = []; // Track newly created nodes
+  private zoomTargetX: number = 0; // Zoom target position
+  private zoomTargetY: number = 0;
+  private currentZoomX: number = 0; // Current zoom position
+  private currentZoomY: number = 0;
 
   constructor(context: RendererContext) {
     this.context = context;
     this.container = new Container();
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
+    
+    // Initialize zoom to center
+    this.zoomTargetX = context.width / 2;
+    this.zoomTargetY = context.height / 2;
+    this.currentZoomX = this.zoomTargetX;
+    this.currentZoomY = this.zoomTargetY;
   }
 
   public update(dt: number, audio: AudioData, input: InputState): void {
@@ -30,24 +49,53 @@ export class FeedbackFractal implements Pattern {
     // Update click cooldown
     this.clickCooldown = Math.max(0, this.clickCooldown - dt);
 
-    // Click changes fractal type (with cooldown to prevent rapid cycling)
+    // Click changes fractal type to a random different one (with cooldown)
     input.clicks.forEach((click) => {
       const age = this.time - click.time;
       if (age < 0.05 && this.clickCooldown <= 0) {
-        this.fractalType = (this.fractalType + 1) % 5;
+        // Pick a random fractal type that's different from current
+        let newType = this.fractalType;
+        while (newType === this.fractalType) {
+          newType = Math.floor(Math.random() * 5);
+        }
+        this.fractalType = newType;
         this.growthPhase = 0; // Reset growth animation
         this.zoomPhase = 1; // Reset zoom to normal
         this.clickCooldown = 0.5; // 0.5 second cooldown
+        this.newNodes = []; // Clear tracked nodes
+        
+        // Reset zoom to center for new fractal
+        this.zoomTargetX = this.context.width / 2;
+        this.zoomTargetY = this.context.height / 2;
       }
     });
 
     // Growth phase for animated expansion (0 to 1, smooth expansion)
     if (this.growthPhase < 1) {
       this.growthPhase = Math.min(1, this.growthPhase + dt * 0.8); // Slower, smoother expansion
+      
+      // Update zoom target to newest node as fractal grows
+      if (this.newNodes.length > 0) {
+        // Find the node at the current growth frontier
+        const currentDepthTarget = Math.floor(this.growthPhase * this.maxDepth);
+        const frontierNodes = this.newNodes.filter(node => node.depth === currentDepthTarget);
+        
+        if (frontierNodes.length > 0) {
+          // Pick a random frontier node to zoom towards
+          const targetNode = frontierNodes[Math.floor(Math.random() * frontierNodes.length)];
+          this.zoomTargetX = targetNode.x;
+          this.zoomTargetY = targetNode.y;
+        }
+      }
     } else {
       // Once fully expanded, continue growing but slower
       this.growthPhase = 1 + (this.time * 0.1) % 0.2; // Slight pulsing when fully grown
     }
+
+    // Smoothly interpolate current zoom position towards target
+    const zoomSpeed = dt * 3;
+    this.currentZoomX += (this.zoomTargetX - this.currentZoomX) * zoomSpeed;
+    this.currentZoomY += (this.zoomTargetY - this.currentZoomY) * zoomSpeed;
 
     // Zoom phase: zoom in as fractal expands
     const targetZoom = 1 + this.growthPhase * 1.5; // Zoom from 1x to 2.5x as it grows
@@ -76,6 +124,9 @@ export class FeedbackFractal implements Pattern {
     const baseHue = (this.time * 20) % 360;
     const initialLength = Math.min(width, height) * 0.25 * this.zoomPhase; // Apply zoom to base size
 
+    // Clear nodes list at the start of each frame
+    this.newNodes = [];
+
     // Store transform state for drawing fractal with zoom and rotation
     const originalTransform = {
       x: this.graphics.x,
@@ -85,8 +136,8 @@ export class FeedbackFractal implements Pattern {
       rotation: this.graphics.rotation,
     };
 
-    // Apply zoom and rotation around center point
-    this.graphics.pivot.set(centerX, centerY);
+    // Apply zoom and rotation around the current zoom position
+    this.graphics.pivot.set(this.currentZoomX, this.currentZoomY);
     this.graphics.position.set(centerX, centerY);
     this.graphics.scale.set(this.zoomPhase, this.zoomPhase);
     this.graphics.rotation = this.rotationPhase;
@@ -175,6 +226,9 @@ export class FeedbackFractal implements Pattern {
     const x2 = x + Math.cos(angle) * length;
     const y2 = y + Math.sin(angle) * length;
     
+    // Track this node for zoom targeting
+    this.newNodes.push({ x: x2, y: y2, depth, angle, size: length });
+    
     const hue = (baseHue + depth * 25) % 360;
     const color = hslToHex(hue, 80, 60);
     const lineWidth = Math.max(1, 10 - depth * 1.5);
@@ -225,6 +279,11 @@ export class FeedbackFractal implements Pattern {
     const mid2y = (y2 + y3) / 2;
     const mid3x = (x3 + x1) / 2;
     const mid3y = (y3 + y1) / 2;
+    
+    // Track midpoints as new nodes
+    this.newNodes.push({ x: mid1x, y: mid1y, depth, angle: 0, size: Math.abs(x2 - x1) });
+    this.newNodes.push({ x: mid2x, y: mid2y, depth, angle: 0, size: Math.abs(x2 - x1) });
+    this.newNodes.push({ x: mid3x, y: mid3y, depth, angle: 0, size: Math.abs(x2 - x1) });
     
     // Recurse on three outer triangles
     this.drawSierpinski(x1, y1, mid1x, mid1y, mid3x, mid3y, depth + 1, baseHue, audio);
@@ -285,6 +344,9 @@ export class FeedbackFractal implements Pattern {
     const x4 = x3 + Math.cos(angle) * length;
     const y4 = y3 + Math.sin(angle) * length;
     
+    // Track the peak point as a new node
+    this.newNodes.push({ x: x4, y: y4, depth, angle, size: length });
+    
     // Recurse on four segments
     this.drawKochLine(x1, y1, x3, y3, depth + 1, baseHue, audio);
     this.drawKochLine(x3, y3, x4, y4, depth + 1, baseHue, audio);
@@ -319,6 +381,9 @@ export class FeedbackFractal implements Pattern {
       const distance = radius - childRadius;
       const cx = x + Math.cos(angle) * distance;
       const cy = y + Math.sin(angle) * distance;
+      
+      // Track child circle positions as new nodes
+      this.newNodes.push({ x: cx, y: cy, depth, angle, size: childRadius });
       
       this.drawRecursiveCircles(cx, cy, childRadius, depth + 1, baseHue, audio);
     }
@@ -366,6 +431,10 @@ export class FeedbackFractal implements Pattern {
     const topLeftY = y - size * cos;
     const topRightX = x + size * cos - size * sin;
     const topRightY = y + size * sin - size * cos;
+    
+    // Track child square positions as new nodes
+    this.newNodes.push({ x: topLeftX, y: topLeftY, depth, angle, size });
+    this.newNodes.push({ x: topRightX, y: topRightY, depth, angle, size });
     
     const leftAngle = angle - this.branchAngle * (1 + audio.bass * 0.3);
     const rightAngle = angle + this.branchAngle * (1 + audio.treble * 0.3);
