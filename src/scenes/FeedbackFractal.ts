@@ -74,45 +74,29 @@ export class FeedbackFractal implements Pattern {
     const baseHue = (this.time * 20) % 360;
     const initialLength = Math.min(width, height) * 0.2;
 
-    // Save the original transform state
-    const originalTransform = {
-      x: this.graphics.position.x,
-      y: this.graphics.position.y,
-      scaleX: this.graphics.scale.x,
-      scaleY: this.graphics.scale.y,
-    };
-
-    // Move to center and apply zoom
-    this.graphics.position.set(centerX, centerY);
-    this.graphics.scale.set(this.zoomLevel, this.zoomLevel);
-
     switch (this.fractalType) {
       case 0: // Fractal Tree
-        this.drawTree(0, initialLength * 0.5, -Math.PI / 2, initialLength, 0, baseHue, audio);
+        this.drawTree(centerX, centerY + initialLength * 0.5, -Math.PI / 2, initialLength, 0, baseHue, audio);
         break;
       case 1: // Sierpinski Triangle
         const size = initialLength * 2;
         this.drawSierpinski(
-          0, -size * 0.6,
-          -size, size * 0.4,
-          size, size * 0.4,
+          centerX, centerY - size * 0.6,
+          centerX - size, centerY + size * 0.4,
+          centerX + size, centerY + size * 0.4,
           0, baseHue, audio
         );
         break;
       case 2: // Koch Snowflake
-        this.drawKochSnowflake(0, 0, initialLength * 1.5, baseHue, audio);
+        this.drawKochSnowflake(centerX, centerY, initialLength * 1.5, baseHue, audio);
         break;
       case 3: // Recursive Circles
-        this.drawRecursiveCircles(0, 0, initialLength, 0, baseHue, audio);
+        this.drawRecursiveCircles(centerX, centerY, initialLength, 0, baseHue, audio);
         break;
       case 4: // Pythagoras Tree
-        this.drawPythagorasTree(0, initialLength * 0.4, initialLength, -Math.PI / 2, 0, baseHue, audio);
+        this.drawPythagorasTree(centerX, centerY + initialLength * 0.4, initialLength, -Math.PI / 2, 0, baseHue, audio);
         break;
     }
-
-    // Reset transform for UI
-    this.graphics.position.set(originalTransform.x, originalTransform.y);
-    this.graphics.scale.set(1, 1);
 
     // Draw indicators
     const indicatorY = 30;
