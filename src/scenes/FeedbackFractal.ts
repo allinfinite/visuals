@@ -2,49 +2,25 @@ import { Container, Graphics } from 'pixi.js';
 import type { Pattern, AudioData, InputState, RendererContext } from '../types';
 import { hslToHex } from '../utils/color';
 
-interface FractalNode {
-  x: number;
-  y: number;
-  depth: number;
-  angle: number;
-  size: number;
-}
-
 export class FeedbackFractal implements Pattern {
   public name = 'Feedback Fractal';
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;
   private time: number = 0;
-  private fractalType: number = 0; // 0: Tree, 1: Sierpinski, 2: Koch, 3: Recursive Circles, 4: Pythagoras Tree
-  private baseDepth: number = 8; // Reduced depth for performance
+  private fractalType: number = 0; // 0: Tree, 1: Sierpinski, 2: Koch, 3: Circles, 4: Squares
+  private growthPhase: number = 0; // Animated growth from 0 to maxDepth
+  private maxDepth: number = 10;
   private branchAngle: number = Math.PI / 6; // 30 degrees
-  private growthPhase: number = 0; // For animated growth (continues indefinitely)
-  private zoomLevel: number = 1; // Camera zoom level
+  private clickCooldown: number = 0;
+  private zoomLevel: number = 1;
   private targetZoom: number = 1;
-  private cameraX: number; // Camera center X in world space
-  private cameraY: number; // Camera center Y in world space
-  private targetCameraX: number;
-  private targetCameraY: number;
-  private rotationPhase: number = 0; // For rotation
-  private clickCooldown: number = 0; // Prevent rapid clicking
-  private currentRootNode: FractalNode | null = null; // Current node we're growing from
-  private redrawCounter: number = 0; // Counter for redrawing every 3 steps
 
   constructor(context: RendererContext) {
     this.context = context;
     this.container = new Container();
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
-
-    // Initialize with root node at origin
-    const initialSize = Math.min(context.width, context.height) * 0.25;
-    this.currentRootNode = { x: 0, y: 0, depth: 0, angle: -Math.PI / 2, size: initialSize };
-    // Camera stays at origin - fractal is drawn centered relative to root
-    this.cameraX = 0;
-    this.cameraY = 0;
-    this.targetCameraX = 0;
-    this.targetCameraY = 0;
   }
 
   public update(dt: number, audio: AudioData, input: InputState): void {
@@ -53,223 +29,39 @@ export class FeedbackFractal implements Pattern {
     // Update click cooldown
     this.clickCooldown = Math.max(0, this.clickCooldown - dt);
 
-    // Click changes fractal type to a random different one (with cooldown)
+    // Click changes fractal type
     if (this.clickCooldown <= 0) {
       for (const click of input.clicks) {
         const age = this.time - click.time;
         if (age < 0.05) {
-          // Pick a random fractal type that's different from current
           let newType = this.fractalType;
           while (newType === this.fractalType) {
             newType = Math.floor(Math.random() * 5);
           }
           this.fractalType = newType;
-          this.growthPhase = 0; // Reset growth animation
-          this.redrawCounter = 0; // Reset redraw counter
-          this.clickCooldown = 1.0; // 1 second cooldown
-
-          // Reset camera for new fractal
-          const initialSize = Math.min(this.context.width, this.context.height) * 0.25;
-          this.currentRootNode = { x: 0, y: 0, depth: 0, angle: -Math.PI / 2, size: initialSize };
-          this.targetZoom = 1;
+          this.growthPhase = 0; // Reset growth
           this.zoomLevel = 1;
-          // Camera stays at origin
-          this.cameraX = 0;
-          this.cameraY = 0;
-          this.targetCameraX = 0;
-          this.targetCameraY = 0;
-
-          break; // Only process one click
+          this.targetZoom = 1;
+          this.clickCooldown = 1.0;
+          break;
         }
       }
     }
 
-    // Increment growth and redraw counter
-    this.growthPhase += dt * 0.3;
-    this.redrawCounter += dt * 0.3;
-
-    // Every 3 growth steps, find a new root node and redraw
-    if (this.redrawCounter >= 3 && this.currentRootNode) {
-      this.redrawCounter = 0;
-
-      // Find the smallest/deepest node by exploring from current root
-      const newRoot = this.findSmallestNode(this.currentRootNode);
-      if (newRoot) {
-        this.currentRootNode = newRoot;
-      }
+    // Animate growth
+    this.growthPhase += dt * 2; // Grow over 5 seconds
+    if (this.growthPhase > this.maxDepth) {
+      this.growthPhase = this.maxDepth;
     }
 
-    // Camera stays fixed at origin (0,0) - fractal is drawn centered
-    this.cameraX = 0;
-    this.cameraY = 0;
-    this.targetCameraX = 0;
-    this.targetCameraY = 0;
+    // Gradually zoom in as fractal grows
+    this.targetZoom = 1 + (this.growthPhase / this.maxDepth) * 2;
+    this.zoomLevel += (this.targetZoom - this.zoomLevel) * dt * 2;
 
-    // Continuously zoom in
-    this.targetZoom = 1 + this.growthPhase * 2;
-    this.zoomLevel += (this.targetZoom - this.zoomLevel) * 2 * dt;
-
-    // Continuous rotation (slow spin)
-    this.rotationPhase = this.time * 0.05 + audio.bass * 0.3;
-
-    // Audio controls fractal parameters
+    // Audio controls branch angle
     this.branchAngle = (Math.PI / 6) * (1 + audio.treble * 0.4);
 
     this.draw(audio);
-  }
-
-  private findSmallestNode(root: FractalNode): FractalNode | null {
-    // Explore the fractal from the root and find the smallest/deepest node
-    let smallest: FractalNode = root;
-    const exploreQueue: FractalNode[] = [root];
-    const visited = new Set<string>();
-
-    while (exploreQueue.length > 0) {
-      const current = exploreQueue.shift()!;
-      const key = `${current.x.toFixed(2)},${current.y.toFixed(2)}`;
-
-      if (visited.has(key)) continue;
-      visited.add(key);
-
-      // Update smallest if this node is smaller
-      if (current.size < smallest.size) {
-        smallest = current;
-      }
-
-      // Generate child nodes based on fractal type
-      const children = this.generateChildNodes(current);
-
-      // Only explore children that are smaller (deeper)
-      for (const child of children) {
-        if (child.size < current.size && child.depth <= this.baseDepth) {
-          exploreQueue.push(child);
-        }
-      }
-
-      // Limit exploration to prevent infinite loops
-      if (visited.size > 20) break;
-    }
-
-    return smallest !== root ? smallest : null;
-  }
-
-  private drawFractalFromNode(root: FractalNode, baseHue: number, audio: AudioData): void {
-    // Draw the fractal starting from this root node
-    // Offset all coordinates so root appears at (0,0)
-    const offsetX = root.x;
-    const offsetY = root.y;
-
-    const drawQueue: FractalNode[] = [{
-      ...root,
-      x: 0,  // Root appears at origin after offset
-      y: 0
-    }];
-    const visited = new Set<string>();
-
-    console.log(`Drawing from root: depth=${root.depth}, size=${root.size}, angle=${root.angle}`);
-
-    while (drawQueue.length > 0) {
-      const current = drawQueue.shift()!;
-      const key = `${current.x.toFixed(2)},${current.y.toFixed(2)}`;
-
-      if (visited.has(key)) continue;
-      visited.add(key);
-
-      // Draw this node based on fractal type
-      this.drawNode(current, baseHue, audio);
-
-      // Generate and queue children (with offset applied)
-      const children = this.generateChildNodes({
-        ...current,
-        x: current.x + offsetX,  // Convert back to world coords for generation
-        y: current.y + offsetY
-      });
-      
-      if (visited.size < 5) {
-        console.log(`Node depth=${current.depth} generated ${children.length} children`);
-      }
-      
-      for (const child of children) {
-        if (child.depth <= this.baseDepth) {
-          // Apply offset to child coordinates
-          drawQueue.push({
-            ...child,
-            x: child.x - offsetX,
-            y: child.y - offsetY
-          });
-        }
-      }
-
-      // Limit drawing to prevent performance issues
-      if (visited.size > 200) break;
-    }
-    
-    console.log(`Drew ${visited.size} nodes total`);
-  }
-
-  private drawNode(node: FractalNode, baseHue: number, audio: AudioData): void {
-    const hue = (baseHue + node.depth * 25) % 360;
-    const color = hslToHex(hue, 80, 60);
-    const alpha = Math.min(1, 1 - node.depth * 0.1 + (audio.beat ? 0.2 : 0));
-
-    switch (this.fractalType) {
-      case 0: // Tree - draw branch from parent to this node
-        if (node.depth > 0) {
-          // Calculate parent position
-          const parentX = node.x - Math.cos(node.angle) * node.size;
-          const parentY = node.y - Math.sin(node.angle) * node.size;
-          const lineWidth = Math.max(1, 8 - node.depth * 1.2);
-
-          this.graphics.lineStyle(lineWidth, color, alpha);
-          this.graphics.moveTo(parentX, parentY);
-          this.graphics.lineTo(node.x, node.y);
-        } else {
-          // Root node - draw a small circle or marker
-          this.graphics.lineStyle(2, color, alpha);
-          this.graphics.drawCircle(node.x, node.y, 3);
-        }
-        break;
-
-      // Add other fractal types as needed...
-    }
-  }
-
-  private generateChildNodes(node: FractalNode): FractalNode[] {
-    const children: FractalNode[] = [];
-
-    console.log(`generateChildNodes called: fractalType=${this.fractalType}, depth=${node.depth}, size=${node.size}, angle=${node.angle}`);
-
-    switch (this.fractalType) {
-      case 0: // Tree - generate branches
-        const length = node.size * 0.65;
-        console.log(`  Tree: length=${length}, branchAngle=${this.branchAngle}`);
-        if (length > 1) {
-          const angle1 = node.angle - this.branchAngle;
-          const angle2 = node.angle + this.branchAngle;
-
-          const x1 = node.x + Math.cos(angle1) * length;
-          const y1 = node.y + Math.sin(angle1) * length;
-          const x2 = node.x + Math.cos(angle2) * length;
-          const y2 = node.y + Math.sin(angle2) * length;
-
-          children.push(
-            { x: x1, y: y1, depth: node.depth + 1, angle: angle1, size: length },
-            { x: x2, y: y2, depth: node.depth + 1, angle: angle2, size: length }
-          );
-          console.log(`  Generated 2 children`);
-        } else {
-          console.log(`  Length too small, no children`);
-        }
-        break;
-
-      // Add other fractal types as needed...
-      default:
-        console.log(`  Fractal type ${this.fractalType} not implemented`);
-        break;
-    }
-
-    console.log(`  Returning ${children.length} children`);
-    return children;
   }
 
   private draw(audio: AudioData): void {
@@ -280,40 +72,43 @@ export class FeedbackFractal implements Pattern {
     const centerY = height / 2;
     
     const baseHue = (this.time * 20) % 360;
-    
-    // Calculate final zoom with audio boost
-    const audioZoomBoost = 1 + audio.rms * 0.2;
-    const finalZoom = this.zoomLevel * audioZoomBoost;
-    const initialLength = Math.min(width, height) * 0.25;
+    const initialLength = Math.min(width, height) * 0.2;
 
-    // Store transform state for drawing fractal with zoom, pan, and rotation
-    const originalTransform = {
-      x: this.graphics.x,
-      y: this.graphics.y,
-      scaleX: this.graphics.scale.x,
-      scaleY: this.graphics.scale.y,
-      rotation: this.graphics.rotation,
-    };
-
-    // Simple camera transform: zoom around camera position
-    // Pivot is the world position that appears at the screen center
-    this.graphics.pivot.set(this.cameraX, this.cameraY);
+    // Apply zoom
+    this.graphics.scale.set(this.zoomLevel, this.zoomLevel);
     this.graphics.position.set(centerX, centerY);
-    this.graphics.scale.set(finalZoom, finalZoom);
-    this.graphics.rotation = this.rotationPhase;
+    this.graphics.pivot.set(0, 0);
 
-    // Draw fractal starting from current root node
-    if (this.currentRootNode) {
-      this.drawFractalFromNode(this.currentRootNode, baseHue, audio);
+    switch (this.fractalType) {
+      case 0: // Fractal Tree
+        this.drawTree(0, initialLength * 0.5, -Math.PI / 2, initialLength, 0, baseHue, audio);
+        break;
+      case 1: // Sierpinski Triangle
+        const size = initialLength * 2;
+        this.drawSierpinski(
+          0, -size * 0.6,
+          -size, size * 0.4,
+          size, size * 0.4,
+          0, baseHue, audio
+        );
+        break;
+      case 2: // Koch Snowflake
+        this.drawKochSnowflake(0, 0, initialLength * 1.5, baseHue, audio);
+        break;
+      case 3: // Recursive Circles
+        this.drawRecursiveCircles(0, 0, initialLength, 0, baseHue, audio);
+        break;
+      case 4: // Pythagoras Tree
+        this.drawPythagorasTree(0, initialLength * 0.4, initialLength, -Math.PI / 2, 0, baseHue, audio);
+        break;
     }
 
-    // Reset transform
+    // Reset transform for UI
+    this.graphics.scale.set(1, 1);
+    this.graphics.position.set(0, 0);
     this.graphics.pivot.set(0, 0);
-    this.graphics.position.set(originalTransform.x, originalTransform.y);
-    this.graphics.scale.set(originalTransform.scaleX, originalTransform.scaleY);
-    this.graphics.rotation = originalTransform.rotation;
 
-    // Draw fractal type indicator (not affected by zoom/rotation)
+    // Draw indicators
     const indicatorY = 30;
     const color = hslToHex(baseHue, 70, 50);
     
@@ -324,36 +119,181 @@ export class FeedbackFractal implements Pattern {
       this.graphics.endFill();
     }
     
-    // Draw zoom indicator (progress bar)
-    const zoomBarWidth = 100;
-    const zoomBarX = width - zoomBarWidth - 20;
-    const zoomBarY = 30;
+    // Growth indicator
+    const barWidth = 80;
+    const barX = width - barWidth - 20;
+    const barY = 30;
     
     this.graphics.lineStyle(2, 0xffffff, 0.3);
-    this.graphics.drawRect(zoomBarX, zoomBarY - 5, zoomBarWidth, 10);
-    
-    const zoomProgress = Math.min(1, (finalZoom - 1) / 2); // Normalize to 0-1 (1x to 3x)
-    this.graphics.beginFill(hslToHex(baseHue, 70, 50), 0.7);
-    this.graphics.drawRect(zoomBarX, zoomBarY - 5, zoomBarWidth * zoomProgress, 10);
-    this.graphics.endFill();
-    
-    // Draw growth indicator
-    const growthBarWidth = 80;
-    const growthBarX = width - growthBarWidth - 20;
-    const growthBarY = 50;
-    
-    this.graphics.lineStyle(2, 0xffffff, 0.3);
-    this.graphics.drawRect(growthBarX, growthBarY - 5, growthBarWidth, 8);
+    this.graphics.drawRect(barX, barY - 5, barWidth, 8);
     
     this.graphics.beginFill(hslToHex((baseHue + 60) % 360, 70, 50), 0.7);
-    this.graphics.drawRect(growthBarX, growthBarY - 5, growthBarWidth * Math.min(1, this.growthPhase), 8);
+    this.graphics.drawRect(barX, barY - 5, barWidth * Math.min(1, this.growthPhase / this.maxDepth), 8);
     this.graphics.endFill();
   }
 
+  private drawTree(x: number, y: number, angle: number, length: number, depth: number, baseHue: number, audio: AudioData): void {
+    if (depth > this.growthPhase || length < 2) return;
+
+    const hue = (baseHue + depth * 30) % 360;
+    const color = hslToHex(hue, 80, 60);
+    const alpha = Math.min(1, 0.9 - depth * 0.05 + (audio.beat ? 0.1 : 0));
+    const lineWidth = Math.max(0.5, 10 - depth * 1);
+
+    const endX = x + Math.cos(angle) * length;
+    const endY = y + Math.sin(angle) * length;
+
+    this.graphics.lineStyle(lineWidth, color, alpha);
+    this.graphics.moveTo(x, y);
+    this.graphics.lineTo(endX, endY);
+
+    const newLength = length * 0.67;
+    this.drawTree(endX, endY, angle - this.branchAngle, newLength, depth + 1, baseHue, audio);
+    this.drawTree(endX, endY, angle + this.branchAngle, newLength, depth + 1, baseHue, audio);
+  }
+
+  private drawSierpinski(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, depth: number, baseHue: number, audio: AudioData): void {
+    if (depth > this.growthPhase) return;
+
+    const size = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    if (size < 3) return;
+
+    const hue = (baseHue + depth * 30) % 360;
+    const color = hslToHex(hue, 80, 60);
+    const alpha = 0.7 - depth * 0.05;
+
+    this.graphics.lineStyle(2, color, alpha);
+    this.graphics.moveTo(x1, y1);
+    this.graphics.lineTo(x2, y2);
+    this.graphics.lineTo(x3, y3);
+    this.graphics.lineTo(x1, y1);
+
+    const mx1 = (x1 + x2) / 2;
+    const my1 = (y1 + y2) / 2;
+    const mx2 = (x2 + x3) / 2;
+    const my2 = (y2 + y3) / 2;
+    const mx3 = (x3 + x1) / 2;
+    const my3 = (y3 + y1) / 2;
+
+    this.drawSierpinski(x1, y1, mx1, my1, mx3, my3, depth + 1, baseHue, audio);
+    this.drawSierpinski(mx1, my1, x2, y2, mx2, my2, depth + 1, baseHue, audio);
+    this.drawSierpinski(mx3, my3, mx2, my2, x3, y3, depth + 1, baseHue, audio);
+  }
+
+  private drawKochSnowflake(x: number, y: number, size: number, baseHue: number, audio: AudioData): void {
+    const h = size * Math.sin(Math.PI / 3);
+    const x1 = x - size / 2;
+    const y1 = y + h / 2;
+    const x2 = x + size / 2;
+    const y2 = y + h / 2;
+    const x3 = x;
+    const y3 = y - h / 2;
+
+    this.drawKochLine(x1, y1, x2, y2, 0, baseHue, audio);
+    this.drawKochLine(x2, y2, x3, y3, 0, baseHue, audio);
+    this.drawKochLine(x3, y3, x1, y1, 0, baseHue, audio);
+  }
+
+  private drawKochLine(x1: number, y1: number, x2: number, y2: number, depth: number, baseHue: number, audio: AudioData): void {
+    if (depth > this.growthPhase) {
+      const hue = (baseHue + depth * 30) % 360;
+      const color = hslToHex(hue, 80, 60);
+      this.graphics.lineStyle(2, color, 0.8);
+      this.graphics.moveTo(x1, y1);
+      this.graphics.lineTo(x2, y2);
+      return;
+    }
+
+    const segmentLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    if (segmentLength < 3) {
+      const hue = (baseHue + depth * 30) % 360;
+      const color = hslToHex(hue, 80, 60);
+      this.graphics.lineStyle(2, color, 0.8);
+      this.graphics.moveTo(x1, y1);
+      this.graphics.lineTo(x2, y2);
+      return;
+    }
+
+    const dx = (x2 - x1) / 3;
+    const dy = (y2 - y1) / 3;
+
+    const px1 = x1 + dx;
+    const py1 = y1 + dy;
+    const px2 = x1 + 2 * dx;
+    const py2 = y1 + 2 * dy;
+
+    const angle = Math.atan2(y2 - y1, x2 - x1) - Math.PI / 3;
+    const peakX = px1 + segmentLength / 3 * Math.cos(angle);
+    const peakY = py1 + segmentLength / 3 * Math.sin(angle);
+
+    this.drawKochLine(x1, y1, px1, py1, depth + 1, baseHue, audio);
+    this.drawKochLine(px1, py1, peakX, peakY, depth + 1, baseHue, audio);
+    this.drawKochLine(peakX, peakY, px2, py2, depth + 1, baseHue, audio);
+    this.drawKochLine(px2, py2, x2, y2, depth + 1, baseHue, audio);
+  }
+
+  private drawRecursiveCircles(x: number, y: number, radius: number, depth: number, baseHue: number, audio: AudioData): void {
+    if (depth > this.growthPhase || radius < 3) return;
+
+    const hue = (baseHue + depth * 30) % 360;
+    const color = hslToHex(hue, 80, 60);
+    const alpha = 0.7 - depth * 0.05;
+
+    this.graphics.lineStyle(2, color, alpha);
+    this.graphics.drawCircle(x, y, radius);
+
+    const newRadius = radius * 0.5;
+    const angleStep = Math.PI * 2 / 6;
+
+    for (let i = 0; i < 6; i++) {
+      const angle = angleStep * i;
+      const nx = x + Math.cos(angle) * (radius - newRadius);
+      const ny = y + Math.sin(angle) * (radius - newRadius);
+      this.drawRecursiveCircles(nx, ny, newRadius, depth + 1, baseHue, audio);
+    }
+  }
+
+  private drawPythagorasTree(x: number, y: number, size: number, angle: number, depth: number, baseHue: number, audio: AudioData): void {
+    if (depth > this.growthPhase || size < 2) return;
+
+    const hue = (baseHue + depth * 30) % 360;
+    const color = hslToHex(hue, 80, 60);
+    const alpha = 0.8 - depth * 0.05;
+
+    const halfSize = size / 2;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    const x1 = x - halfSize * cos;
+    const y1 = y - halfSize * sin;
+    const x2 = x + halfSize * cos;
+    const y2 = y + halfSize * sin;
+    const x3 = x2 + halfSize * sin;
+    const y3 = y2 - halfSize * cos;
+    const x4 = x1 + halfSize * sin;
+    const y4 = y1 - halfSize * cos;
+
+    this.graphics.beginFill(color, alpha);
+    this.graphics.lineStyle(1, color, alpha);
+    this.graphics.moveTo(x1, y1);
+    this.graphics.lineTo(x2, y2);
+    this.graphics.lineTo(x3, y3);
+    this.graphics.lineTo(x4, y4);
+    this.graphics.lineTo(x1, y1);
+    this.graphics.endFill();
+
+    const newSize = size * 0.7;
+    const branchAngle = Math.PI / 4;
+
+    const topCenterX = (x3 + x4) / 2;
+    const topCenterY = (y3 + y4) / 2;
+
+    this.drawPythagorasTree(topCenterX, topCenterY, newSize, angle - branchAngle, depth + 1, baseHue, audio);
+    this.drawPythagorasTree(topCenterX, topCenterY, newSize, angle + branchAngle, depth + 1, baseHue, audio);
+  }
 
   public destroy(): void {
     this.graphics.destroy();
     this.container.destroy();
   }
 }
-
