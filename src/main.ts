@@ -81,6 +81,11 @@ import { AIKenBurns } from './scenes/AIKenBurns';
 import { MysticWords } from './scenes/MysticWords';
 import { StealYourFace } from './scenes/StealYourFace';
 import { RainbowEcho } from './scenes/RainbowEcho';
+import { ParticlePuppeteer } from './scenes/ParticlePuppeteer';
+import { AuraVision } from './scenes/AuraVision';
+import { PixelDisintegration } from './scenes/PixelDisintegration';
+import { NeonContour } from './scenes/NeonContour';
+import { TimeDisplacement } from './scenes/TimeDisplacement';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -177,6 +182,11 @@ async function main() {
   sceneManager.addPattern(new MysticWords(context));
   sceneManager.addPattern(new StealYourFace(context));
   sceneManager.addPattern(new RainbowEcho(context));
+  sceneManager.addPattern(new ParticlePuppeteer(context));
+  sceneManager.addPattern(new AuraVision(context));
+  sceneManager.addPattern(new PixelDisintegration(context));
+  sceneManager.addPattern(new NeonContour(context));
+  sceneManager.addPattern(new TimeDisplacement(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
@@ -246,9 +256,15 @@ async function main() {
   console.log('🎞️  Film Effects enabled by default (grain, blur, vignette)');
   console.log('🎨 Multi-Layer Mode enabled by default (dynamic compositions)');
   console.log('🖱️  Move mouse and click to interact with all layers');
-  console.log('📹 Enable webcam for motion-based interaction');
+  console.log('📹 Enable webcam for 6 new interactive visual modes!');
   console.log('🎵 Enable microphone in the UI for audio reactivity');
-  console.log('🌈 NEW: Rainbow Echo - trippy webcam silhouettes with rainbow tracers');
+  console.log('🌈 NEW WEBCAM VISUALS:');
+  console.log('   • Rainbow Echo - trippy silhouettes with rainbow tracers');
+  console.log('   • Particle Puppeteer - particles orbit your body outline');
+  console.log('   • Aura Vision - colorful energy fields around you');
+  console.log('   • Pixel Disintegration - body dissolves and rebuilds');
+  console.log('   • Neon Contour - glowing 80s neon outlines');
+  console.log('   • Time Displacement - see your past movements');
   console.log(`📊 ${sceneManager.getAllPatterns().length} patterns loaded`);
 }
 
