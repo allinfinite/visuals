@@ -14,10 +14,8 @@ export class FeedbackFractal implements Pattern {
   private branchAngle: number = Math.PI / 6; // 30 degrees
   private clickCooldown: number = 0;
   private zoomLevel: number = 1;
-  private targetZoom: number = 1;
   private panX: number = 0;
   private panY: number = 0;
-  private breathePhase: number = 0; // For expansion/contraction
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -44,10 +42,8 @@ export class FeedbackFractal implements Pattern {
           this.fractalType = newType;
           this.growthPhase = 0; // Reset growth
           this.zoomLevel = 1;
-          this.targetZoom = 1;
           this.panX = 0;
           this.panY = 0;
-          this.breathePhase = 0;
           this.clickCooldown = 1.0;
           break;
         }
