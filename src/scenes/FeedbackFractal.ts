@@ -237,9 +237,12 @@ export class FeedbackFractal implements Pattern {
   private generateChildNodes(node: FractalNode): FractalNode[] {
     const children: FractalNode[] = [];
 
+    console.log(`generateChildNodes called: fractalType=${this.fractalType}, depth=${node.depth}, size=${node.size}, angle=${node.angle}`);
+
     switch (this.fractalType) {
       case 0: // Tree - generate branches
         const length = node.size * 0.65;
+        console.log(`  Tree: length=${length}, branchAngle=${this.branchAngle}`);
         if (length > 1) {
           const angle1 = node.angle - this.branchAngle;
           const angle2 = node.angle + this.branchAngle;
@@ -253,12 +256,19 @@ export class FeedbackFractal implements Pattern {
             { x: x1, y: y1, depth: node.depth + 1, angle: angle1, size: length },
             { x: x2, y: y2, depth: node.depth + 1, angle: angle2, size: length }
           );
+          console.log(`  Generated 2 children`);
+        } else {
+          console.log(`  Length too small, no children`);
         }
         break;
 
       // Add other fractal types as needed...
+      default:
+        console.log(`  Fractal type ${this.fractalType} not implemented`);
+        break;
     }
 
+    console.log(`  Returning ${children.length} children`);
     return children;
   }
 
