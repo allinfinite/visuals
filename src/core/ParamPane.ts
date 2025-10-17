@@ -431,6 +431,10 @@ export class ParamPane {
     this.pane.refresh();
   }
 
+  public setExpanded(expanded: boolean): void {
+    this.pane.expanded = expanded;
+  }
+
   public destroy(): void {
     this.pane.dispose();
   }

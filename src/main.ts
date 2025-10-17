@@ -203,7 +203,7 @@ async function main() {
         } else {
           tweakpane.classList.add('menu-open');
           // Ensure the pane is expanded when shown
-          paramPane.pane.expanded = true;
+          paramPane.setExpanded(true);
         }
       }
     });
