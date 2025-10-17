@@ -22,21 +22,27 @@ export class FeedbackFractal implements Pattern {
   private growthPhase: number = 0; // For animated growth (continues indefinitely)
   private zoomLevel: number = 1; // Camera zoom level
   private targetZoom: number = 1;
-  private panX: number = 0; // Camera pan X offset
-  private panY: number = 0; // Camera pan Y offset
-  private targetPanX: number = 0;
-  private targetPanY: number = 0;
+  private cameraX: number; // Camera center X in world space
+  private cameraY: number; // Camera center Y in world space
+  private targetCameraX: number;
+  private targetCameraY: number;
   private rotationPhase: number = 0; // For rotation
   private clickCooldown: number = 0; // Prevent rapid clicking
   private newNodes: FractalNode[] = []; // Track newly created nodes
-  private panSpeed: number = 0.5; // Pan movement speed
   private minVisibleSize: number = 0.5; // Minimum pixel size to render
+  private lastNodeUpdateTime: number = 0;
 
   constructor(context: RendererContext) {
     this.context = context;
     this.container = new Container();
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
+    
+    // Initialize camera to center
+    this.cameraX = context.width / 2;
+    this.cameraY = context.height / 2;
+    this.targetCameraX = this.cameraX;
+    this.targetCameraY = this.cameraY;
   }
 
   public update(dt: number, audio: AudioData, input: InputState): void {
@@ -61,47 +67,41 @@ export class FeedbackFractal implements Pattern {
         
         // Reset camera for new fractal
         this.targetZoom = 1;
-        this.targetPanX = 0;
-        this.targetPanY = 0;
+        this.zoomLevel = 1;
+        this.targetCameraX = this.context.width / 2;
+        this.targetCameraY = this.context.height / 2;
+        this.cameraX = this.targetCameraX;
+        this.cameraY = this.targetCameraY;
       }
     });
 
     // Growth phase continues indefinitely (never stops)
     this.growthPhase += dt * 0.3; // Continuous growth
     
-    // Continuously and aggressively zoom in as fractal grows
-    this.targetZoom = 1 + this.growthPhase * 2; // Faster zoom (2x instead of 0.5x)
+    // Aggressively zoom in as fractal grows
+    this.targetZoom = 1 + this.growthPhase * 3; // Fast zoom
+    this.zoomLevel += (this.targetZoom - this.zoomLevel) * 4 * dt;
     
-    // Smoothly interpolate zoom level towards target (faster zoom)
-    this.zoomLevel += (this.targetZoom - this.zoomLevel) * 3 * dt; // Faster zoom interpolation
-    
-    // Update pan target to follow the newest/smallest nodes (the frontier)
-    if (this.newNodes.length > 0) {
-      // Find the smallest nodes (newest generation at the frontier)
-      const sortedBySize = [...this.newNodes].sort((a, b) => a.size - b.size);
+    // Pick a new node to zoom to every 0.5 seconds
+    if (this.time - this.lastNodeUpdateTime > 0.5 && this.newNodes.length > 0) {
+      this.lastNodeUpdateTime = this.time;
       
-      // Take the smallest 20% of nodes (the newest generation)
+      // Find the smallest nodes (newest generation)
+      const sortedBySize = [...this.newNodes].sort((a, b) => a.size - b.size);
       const frontierCount = Math.max(5, Math.floor(sortedBySize.length * 0.2));
       const frontierNodes = sortedBySize.slice(0, frontierCount);
       
-      // Pick a random frontier node to follow
+      // Pick a random frontier node
       const targetNode = frontierNodes[Math.floor(Math.random() * frontierNodes.length)];
       
-      const { width, height } = this.context;
-      
-      // Pan is the offset from center - the node position becomes the new "center"
-      // We want to move the view so that targetNode appears at the screen center
-      this.targetPanX = width / 2 - targetNode.x;
-      this.targetPanY = height / 2 - targetNode.y;
+      // Set camera target to this node's position
+      this.targetCameraX = targetNode.x;
+      this.targetCameraY = targetNode.y;
     }
     
-    // Gentle drift for organic movement
-    this.targetPanX += Math.sin(this.time * 0.3) * dt * 2;
-    this.targetPanY += Math.cos(this.time * 0.2) * dt * 2;
-
-    // Smoothly interpolate camera pan towards target
-    this.panX += (this.targetPanX - this.panX) * 2 * dt; // Faster pan to keep up with zoom
-    this.panY += (this.targetPanY - this.panY) * 2 * dt;
+    // Smoothly move camera towards target
+    this.cameraX += (this.targetCameraX - this.cameraX) * 3 * dt;
+    this.cameraY += (this.targetCameraY - this.cameraY) * 3 * dt;
 
     // Continuous rotation (slow spin)
     this.rotationPhase = this.time * 0.05 + audio.bass * 0.3;
@@ -138,13 +138,9 @@ export class FeedbackFractal implements Pattern {
       rotation: this.graphics.rotation,
     };
 
-    // Apply camera transform with correct order for zoom + pan
-    // The pivot determines what point stays in place when we zoom
-    // We want to zoom towards (and pan to) the target node location
-    const pivotX = centerX - this.panX;
-    const pivotY = centerY - this.panY;
-    
-    this.graphics.pivot.set(pivotX, pivotY);
+    // Simple camera transform: zoom around camera position
+    // Pivot is the world position that appears at the screen center
+    this.graphics.pivot.set(this.cameraX, this.cameraY);
     this.graphics.position.set(centerX, centerY);
     this.graphics.scale.set(finalZoom, finalZoom);
     this.graphics.rotation = this.rotationPhase;
