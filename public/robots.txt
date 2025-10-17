@@ -25,3 +25,22 @@ Allow: /
 User-agent: DuckDuckBot
 Allow: /
 
+# Facebook scrapers for social media previews
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
