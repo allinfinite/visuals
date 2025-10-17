@@ -50,7 +50,7 @@ export class FeedbackFractal implements Pattern {
 
     // Start a fresh node collection for this frame's draw
     this.newNodes = [];
-    this.frontierNodes = [];
+    // Don't clear frontierNodes here - we want to keep using previous frame's until new ones collected
 
     // Update click cooldown
     this.clickCooldown = Math.max(0, this.clickCooldown - dt);
@@ -95,18 +95,16 @@ export class FeedbackFractal implements Pattern {
     if (this.frontierNodes.length > 0) {
       // Pick the smallest node at the frontier
       const targetNode = this.frontierNodes[0]; // Already sorted by size
-      console.log(`Zooming to frontier node: x=${targetNode.x}, y=${targetNode.y}, size=${targetNode.size}, depth=${targetNode.depth}`);
       this.cameraX = targetNode.x;
       this.cameraY = targetNode.y;
       this.targetCameraX = targetNode.x;
       this.targetCameraY = targetNode.y;
     } else {
-      // Test transform by moving to a known position (off-center)
-      console.log('No frontier nodes - testing transform with fixed position');
-      this.cameraX = 200; // Move to an offset position to test if transform works
-      this.cameraY = 100;
-      this.targetCameraX = 200;
-      this.targetCameraY = 100;
+      // No frontier nodes yet - stay centered
+      this.cameraX = this.context.width / 2;
+      this.cameraY = this.context.height / 2;
+      this.targetCameraX = this.cameraX;
+      this.targetCameraY = this.cameraY;
     }
 
     // Continuous rotation (slow spin)
@@ -176,17 +174,14 @@ export class FeedbackFractal implements Pattern {
     }
 
     // Collect frontier nodes (smallest/deepest nodes)
-    console.log(`Draw complete: newNodes.length = ${this.newNodes.length}, growthPhase = ${this.growthPhase}`);
     if (this.newNodes.length > 0) {
       // Sort by size (smallest first = deepest/newest)
       this.newNodes.sort((a, b) => a.size - b.size);
       // Take the smallest 10% or at least 5 nodes
       const frontierCount = Math.max(5, Math.floor(this.newNodes.length * 0.1));
       this.frontierNodes = this.newNodes.slice(0, frontierCount);
-      console.log(`Collected ${this.frontierNodes.length} frontier nodes, smallest size: ${this.frontierNodes[0]?.size}`);
-    } else {
-      console.log('No newNodes collected during draw');
     }
+    // If no new nodes, keep previous frontier nodes
 
     // Reset transform
     this.graphics.pivot.set(0, 0);
@@ -235,17 +230,11 @@ export class FeedbackFractal implements Pattern {
   private drawFractalTree(x: number, y: number, angle: number, length: number, depth: number, baseHue: number, audio: AudioData): void {
     // Check if branch is visible (size in screen space)
     const screenSize = length * this.zoomLevel;
-    if (screenSize < this.minVisibleSize || depth > this.baseDepth) {
-      console.log(`Tree branch rejected: depth=${depth}, screenSize=${screenSize}, zoomLevel=${this.zoomLevel}`);
-      return;
-    }
+    if (screenSize < this.minVisibleSize || depth > this.baseDepth) return;
 
     // Animated growth based on continuous growth phase
     const depthProgress = depth / this.baseDepth;
-    if (depthProgress > this.growthPhase && this.growthPhase < 1) {
-      console.log(`Tree branch growth rejected: depth=${depth}, depthProgress=${depthProgress}, growthPhase=${this.growthPhase}`);
-      return; // Initial growth animation
-    }
+    if (depthProgress > this.growthPhase && this.growthPhase < 1) return; // Initial growth animation
     
     const x2 = x + Math.cos(angle) * length;
     const y2 = y + Math.sin(angle) * length;
