@@ -112,10 +112,6 @@ export class FeedbackFractal implements Pattern {
 
     // Smoothly interpolate zoom level towards target
     this.zoomLevel += (this.targetZoom - this.zoomLevel) * this.zoomSpeed * dt;
-    
-    // Add audio boost to zoom
-    const audioZoomBoost = 1 + audio.rms * 0.2;
-    const finalZoom = this.zoomLevel * audioZoomBoost;
 
     // Continuous rotation (slow spin)
     this.rotationPhase = this.time * 0.05 + audio.bass * 0.3;
