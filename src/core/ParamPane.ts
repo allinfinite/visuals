@@ -39,7 +39,7 @@ export class ParamPane {
     this.audio = audio;
     this.app = app;
     this.pane = new Pane({
-      title: 'Visual Canvas',
+      title: `<img src="/stealy.svg" style="width: 24px; height: 24px; display: block; margin: 0 auto;" />`,
       expanded: false,
     });
 

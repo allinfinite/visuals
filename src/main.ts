@@ -190,6 +190,37 @@ async function main() {
   // Start the app
   app.start();
 
+  // Setup fullscreen button
+  const fullscreenBtn = document.getElementById('fullscreen-btn') as HTMLButtonElement;
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+  }
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        fullscreenBtn?.classList.add('fullscreen');
+      }).catch(err => {
+        console.error('Error attempting to enable fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        fullscreenBtn?.classList.remove('fullscreen');
+      }).catch(err => {
+        console.error('Error attempting to exit fullscreen:', err);
+      });
+    }
+  }
+
+  // Listen for fullscreen changes
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      fullscreenBtn?.classList.remove('fullscreen');
+    } else {
+      fullscreenBtn?.classList.add('fullscreen');
+    }
+  });
+
   console.log('✨ Interactive Visual Canvas started');
   console.log('🎞️  Film Effects enabled by default (grain, blur, vignette)');
   console.log('🎨 Multi-Layer Mode enabled by default (dynamic compositions)');
