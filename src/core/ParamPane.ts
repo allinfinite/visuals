@@ -39,7 +39,7 @@ export class ParamPane {
     this.audio = audio;
     this.app = app;
     this.pane = new Pane({
-      title: 'Visual Canvas',
+      title: '',
       expanded: false,
     });
 
