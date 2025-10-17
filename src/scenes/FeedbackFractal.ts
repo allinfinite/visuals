@@ -38,7 +38,8 @@ export class FeedbackFractal implements Pattern {
     this.container.addChild(this.graphics);
 
     // Initialize with root node at origin
-    this.currentRootNode = { x: 0, y: 0, depth: 0, angle: 0, size: 100 };
+    const initialSize = Math.min(context.width, context.height) * 0.25;
+    this.currentRootNode = { x: 0, y: 0, depth: 0, angle: -Math.PI / 2, size: initialSize };
     // Camera stays at origin - fractal is drawn centered relative to root
     this.cameraX = 0;
     this.cameraY = 0;
@@ -68,7 +69,8 @@ export class FeedbackFractal implements Pattern {
           this.clickCooldown = 1.0; // 1 second cooldown
 
           // Reset camera for new fractal
-          this.currentRootNode = { x: 0, y: 0, depth: 0, angle: 0, size: 100 };
+          const initialSize = Math.min(this.context.width, this.context.height) * 0.25;
+          this.currentRootNode = { x: 0, y: 0, depth: 0, angle: -Math.PI / 2, size: initialSize };
           this.targetZoom = 1;
           this.zoomLevel = 1;
           // Camera stays at origin
@@ -164,6 +166,8 @@ export class FeedbackFractal implements Pattern {
     }];
     const visited = new Set<string>();
 
+    console.log(`Drawing from root: depth=${root.depth}, size=${root.size}, angle=${root.angle}`);
+
     while (drawQueue.length > 0) {
       const current = drawQueue.shift()!;
       const key = `${current.x.toFixed(2)},${current.y.toFixed(2)}`;
@@ -180,6 +184,11 @@ export class FeedbackFractal implements Pattern {
         x: current.x + offsetX,  // Convert back to world coords for generation
         y: current.y + offsetY
       });
+      
+      if (visited.size < 5) {
+        console.log(`Node depth=${current.depth} generated ${children.length} children`);
+      }
+      
       for (const child of children) {
         if (child.depth <= this.baseDepth) {
           // Apply offset to child coordinates
@@ -194,6 +203,8 @@ export class FeedbackFractal implements Pattern {
       // Limit drawing to prevent performance issues
       if (visited.size > 200) break;
     }
+    
+    console.log(`Drew ${visited.size} nodes total`);
   }
 
   private drawNode(node: FractalNode, baseHue: number, audio: AudioData): void {
