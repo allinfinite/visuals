@@ -194,10 +194,10 @@ async function main() {
   const menuBtn = document.getElementById('menu-btn') as HTMLButtonElement;
   if (menuBtn) {
     menuBtn.addEventListener('click', () => {
-      // Toggle the Tweakpane visibility
+      // Toggle the Tweakpane visibility using class
       const tweakpane = document.querySelector('.tp-dfwv') as HTMLElement;
       if (tweakpane) {
-        tweakpane.style.display = tweakpane.style.display === 'none' ? 'block' : 'none';
+        tweakpane.classList.toggle('menu-open');
       }
     });
   }
