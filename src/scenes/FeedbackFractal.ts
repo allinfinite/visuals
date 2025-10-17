@@ -74,10 +74,17 @@ export class FeedbackFractal implements Pattern {
     const baseHue = (this.time * 20) % 360;
     const initialLength = Math.min(width, height) * 0.2;
 
-    // Apply zoom
-    this.graphics.scale.set(this.zoomLevel, this.zoomLevel);
+    // Save the original transform state
+    const originalTransform = {
+      x: this.graphics.position.x,
+      y: this.graphics.position.y,
+      scaleX: this.graphics.scale.x,
+      scaleY: this.graphics.scale.y,
+    };
+
+    // Move to center and apply zoom
     this.graphics.position.set(centerX, centerY);
-    this.graphics.pivot.set(0, 0);
+    this.graphics.scale.set(this.zoomLevel, this.zoomLevel);
 
     switch (this.fractalType) {
       case 0: // Fractal Tree
@@ -104,9 +111,8 @@ export class FeedbackFractal implements Pattern {
     }
 
     // Reset transform for UI
+    this.graphics.position.set(originalTransform.x, originalTransform.y);
     this.graphics.scale.set(1, 1);
-    this.graphics.position.set(0, 0);
-    this.graphics.pivot.set(0, 0);
 
     // Draw indicators
     const indicatorY = 30;
