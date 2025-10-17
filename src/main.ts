@@ -268,10 +268,27 @@ async function main() {
     }
   });
 
+  // Keyboard shortcut: 'm' to hide/show buttons
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'm' || e.key === 'M') {
+      const bothButtons = [menuBtn, fullscreenBtn];
+      bothButtons.forEach(btn => {
+        if (btn) {
+          if (btn.style.display === 'none') {
+            btn.style.display = 'flex';
+          } else {
+            btn.style.display = 'none';
+          }
+        }
+      });
+    }
+  });
+
   console.log('✨ Interactive Visual Canvas started');
   console.log('🎞️  Film Effects enabled by default (grain, blur, vignette)');
   console.log('🎨 Multi-Layer Mode enabled by default (dynamic compositions)');
   console.log('🖱️  Move mouse and click to interact with all layers');
+  console.log('⌨️  Press "M" to hide/show menu buttons');
   console.log('📹 Enable webcam for 14 interactive visual modes!');
   console.log('🎵 Enable microphone in the UI for audio reactivity');
   console.log('🌈 WEBCAM VISUALS:');
