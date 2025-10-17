@@ -93,13 +93,12 @@ export class FeedbackFractal implements Pattern {
     
     // Always aim camera at the most recently created node (from last draw)
     if (this.lastNewNode) {
+      // Jump directly to the node for testing
+      this.cameraX = this.lastNewNode.x;
+      this.cameraY = this.lastNewNode.y;
       this.targetCameraX = this.lastNewNode.x;
       this.targetCameraY = this.lastNewNode.y;
     }
-    
-    // Smoothly move camera towards target
-    this.cameraX += (this.targetCameraX - this.cameraX) * 3 * dt;
-    this.cameraY += (this.targetCameraY - this.cameraY) * 3 * dt;
 
     // Continuous rotation (slow spin)
     this.rotationPhase = this.time * 0.05 + audio.bass * 0.3;
