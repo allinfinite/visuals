@@ -15,6 +15,9 @@ export class FeedbackFractal implements Pattern {
   private clickCooldown: number = 0;
   private zoomLevel: number = 1;
   private targetZoom: number = 1;
+  private panX: number = 0;
+  private panY: number = 0;
+  private breathePhase: number = 0; // For expansion/contraction
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -42,6 +45,9 @@ export class FeedbackFractal implements Pattern {
           this.growthPhase = 0; // Reset growth
           this.zoomLevel = 1;
           this.targetZoom = 1;
+          this.panX = 0;
+          this.panY = 0;
+          this.breathePhase = 0;
           this.clickCooldown = 1.0;
           break;
         }
@@ -54,9 +60,20 @@ export class FeedbackFractal implements Pattern {
       this.growthPhase = this.maxDepth;
     }
 
-    // Gradually zoom in as fractal grows
-    this.targetZoom = 1 + (this.growthPhase / this.maxDepth) * 2;
-    this.zoomLevel += (this.targetZoom - this.zoomLevel) * dt * 2;
+    // Breathing effect - expansion and contraction
+    this.breathePhase += dt * 0.5; // Slow breathing cycle
+    const breathe = Math.sin(this.breathePhase) * 0.3 + 1; // Oscillate between 0.7x and 1.3x
+
+    // Zoom in as fractal grows, then add breathing
+    const baseZoom = 1 + (this.growthPhase / this.maxDepth) * 2.5;
+    this.targetZoom = baseZoom * breathe;
+    this.zoomLevel += (this.targetZoom - this.zoomLevel) * dt * 3;
+
+    // Pan based on growth - explore different parts of the fractal
+    const panSpeed = 0.3;
+    const panAmount = 50 * (this.growthPhase / this.maxDepth);
+    this.panX = Math.sin(this.time * panSpeed) * panAmount;
+    this.panY = Math.cos(this.time * panSpeed * 0.7) * panAmount * 0.5;
 
     // Audio controls branch angle
     this.branchAngle = (Math.PI / 6) * (1 + audio.treble * 0.4);
@@ -74,29 +91,40 @@ export class FeedbackFractal implements Pattern {
     const baseHue = (this.time * 20) % 360;
     const initialLength = Math.min(width, height) * 0.2;
 
+    // Apply zoom and pan transform
+    this.graphics.position.set(centerX, centerY);
+    this.graphics.scale.set(this.zoomLevel, this.zoomLevel);
+    this.graphics.pivot.set(-this.panX, -this.panY);
+
+    // Draw from origin (will be transformed by above settings)
     switch (this.fractalType) {
       case 0: // Fractal Tree
-        this.drawTree(centerX, centerY + initialLength * 0.5, -Math.PI / 2, initialLength, 0, baseHue, audio);
+        this.drawTree(0, initialLength * 0.5, -Math.PI / 2, initialLength, 0, baseHue, audio);
         break;
       case 1: // Sierpinski Triangle
         const size = initialLength * 2;
         this.drawSierpinski(
-          centerX, centerY - size * 0.6,
-          centerX - size, centerY + size * 0.4,
-          centerX + size, centerY + size * 0.4,
+          0, -size * 0.6,
+          -size, size * 0.4,
+          size, size * 0.4,
           0, baseHue, audio
         );
         break;
       case 2: // Koch Snowflake
-        this.drawKochSnowflake(centerX, centerY, initialLength * 1.5, baseHue, audio);
+        this.drawKochSnowflake(0, 0, initialLength * 1.5, baseHue, audio);
         break;
       case 3: // Recursive Circles
-        this.drawRecursiveCircles(centerX, centerY, initialLength, 0, baseHue, audio);
+        this.drawRecursiveCircles(0, 0, initialLength, 0, baseHue, audio);
         break;
       case 4: // Pythagoras Tree
-        this.drawPythagorasTree(centerX, centerY + initialLength * 0.4, initialLength, -Math.PI / 2, 0, baseHue, audio);
+        this.drawPythagorasTree(0, initialLength * 0.4, initialLength, -Math.PI / 2, 0, baseHue, audio);
         break;
     }
+
+    // Reset transform for UI
+    this.graphics.position.set(0, 0);
+    this.graphics.scale.set(1, 1);
+    this.graphics.pivot.set(0, 0);
 
     // Draw indicators
     const indicatorY = 30;
