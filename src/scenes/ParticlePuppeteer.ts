@@ -24,13 +24,13 @@ export class ParticlePuppeteer implements Pattern {
   // Video processing
   private videoCanvas: HTMLCanvasElement;
   private videoCtx: CanvasRenderingContext2D;
-  private processWidth: number = 160;
-  private processHeight: number = 120;
+  private processWidth: number = 60;  // Reduced for performance
+  private processHeight: number = 45;  // Reduced for performance
   
   // Particles
   private particles: Particle[] = [];
-  private maxParticles: number = 2000;
-  private spawnRate: number = 10;
+  private maxParticles: number = 800;  // Reduced from 2000
+  private spawnRate: number = 5;  // Reduced from 10
 
   constructor(context: RendererContext) {
     this.context = context;

@@ -16,11 +16,15 @@ export class WebcamInput {
   private hasMotion: boolean = false;
   
   // Processing settings
-  private processWidth: number = 160;
-  private processHeight: number = 120;
+  private processWidth: number = 80;  // Reduced from 160 for performance
+  private processHeight: number = 60;  // Reduced from 120 for performance
   public motionSensitivity: number = 0.3; // 0-1, higher = more sensitive
   public clickThreshold: number = 0.7; // 0-1, motion spike threshold for clicks
   public smoothingFactor: number = 0.3; // 0-1, higher = more smoothing
+  
+  // Performance optimization
+  private frameSkip: number = 2; // Process every Nth frame
+  private frameCount: number = 0;
   
   // Click detection
   private clickCooldown: number = 0;
@@ -100,6 +104,13 @@ export class WebcamInput {
     if (this.clickCooldown > 0) {
       this.clickCooldown -= dt;
     }
+    
+    // Frame skipping for performance
+    this.frameCount++;
+    if (this.frameCount < this.frameSkip) {
+      return;
+    }
+    this.frameCount = 0;
     
     try {
       // Draw video frame to canvas (downscaled)

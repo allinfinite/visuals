@@ -25,12 +25,12 @@ export class VoronoiShatter implements Pattern {
   // Video processing
   private videoCanvas: HTMLCanvasElement;
   private videoCtx: CanvasRenderingContext2D;
-  private processWidth: number = 80;
-  private processHeight: number = 60;
+  private processWidth: number = 50;  // Reduced for performance
+  private processHeight: number = 38;  // Reduced for performance
   
   // Voronoi cells
   private cells: VoronoiCell[] = [];
-  private cellCount: number = 50;
+  private cellCount: number = 30;  // Reduced from 50 for performance
   private previousFrame: ImageData | null = null;
 
   constructor(context: RendererContext) {
@@ -56,8 +56,8 @@ export class VoronoiShatter implements Pattern {
   public update(dt: number, audio: AudioData, _input: InputState): void {
     this.time += dt;
     
-    // Audio affects cell count
-    this.cellCount = Math.floor(40 + audio.rms * 30);
+    // Audio affects cell count (reduced for performance)
+    this.cellCount = Math.floor(25 + audio.rms * 20);
     
     this.draw(dt, audio);
   }
@@ -226,7 +226,7 @@ export class VoronoiShatter implements Pattern {
   
   private drawVoronoiDiagram(width: number, height: number, audio: AudioData): void {
     // Simple Voronoi by checking each pixel
-    const step = 4; // Pixel sampling rate
+    const step = 8; // Pixel sampling rate (increased for performance)
     
     for (let y = 0; y < height; y += step) {
       for (let x = 0; x < width; x += step) {

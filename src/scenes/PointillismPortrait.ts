@@ -25,12 +25,12 @@ export class PointillismPortrait implements Pattern {
   // Video processing
   private videoCanvas: HTMLCanvasElement;
   private videoCtx: CanvasRenderingContext2D;
-  private processWidth: number = 60;
-  private processHeight: number = 45;
+  private processWidth: number = 40;  // Reduced for performance
+  private processHeight: number = 30;  // Reduced for performance
   
   // Dots
   private dots: Dot[] = [];
-  private targetDotCount: number = 2000;
+  private targetDotCount: number = 800;  // Reduced from 2000
   private previousFrame: ImageData | null = null;
 
   constructor(context: RendererContext) {
@@ -53,8 +53,8 @@ export class PointillismPortrait implements Pattern {
   public update(dt: number, audio: AudioData, _input: InputState): void {
     this.time += dt;
     
-    // Audio affects dot count
-    this.targetDotCount = Math.floor(1500 + audio.rms * 1000);
+    // Audio affects dot count (reduced for performance)
+    this.targetDotCount = Math.floor(600 + audio.rms * 400);
     
     this.draw(dt, audio);
   }

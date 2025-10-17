@@ -23,12 +23,12 @@ export class ColorExtractionPaint implements Pattern {
   // Video processing
   private videoCanvas: HTMLCanvasElement;
   private videoCtx: CanvasRenderingContext2D;
-  private processWidth: number = 80;
-  private processHeight: number = 60;
+  private processWidth: number = 50;  // Reduced for performance
+  private processHeight: number = 38;  // Reduced for performance
   
   // Paint strokes
   private strokes: PaintStroke[] = [];
-  private maxStrokes: number = 3000;
+  private maxStrokes: number = 1200;  // Reduced from 3000
   private previousFrame: ImageData | null = null;
 
   constructor(context: RendererContext) {

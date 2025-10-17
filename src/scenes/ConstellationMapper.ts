@@ -31,13 +31,13 @@ export class ConstellationMapper implements Pattern {
   // Video processing
   private videoCanvas: HTMLCanvasElement;
   private videoCtx: CanvasRenderingContext2D;
-  private processWidth: number = 80;
-  private processHeight: number = 60;
+  private processWidth: number = 50;  // Reduced for performance
+  private processHeight: number = 38;  // Reduced for performance
   
   // Feature points
   private featurePoints: FeaturePoint[] = [];
   private orbitingParticles: OrbitingParticle[] = [];
-  private maxParticles: number = 150;
+  private maxParticles: number = 80;  // Reduced from 150
 
   constructor(context: RendererContext) {
     this.context = context;
