@@ -52,28 +52,32 @@ export class FeedbackFractal implements Pattern {
     this.clickCooldown = Math.max(0, this.clickCooldown - dt);
 
     // Click changes fractal type to a random different one (with cooldown)
-    input.clicks.forEach((click) => {
-      const age = this.time - click.time;
-      if (age < 0.05 && this.clickCooldown <= 0) {
-        // Pick a random fractal type that's different from current
-        let newType = this.fractalType;
-        while (newType === this.fractalType) {
-          newType = Math.floor(Math.random() * 5);
+    if (this.clickCooldown <= 0) {
+      for (const click of input.clicks) {
+        const age = this.time - click.time;
+        if (age < 0.05) {
+          // Pick a random fractal type that's different from current
+          let newType = this.fractalType;
+          while (newType === this.fractalType) {
+            newType = Math.floor(Math.random() * 5);
+          }
+          this.fractalType = newType;
+          this.growthPhase = 0; // Reset growth animation
+          this.clickCooldown = 1.0; // 1 second cooldown to prevent rapid switching
+          this.newNodes = []; // Clear tracked nodes
+          
+          // Reset camera for new fractal
+          this.targetZoom = 1;
+          this.zoomLevel = 1;
+          this.targetCameraX = this.context.width / 2;
+          this.targetCameraY = this.context.height / 2;
+          this.cameraX = this.targetCameraX;
+          this.cameraY = this.targetCameraY;
+          
+          break; // Only process one click
         }
-        this.fractalType = newType;
-        this.growthPhase = 0; // Reset growth animation
-        this.clickCooldown = 0.5; // 0.5 second cooldown
-        this.newNodes = []; // Clear tracked nodes
-        
-        // Reset camera for new fractal
-        this.targetZoom = 1;
-        this.zoomLevel = 1;
-        this.targetCameraX = this.context.width / 2;
-        this.targetCameraY = this.context.height / 2;
-        this.cameraX = this.targetCameraX;
-        this.cameraY = this.targetCameraY;
       }
-    });
+    }
 
     // Growth phase continues indefinitely (never stops)
     this.growthPhase += dt * 0.3; // Continuous growth
