@@ -355,12 +355,12 @@ export class FeedbackFractal implements Pattern {
     
     // Calculate peak of equilateral triangle
     const angle = Math.atan2(dy, dx) - Math.PI / 3;
-    const length = Math.sqrt(dx * dx + dy * dy) / 3;
-    const x4 = x3 + Math.cos(angle) * length;
-    const y4 = y3 + Math.sin(angle) * length;
+    const segmentLength = Math.sqrt(dx * dx + dy * dy) / 3;
+    const x4 = x3 + Math.cos(angle) * segmentLength;
+    const y4 = y3 + Math.sin(angle) * segmentLength;
     
     // Track the peak point as a new node
-    this.newNodes.push({ x: x4, y: y4, depth, angle, size: length });
+    this.newNodes.push({ x: x4, y: y4, depth, angle, size: segmentLength });
     
     // Recurse on four segments
     this.drawKochLine(x1, y1, x3, y3, depth + 1, baseHue, audio);
