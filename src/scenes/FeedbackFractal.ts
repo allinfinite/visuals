@@ -38,9 +38,9 @@ export class FeedbackFractal implements Pattern {
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
     
-    // Initialize camera to center
-    this.cameraX = context.width / 2;
-    this.cameraY = context.height / 2;
+    // Initialize camera at world origin (where fractal is drawn)
+    this.cameraX = 0;
+    this.cameraY = 0;
     this.targetCameraX = this.cameraX;
     this.targetCameraY = this.cameraY;
   }
@@ -74,8 +74,8 @@ export class FeedbackFractal implements Pattern {
           // Reset camera for new fractal
           this.targetZoom = 1;
           this.zoomLevel = 1;
-          this.targetCameraX = this.context.width / 2;
-          this.targetCameraY = this.context.height / 2;
+          this.targetCameraX = 0; // Back to world origin
+          this.targetCameraY = 0;
           this.cameraX = this.targetCameraX;
           this.cameraY = this.targetCameraY;
           
@@ -100,9 +100,9 @@ export class FeedbackFractal implements Pattern {
       this.targetCameraX = targetNode.x;
       this.targetCameraY = targetNode.y;
     } else {
-      // No frontier nodes yet - stay centered
-      this.cameraX = this.context.width / 2;
-      this.cameraY = this.context.height / 2;
+      // No frontier nodes yet - stay at origin
+      this.cameraX = 0;
+      this.cameraY = 0;
       this.targetCameraX = this.cameraX;
       this.targetCameraY = this.cameraY;
     }
@@ -146,30 +146,30 @@ export class FeedbackFractal implements Pattern {
     this.graphics.scale.set(finalZoom, finalZoom);
     this.graphics.rotation = this.rotationPhase;
 
-    // Coordinates for fractal drawing (in world space)
-    const adjustedCenterX = centerX;
-    const adjustedCenterY = centerY;
+    // Coordinates for fractal drawing (centered at origin for camera system)
+    const adjustedCenterX = 0; // Draw relative to camera, not screen center
+    const adjustedCenterY = 0;
 
     switch (this.fractalType) {
-      case 0: // Fractal Tree
-        this.drawFractalTree(adjustedCenterX, height * 0.8, -Math.PI / 2, initialLength, 0, baseHue, audio);
+      case 0: // Fractal Tree - draw rooted at origin, trunk up
+        this.drawFractalTree(adjustedCenterX, adjustedCenterY - initialLength * 0.8, -Math.PI / 2, initialLength, 0, baseHue, audio);
         break;
-      case 1: // Sierpinski Triangle
+      case 1: // Sierpinski Triangle - center at origin
         this.drawSierpinski(
-          adjustedCenterX, height * 0.7, 
-          adjustedCenterX - initialLength * 1.5, height * 0.2,
-          adjustedCenterX + initialLength * 1.5, height * 0.2,
+          adjustedCenterX, adjustedCenterY - initialLength * 0.7,
+          adjustedCenterX - initialLength * 1.5, adjustedCenterY + initialLength * 0.8,
+          adjustedCenterX + initialLength * 1.5, adjustedCenterY + initialLength * 0.8,
           0, baseHue, audio
         );
         break;
-      case 2: // Koch Snowflake
+      case 2: // Koch Snowflake - center at origin
         this.drawKochSnowflake(adjustedCenterX, adjustedCenterY, initialLength * 1.2, baseHue, audio);
         break;
-      case 3: // Recursive Circles (Apollonian Gasket style)
+      case 3: // Recursive Circles (Apollonian Gasket style) - center at origin
         this.drawRecursiveCircles(adjustedCenterX, adjustedCenterY, initialLength, 0, baseHue, audio);
         break;
-      case 4: // Recursive Squares (Pythagoras Tree style)
-        this.drawPythagorasTree(adjustedCenterX, height * 0.85, initialLength * 0.8, -Math.PI / 2, 0, baseHue, audio);
+      case 4: // Recursive Squares (Pythagoras Tree style) - root at origin
+        this.drawPythagorasTree(adjustedCenterX, adjustedCenterY + initialLength * 0.4, initialLength * 0.8, -Math.PI / 2, 0, baseHue, audio);
         break;
     }
 
