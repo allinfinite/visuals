@@ -88,57 +88,52 @@ export class FeedbackFractal implements Pattern {
     // Apply zoom by scaling drawing coordinates
     const scaledLength = initialLength / this.zoomLevel;
 
-    // Secondary fractal angle offset (rotates over time)
-    const secondaryAngleOffset = this.time * 0.1; // Slowly rotating
-    const secondaryHueOffset = 180; // Complementary color
+    // Define multiple duplicates at different angles and positions
+    const duplicates = [
+      { angleOffset: 0, scale: 1.0, hueOffset: 0, xOffset: 0, yOffset: 0 },
+      { angleOffset: Math.PI * 2 / 3, scale: 0.75, hueOffset: 120, xOffset: 0, yOffset: 0 },
+      { angleOffset: Math.PI * 4 / 3, scale: 0.75, hueOffset: 240, xOffset: 0, yOffset: 0 },
+      { angleOffset: Math.PI / 2, scale: 0.6, hueOffset: 180, xOffset: 0, yOffset: 0 },
+    ];
 
-    switch (this.fractalType) {
-      case 0: // Fractal Tree
-        // Primary tree
-        this.drawTree(drawX, drawY + scaledLength * 0.5, -Math.PI / 2, scaledLength, 0, baseHue, audio);
-        // Secondary tree (rotated)
-        this.drawTree(drawX, drawY + scaledLength * 0.5, -Math.PI / 2 + secondaryAngleOffset, scaledLength * 0.8, 0, baseHue + secondaryHueOffset, audio);
-        break;
-      case 1: // Sierpinski Triangle
-        const size = scaledLength * 2;
-        // Primary triangle
-        this.drawSierpinski(
-          drawX, drawY - size * 0.6,
-          drawX - size, drawY + size * 0.4,
-          drawX + size, drawY + size * 0.4,
-          0, baseHue, audio
-        );
-        // Secondary triangle (rotated and scaled)
-        const angle = secondaryAngleOffset;
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        const s = size * 0.7;
-        this.drawSierpinski(
-          drawX + (-s * 0.6) * cos - 0 * sin, drawY + (-s * 0.6) * sin + 0 * cos,
-          drawX + (-s) * cos - (s * 0.4) * sin, drawY + (-s) * sin + (s * 0.4) * cos,
-          drawX + s * cos - (s * 0.4) * sin, drawY + s * sin + (s * 0.4) * cos,
-          0, baseHue + secondaryHueOffset, audio
-        );
-        break;
-      case 2: // Koch Snowflake
-        this.drawKochSnowflake(drawX, drawY, scaledLength * 1.5, baseHue, audio);
-        // Secondary snowflake (rotated)
-        this.graphics.pivot.set(drawX, drawY);
-        this.graphics.rotation = secondaryAngleOffset;
-        this.drawKochSnowflake(drawX, drawY, scaledLength * 1.2, baseHue + secondaryHueOffset, audio);
-        this.graphics.rotation = 0;
-        this.graphics.pivot.set(0, 0);
-        break;
-      case 3: // Recursive Circles
-        this.drawRecursiveCircles(drawX, drawY, scaledLength, 0, baseHue, audio);
-        // Secondary circles (offset phase)
-        this.drawRecursiveCircles(drawX, drawY, scaledLength * 0.85, 0, baseHue + secondaryHueOffset, audio);
-        break;
-      case 4: // Pythagoras Tree
-        this.drawPythagorasTree(drawX, drawY + scaledLength * 0.4, scaledLength, -Math.PI / 2, 0, baseHue, audio);
-        // Secondary tree (rotated)
-        this.drawPythagorasTree(drawX, drawY + scaledLength * 0.4, -Math.PI / 2 + secondaryAngleOffset, scaledLength * 0.8, 0, baseHue + secondaryHueOffset, audio);
-        break;
+    // Draw each duplicate
+    for (const dup of duplicates) {
+      const dupX = drawX + dup.xOffset;
+      const dupY = drawY + dup.yOffset;
+      const dupLength = scaledLength * dup.scale;
+      const dupHue = (baseHue + dup.hueOffset) % 360;
+
+      switch (this.fractalType) {
+        case 0: // Fractal Tree
+          this.drawTree(dupX, dupY + dupLength * 0.5, -Math.PI / 2 + dup.angleOffset, dupLength, 0, dupHue, audio);
+          break;
+        case 1: // Sierpinski Triangle
+          const size = dupLength * 2;
+          const angle = dup.angleOffset;
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+          const p1x = dupX + 0 * cos - (-size * 0.6) * sin;
+          const p1y = dupY + 0 * sin + (-size * 0.6) * cos;
+          const p2x = dupX + (-size) * cos - (size * 0.4) * sin;
+          const p2y = dupY + (-size) * sin + (size * 0.4) * cos;
+          const p3x = dupX + size * cos - (size * 0.4) * sin;
+          const p3y = dupY + size * sin + (size * 0.4) * cos;
+          this.drawSierpinski(p1x, p1y, p2x, p2y, p3x, p3y, 0, dupHue, audio);
+          break;
+        case 2: // Koch Snowflake
+          this.graphics.pivot.set(dupX, dupY);
+          this.graphics.rotation = dup.angleOffset;
+          this.drawKochSnowflake(dupX, dupY, dupLength * 1.5, dupHue, audio);
+          this.graphics.rotation = 0;
+          this.graphics.pivot.set(0, 0);
+          break;
+        case 3: // Recursive Circles
+          this.drawRecursiveCircles(dupX, dupY, dupLength, 0, dupHue, audio);
+          break;
+        case 4: // Pythagoras Tree
+          this.drawPythagorasTree(dupX, dupY + dupLength * 0.4, dupLength, -Math.PI / 2 + dup.angleOffset, 0, dupHue, audio);
+          break;
+      }
     }
 
     // Draw indicators
