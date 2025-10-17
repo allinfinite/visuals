@@ -1,7 +1,7 @@
 import type { WebcamData } from '../types';
 
 export class WebcamInput {
-  private video: HTMLVideoElement | null = null;
+  public video: HTMLVideoElement | null = null;
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private previousFrame: ImageData | null = null;
@@ -35,6 +35,8 @@ export class WebcamInput {
   
   constructor() {
     this.setupDebugOverlay();
+    // Make webcam accessible globally for scenes that want to use it
+    (window as any).__webcamInput = this;
   }
   
   public async init(): Promise<boolean> {

@@ -80,6 +80,7 @@ import { CarnalGlow } from './scenes/CarnalGlow';
 import { AIKenBurns } from './scenes/AIKenBurns';
 import { MysticWords } from './scenes/MysticWords';
 import { StealYourFace } from './scenes/StealYourFace';
+import { RainbowEcho } from './scenes/RainbowEcho';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -175,6 +176,7 @@ async function main() {
   sceneManager.addPattern(new AIKenBurns(context));
   sceneManager.addPattern(new MysticWords(context));
   sceneManager.addPattern(new StealYourFace(context));
+  sceneManager.addPattern(new RainbowEcho(context));
 
   // Set first pattern as active
   sceneManager.setActivePattern(0);
@@ -244,8 +246,9 @@ async function main() {
   console.log('🎞️  Film Effects enabled by default (grain, blur, vignette)');
   console.log('🎨 Multi-Layer Mode enabled by default (dynamic compositions)');
   console.log('🖱️  Move mouse and click to interact with all layers');
+  console.log('📹 Enable webcam for motion-based interaction');
   console.log('🎵 Enable microphone in the UI for audio reactivity');
-  console.log('📜 NEW: Mystic Words - sacred text with ripples & disintegration');
+  console.log('🌈 NEW: Rainbow Echo - trippy webcam silhouettes with rainbow tracers');
   console.log(`📊 ${sceneManager.getAllPatterns().length} patterns loaded`);
 }
 
