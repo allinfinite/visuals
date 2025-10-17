@@ -176,12 +176,16 @@ export class FeedbackFractal implements Pattern {
     }
 
     // Collect frontier nodes (smallest/deepest nodes)
+    console.log(`Draw complete: newNodes.length = ${this.newNodes.length}, growthPhase = ${this.growthPhase}`);
     if (this.newNodes.length > 0) {
       // Sort by size (smallest first = deepest/newest)
       this.newNodes.sort((a, b) => a.size - b.size);
       // Take the smallest 10% or at least 5 nodes
       const frontierCount = Math.max(5, Math.floor(this.newNodes.length * 0.1));
       this.frontierNodes = this.newNodes.slice(0, frontierCount);
+      console.log(`Collected ${this.frontierNodes.length} frontier nodes, smallest size: ${this.frontierNodes[0]?.size}`);
+    } else {
+      console.log('No newNodes collected during draw');
     }
 
     // Reset transform
@@ -231,11 +235,17 @@ export class FeedbackFractal implements Pattern {
   private drawFractalTree(x: number, y: number, angle: number, length: number, depth: number, baseHue: number, audio: AudioData): void {
     // Check if branch is visible (size in screen space)
     const screenSize = length * this.zoomLevel;
-    if (screenSize < this.minVisibleSize || depth > this.baseDepth) return;
-    
+    if (screenSize < this.minVisibleSize || depth > this.baseDepth) {
+      console.log(`Tree branch rejected: depth=${depth}, screenSize=${screenSize}, zoomLevel=${this.zoomLevel}`);
+      return;
+    }
+
     // Animated growth based on continuous growth phase
     const depthProgress = depth / this.baseDepth;
-    if (depthProgress > this.growthPhase && this.growthPhase < 1) return; // Initial growth animation
+    if (depthProgress > this.growthPhase && this.growthPhase < 1) {
+      console.log(`Tree branch growth rejected: depth=${depth}, depthProgress=${depthProgress}, growthPhase=${this.growthPhase}`);
+      return; // Initial growth animation
+    }
     
     const x2 = x + Math.cos(angle) * length;
     const y2 = y + Math.sin(angle) * length;
