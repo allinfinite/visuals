@@ -197,48 +197,190 @@ export class StealYourFace implements Pattern {
     // Add psychedelic aura around the logo
     const auraIntensity = 0.2 + Math.sin(logo.pulsePhase * 2) * 0.1 + audio.rms * 0.3;
     
-    // Outer aura rings
-    for (let i = 0; i < 3; i++) {
-      const ringRadius = size * (0.7 + i * 0.1);
-      const ringAlpha = alpha * auraIntensity * (0.5 - i * 0.1);
-      const ringColor = hslToHex((logo.colorShift + i * 60) % 360, 80, 70);
+    // Outer aura rings with pulsing effect
+    for (let i = 0; i < 5; i++) {
+      const ringRadius = size * (0.6 + i * 0.15 + Math.sin(logo.pulsePhase + i) * 0.1);
+      const ringAlpha = alpha * auraIntensity * (0.6 - i * 0.08);
+      const ringColor = hslToHex((logo.colorShift + i * 72) % 360, 90, 70);
       
-      this.graphics.lineStyle(2, ringColor, ringAlpha);
+      this.graphics.lineStyle(2 + Math.sin(logo.pulsePhase * 3 + i) * 1, ringColor, ringAlpha);
       this.graphics.drawCircle(logo.x, logo.y, ringRadius);
     }
     this.graphics.lineStyle(0);
 
-    // Add sparkles on beats
+    // Add morphing geometric shapes around the logo
+    const shapeCount = 6 + Math.floor(audio.bass * 4);
+    for (let i = 0; i < shapeCount; i++) {
+      const shapeAngle = (i / shapeCount) * Math.PI * 2 + logo.morphPhase;
+      const shapeDistance = size * (0.8 + Math.sin(logo.morphPhase * 2 + i) * 0.3);
+      const shapeX = logo.x + Math.cos(shapeAngle) * shapeDistance;
+      const shapeY = logo.y + Math.sin(shapeAngle) * shapeDistance;
+      
+      // Draw rotating triangles/squares/hexagons
+      const shapeSize = 8 + audio.mid * 12;
+      const shapeRotation = logo.rotation + i * Math.PI / 3;
+      const shapeColor = hslToHex((logo.colorShift + i * 60 + logo.morphPhase * 30) % 360, 85, 65);
+      
+      this.graphics.beginFill(shapeColor, alpha * 0.4);
+      this.graphics.lineStyle(1, shapeColor, alpha * 0.6);
+      
+      // Draw different shapes based on audio frequency
+      if (audio.treble > 0.6) {
+        // Hexagon
+        this.drawHexagon(shapeX, shapeY, shapeSize, shapeRotation);
+      } else if (audio.mid > 0.5) {
+        // Square
+        this.drawRotatedSquare(shapeX, shapeY, shapeSize, shapeRotation);
+      } else {
+        // Triangle
+        this.drawTriangle(shapeX, shapeY, shapeSize, shapeRotation);
+      }
+      
+      this.graphics.endFill();
+      this.graphics.lineStyle(0);
+    }
+
+    // Add floating particles that orbit the logo
+    const particleCount = 12 + Math.floor(audio.rms * 8);
+    for (let i = 0; i < particleCount; i++) {
+      const particleAngle = (i / particleCount) * Math.PI * 2 + this.time * 0.5 + logo.lightningPhase;
+      const particleRadius = size * (1.2 + Math.sin(logo.lightningPhase * 1.5 + i) * 0.4);
+      const particleX = logo.x + Math.cos(particleAngle) * particleRadius;
+      const particleY = logo.y + Math.sin(particleAngle) * particleRadius;
+      
+      const particleSize = 2 + Math.sin(logo.lightningPhase * 2 + i) * 2 + audio.bass * 3;
+      const particleColor = hslToHex((logo.colorShift + i * 30 + this.time * 100) % 360, 95, 75);
+      
+      this.graphics.beginFill(particleColor, alpha * 0.7);
+      this.graphics.drawCircle(particleX, particleY, particleSize);
+      this.graphics.endFill();
+    }
+
+    // Add sparkles on beats with enhanced effects
     if (audio.beat) {
-      for (let i = 0; i < 8; i++) {
-        const angle = (i / 8) * Math.PI * 2 + this.time;
-        const distance = size * (0.6 + Math.random() * 0.3);
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2 + this.time;
+        const distance = size * (0.5 + Math.random() * 0.5);
         const sparkleX = logo.x + Math.cos(angle) * distance;
         const sparkleY = logo.y + Math.sin(angle) * distance;
         
-        const sparkleColor = hslToHex((logo.colorShift + i * 45) % 360, 100, 80);
-        this.graphics.beginFill(sparkleColor, alpha * 0.8);
-        this.graphics.drawCircle(sparkleX, sparkleY, 3 + Math.random() * 3);
-        this.graphics.endFill();
+        const sparkleColor = hslToHex((logo.colorShift + i * 30) % 360, 100, 90);
+        const sparkleSize = 4 + Math.random() * 6 + audio.bass * 4;
+        
+        // Draw star-shaped sparkles
+        this.drawStar(sparkleX, sparkleY, sparkleSize, sparkleColor, alpha * 0.9);
       }
     }
 
-    // Add energy trails
-    if (audio.treble > 0.7) {
-      for (let i = 0; i < 5; i++) {
-        const trailAngle = logo.rotation + i * Math.PI / 3;
-        const trailLength = size * 0.8;
+    // Add energy trails with more complexity
+    if (audio.treble > 0.6) {
+      const trailCount = 7 + Math.floor(audio.treble * 3);
+      for (let i = 0; i < trailCount; i++) {
+        const trailAngle = logo.rotation + i * Math.PI / 3.5 + Math.sin(this.time * 2 + i) * 0.3;
+        const trailLength = size * (0.7 + Math.sin(logo.lightningPhase + i) * 0.3);
         const trailStartX = logo.x;
         const trailStartY = logo.y;
         const trailEndX = logo.x + Math.cos(trailAngle) * trailLength;
         const trailEndY = logo.y + Math.sin(trailAngle) * trailLength;
         
-        this.graphics.lineStyle(3, hslToHex((logo.colorShift + i * 72) % 360, 90, 60), alpha * 0.6);
+        const trailThickness = 2 + Math.sin(logo.lightningPhase * 3 + i) * 2;
+        const trailColor = hslToHex((logo.colorShift + i * 51) % 360, 95, 70);
+        
+        this.graphics.lineStyle(trailThickness, trailColor, alpha * 0.7);
         this.graphics.moveTo(trailStartX, trailStartY);
         this.graphics.lineTo(trailEndX, trailEndY);
         this.graphics.lineStyle(0);
       }
     }
+
+    // Add psychedelic mandala pattern behind the logo
+    if (audio.bass > 0.7) {
+      const mandalaRings = 4;
+      for (let ring = 0; ring < mandalaRings; ring++) {
+        const mandalaRadius = size * (0.3 + ring * 0.2);
+        const mandalaPoints = 8 + ring * 4;
+        
+        for (let point = 0; point < mandalaPoints; point++) {
+          const angle1 = (point / mandalaPoints) * Math.PI * 2 + logo.morphPhase;
+          const angle2 = ((point + 1) / mandalaPoints) * Math.PI * 2 + logo.morphPhase;
+          
+          const x1 = logo.x + Math.cos(angle1) * mandalaRadius;
+          const y1 = logo.y + Math.sin(angle1) * mandalaRadius;
+          const x2 = logo.x + Math.cos(angle2) * mandalaRadius;
+          const y2 = logo.y + Math.sin(angle2) * mandalaRadius;
+          
+          const mandalaColor = hslToHex((logo.colorShift + ring * 90 + point * 45) % 360, 80, 60);
+          
+          this.graphics.lineStyle(1, mandalaColor, alpha * 0.3);
+          this.graphics.moveTo(x1, y1);
+          this.graphics.lineTo(x2, y2);
+          this.graphics.lineTo(logo.x, logo.y);
+          this.graphics.lineStyle(0);
+        }
+      }
+    }
+
+    // Add wave distortion effect
+    const waveIntensity = audio.rms * 20;
+    if (waveIntensity > 5) {
+      for (let i = 0; i < 8; i++) {
+        const waveAngle = (i / 8) * Math.PI * 2;
+        const waveRadius = size * (0.4 + Math.sin(logo.pulsePhase * 4 + waveAngle * 2) * 0.2);
+        const waveX = logo.x + Math.cos(waveAngle) * waveRadius;
+        const waveY = logo.y + Math.sin(waveAngle) * waveRadius;
+        
+        const waveColor = hslToHex((logo.colorShift + i * 45) % 360, 90, 80);
+        this.graphics.beginFill(waveColor, alpha * 0.4);
+        this.graphics.drawCircle(waveX, waveY, 3 + waveIntensity * 0.5);
+        this.graphics.endFill();
+      }
+    }
+  }
+
+  private drawHexagon(x: number, y: number, size: number, rotation: number): void {
+    this.graphics.moveTo(x + Math.cos(rotation) * size, y + Math.sin(rotation) * size);
+    for (let i = 1; i <= 6; i++) {
+      const angle = rotation + (i / 6) * Math.PI * 2;
+      this.graphics.lineTo(x + Math.cos(angle) * size, y + Math.sin(angle) * size);
+    }
+  }
+
+  private drawRotatedSquare(x: number, y: number, size: number, rotation: number): void {
+    const halfSize = size * 0.707; // sqrt(2)/2 for diagonal
+    const cos = Math.cos(rotation + Math.PI / 4);
+    const sin = Math.sin(rotation + Math.PI / 4);
+    
+    this.graphics.moveTo(x + cos * halfSize, y + sin * halfSize);
+    this.graphics.lineTo(x + sin * halfSize, y - cos * halfSize);
+    this.graphics.lineTo(x - cos * halfSize, y - sin * halfSize);
+    this.graphics.lineTo(x - sin * halfSize, y + cos * halfSize);
+  }
+
+  private drawTriangle(x: number, y: number, size: number, rotation: number): void {
+    this.graphics.moveTo(x + Math.cos(rotation) * size, y + Math.sin(rotation) * size);
+    this.graphics.lineTo(x + Math.cos(rotation + 2.094) * size, y + Math.sin(rotation + 2.094) * size);
+    this.graphics.lineTo(x + Math.cos(rotation + 4.188) * size, y + Math.sin(rotation + 4.188) * size);
+  }
+
+  private drawStar(x: number, y: number, size: number, color: number, alpha: number): void {
+    this.graphics.beginFill(color, alpha);
+    this.graphics.lineStyle(1, color, alpha);
+    
+    const outerRadius = size;
+    const innerRadius = size * 0.4;
+    const points = 5;
+    
+    this.graphics.moveTo(x + outerRadius, y);
+    for (let i = 0; i < points * 2; i++) {
+      const angle = (i / (points * 2)) * Math.PI * 2;
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const starX = x + Math.cos(angle) * radius;
+      const starY = y + Math.sin(angle) * radius;
+      this.graphics.lineTo(starX, starY);
+    }
+    
+    this.graphics.endFill();
+    this.graphics.lineStyle(0);
   }
 
   public destroy(): void {
