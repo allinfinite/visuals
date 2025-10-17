@@ -40,7 +40,7 @@ export class ParamPane {
     this.app = app;
     this.pane = new Pane({
       title: 'Visual Canvas',
-      expanded: true,
+      expanded: false,
     });
 
     this.setupUI();
