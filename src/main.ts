@@ -194,7 +194,11 @@ async function main() {
   const menuBtn = document.getElementById('menu-btn') as HTMLButtonElement;
   if (menuBtn) {
     menuBtn.addEventListener('click', () => {
-      paramPane.pane.expanded = !paramPane.pane.expanded;
+      // Toggle the Tweakpane visibility
+      const tweakpane = document.querySelector('.tp-dfwv') as HTMLElement;
+      if (tweakpane) {
+        tweakpane.style.display = tweakpane.style.display === 'none' ? 'block' : 'none';
+      }
     });
   }
 
