@@ -89,18 +89,19 @@ export class FeedbackFractal implements Pattern {
       
       const { width, height } = this.context;
       
-      // Calculate pan offset to center this node (accounting for current zoom)
-      this.targetPanX = (width / 2 - targetNode.x) * this.zoomLevel;
-      this.targetPanY = (height / 2 - targetNode.y) * this.zoomLevel;
+      // Pan is the offset from center - the node position becomes the new "center"
+      // We want to move the view so that targetNode appears at the screen center
+      this.targetPanX = width / 2 - targetNode.x;
+      this.targetPanY = height / 2 - targetNode.y;
     }
     
     // Gentle drift for organic movement
-    this.targetPanX += Math.sin(this.time * 0.3) * dt * 5;
-    this.targetPanY += Math.cos(this.time * 0.2) * dt * 5;
+    this.targetPanX += Math.sin(this.time * 0.3) * dt * 2;
+    this.targetPanY += Math.cos(this.time * 0.2) * dt * 2;
 
     // Smoothly interpolate camera pan towards target
-    this.panX += (this.targetPanX - this.panX) * this.panSpeed * dt;
-    this.panY += (this.targetPanY - this.panY) * this.panSpeed * dt;
+    this.panX += (this.targetPanX - this.panX) * 2 * dt; // Faster pan to keep up with zoom
+    this.panY += (this.targetPanY - this.panY) * 2 * dt;
 
     // Continuous rotation (slow spin)
     this.rotationPhase = this.time * 0.05 + audio.bass * 0.3;
@@ -137,12 +138,16 @@ export class FeedbackFractal implements Pattern {
       rotation: this.graphics.rotation,
     };
 
-    // Apply camera transform: pan, zoom, and rotation
-    // Pan shifts the entire view, zoom scales around center, rotation spins
-    this.graphics.position.set(centerX + this.panX, centerY + this.panY);
+    // Apply camera transform with correct order for zoom + pan
+    // The pivot determines what point stays in place when we zoom
+    // We want to zoom towards (and pan to) the target node location
+    const pivotX = centerX - this.panX;
+    const pivotY = centerY - this.panY;
+    
+    this.graphics.pivot.set(pivotX, pivotY);
+    this.graphics.position.set(centerX, centerY);
     this.graphics.scale.set(finalZoom, finalZoom);
     this.graphics.rotation = this.rotationPhase;
-    this.graphics.pivot.set(centerX, centerY);
 
     // Coordinates for fractal drawing (in world space)
     const adjustedCenterX = centerX;
