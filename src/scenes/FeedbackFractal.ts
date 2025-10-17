@@ -30,8 +30,7 @@ export class FeedbackFractal implements Pattern {
   private clickCooldown: number = 0; // Prevent rapid clicking
   private newNodes: FractalNode[] = []; // Track newly created nodes
   private minVisibleSize: number = 0.5; // Minimum pixel size to render
-  private lastNodeUpdateTime: number = 0;
-  private lastNewNode?: FractalNode; // Most recently generated node from draw cycle
+  private frontierNodes: FractalNode[] = []; // Deepest/smallest nodes at growth frontier
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -51,6 +50,7 @@ export class FeedbackFractal implements Pattern {
 
     // Start a fresh node collection for this frame's draw
     this.newNodes = [];
+    this.frontierNodes = [];
 
     // Update click cooldown
     this.clickCooldown = Math.max(0, this.clickCooldown - dt);
@@ -68,8 +68,8 @@ export class FeedbackFractal implements Pattern {
           this.fractalType = newType;
           this.growthPhase = 0; // Reset growth animation
           this.clickCooldown = 1.0; // 1 second cooldown to prevent rapid switching
-        this.newNodes = []; // Clear tracked nodes
-        this.lastNewNode = undefined;
+          this.newNodes = []; // Clear tracked nodes
+          this.frontierNodes = []; // Clear frontier nodes
           
           // Reset camera for new fractal
           this.targetZoom = 1;
@@ -91,17 +91,18 @@ export class FeedbackFractal implements Pattern {
     this.targetZoom = 1 + this.growthPhase * 3; // Fast zoom
     this.zoomLevel += (this.targetZoom - this.zoomLevel) * 4 * dt;
     
-    // Always aim camera at the most recently created node (from last draw)
-    if (this.lastNewNode) {
-      // Jump directly to the node for testing
-      console.log(`Zooming to node: x=${this.lastNewNode.x}, y=${this.lastNewNode.y}, size=${this.lastNewNode.size}`);
-      this.cameraX = this.lastNewNode.x;
-      this.cameraY = this.lastNewNode.y;
-      this.targetCameraX = this.lastNewNode.x;
-      this.targetCameraY = this.lastNewNode.y;
+    // Always aim camera at the smallest frontier nodes (deepest growth)
+    if (this.frontierNodes.length > 0) {
+      // Pick the smallest node at the frontier
+      const targetNode = this.frontierNodes[0]; // Already sorted by size
+      console.log(`Zooming to frontier node: x=${targetNode.x}, y=${targetNode.y}, size=${targetNode.size}, depth=${targetNode.depth}`);
+      this.cameraX = targetNode.x;
+      this.cameraY = targetNode.y;
+      this.targetCameraX = targetNode.x;
+      this.targetCameraY = targetNode.y;
     } else {
       // Test transform by moving to a known position (off-center)
-      console.log('No lastNewNode - testing transform with fixed position');
+      console.log('No frontier nodes - testing transform with fixed position');
       this.cameraX = 200; // Move to an offset position to test if transform works
       this.cameraY = 100;
       this.targetCameraX = 200;
@@ -174,6 +175,15 @@ export class FeedbackFractal implements Pattern {
         break;
     }
 
+    // Collect frontier nodes (smallest/deepest nodes)
+    if (this.newNodes.length > 0) {
+      // Sort by size (smallest first = deepest/newest)
+      this.newNodes.sort((a, b) => a.size - b.size);
+      // Take the smallest 10% or at least 5 nodes
+      const frontierCount = Math.max(5, Math.floor(this.newNodes.length * 0.1));
+      this.frontierNodes = this.newNodes.slice(0, frontierCount);
+    }
+
     // Reset transform
     this.graphics.pivot.set(0, 0);
     this.graphics.position.set(originalTransform.x, originalTransform.y);
@@ -231,10 +241,7 @@ export class FeedbackFractal implements Pattern {
     const y2 = y + Math.sin(angle) * length;
     
     // Track this node for zoom targeting
-    const node: FractalNode = { x: x2, y: y2, depth, angle, size: length };
-    this.newNodes.push(node);
-    this.lastNewNode = node;
-    console.log(`Generated tree node: x=${x2}, y=${y2}, depth=${depth}`);
+    this.newNodes.push({ x: x2, y: y2, depth, angle, size: length });
     
     const hue = (baseHue + depth * 25) % 360;
     const color = hslToHex(hue, 80, 60);
@@ -290,11 +297,11 @@ export class FeedbackFractal implements Pattern {
     
     // Track midpoints as new nodes
     const s = Math.abs(x2 - x1);
-    const n1: FractalNode = { x: mid1x, y: mid1y, depth, angle: 0, size: s };
-    const n2: FractalNode = { x: mid2x, y: mid2y, depth, angle: 0, size: s };
-    const n3: FractalNode = { x: mid3x, y: mid3y, depth, angle: 0, size: s };
-    this.newNodes.push(n1, n2, n3);
-    this.lastNewNode = n3;
+    this.newNodes.push(
+      { x: mid1x, y: mid1y, depth, angle: 0, size: s },
+      { x: mid2x, y: mid2y, depth, angle: 0, size: s },
+      { x: mid3x, y: mid3y, depth, angle: 0, size: s }
+    );
     
     // Recurse on three outer triangles
     this.drawSierpinski(x1, y1, mid1x, mid1y, mid3x, mid3y, depth + 1, baseHue, audio);
@@ -358,9 +365,7 @@ export class FeedbackFractal implements Pattern {
     const y4 = y3 + Math.sin(angle) * segmentLength;
     
     // Track the peak point as a new node
-    const kn: FractalNode = { x: x4, y: y4, depth, angle, size: segmentLength };
-    this.newNodes.push(kn);
-    this.lastNewNode = kn;
+    this.newNodes.push({ x: x4, y: y4, depth, angle, size: segmentLength });
     
     // Recurse on four segments
     this.drawKochLine(x1, y1, x3, y3, depth + 1, baseHue, audio);
@@ -398,9 +403,7 @@ export class FeedbackFractal implements Pattern {
       const cy = y + Math.sin(angle) * distance;
       
       // Track child circle positions as new nodes
-      const cn: FractalNode = { x: cx, y: cy, depth, angle, size: childRadius };
-      this.newNodes.push(cn);
-      this.lastNewNode = cn;
+      this.newNodes.push({ x: cx, y: cy, depth, angle, size: childRadius });
       
       this.drawRecursiveCircles(cx, cy, childRadius, depth + 1, baseHue, audio);
     }
@@ -450,10 +453,10 @@ export class FeedbackFractal implements Pattern {
     const topRightY = y + size * sin - size * cos;
     
     // Track child square positions as new nodes
-    const q1: FractalNode = { x: topLeftX, y: topLeftY, depth, angle, size };
-    const q2: FractalNode = { x: topRightX, y: topRightY, depth, angle, size };
-    this.newNodes.push(q1, q2);
-    this.lastNewNode = q2;
+    this.newNodes.push(
+      { x: topLeftX, y: topLeftY, depth, angle, size },
+      { x: topRightX, y: topRightY, depth, angle, size }
+    );
     
     const leftAngle = angle - this.branchAngle * (1 + audio.bass * 0.3);
     const rightAngle = angle + this.branchAngle * (1 + audio.treble * 0.3);
