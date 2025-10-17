@@ -147,7 +147,23 @@ export class FeedbackFractal implements Pattern {
   }
 
   private drawTree(x: number, y: number, angle: number, length: number, depth: number, baseHue: number, audio: AudioData): void {
-    if (depth > this.growthPhase || length < 2) return;
+    if (length < 2) return;
+    
+    // Draw branches at this depth if they're within the growth window
+    // Early depths appear first, then middle, then deepest
+    const depthProgress = depth / this.maxDepth;
+    const growthWindow = Math.abs(depthProgress - 0.5) * 2; // 0 at middle, 1 at extremes
+    const isVisible = this.growthPhase > growthWindow * this.maxDepth;
+    
+    if (!isVisible) {
+      // Still recurse to draw deeper/shallower branches
+      const newLength = length * 0.67;
+      const endX = x + Math.cos(angle) * length;
+      const endY = y + Math.sin(angle) * length;
+      this.drawTree(endX, endY, angle - this.branchAngle, newLength, depth + 1, baseHue, audio);
+      this.drawTree(endX, endY, angle + this.branchAngle, newLength, depth + 1, baseHue, audio);
+      return;
+    }
 
     const hue = (baseHue + depth * 30) % 360;
     const color = hslToHex(hue, 80, 60);
@@ -167,10 +183,28 @@ export class FeedbackFractal implements Pattern {
   }
 
   private drawSierpinski(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, depth: number, baseHue: number, audio: AudioData): void {
-    if (depth > this.growthPhase) return;
-
     const size = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
     if (size < 3) return;
+
+    // Draw triangles from middle outward/inward simultaneously
+    const depthProgress = depth / this.maxDepth;
+    const growthWindow = Math.abs(depthProgress - 0.5) * 2;
+    const isVisible = this.growthPhase > growthWindow * this.maxDepth;
+    
+    if (!isVisible) {
+      // Still recurse to draw other depths
+      const mx1 = (x1 + x2) / 2;
+      const my1 = (y1 + y2) / 2;
+      const mx2 = (x2 + x3) / 2;
+      const my2 = (y2 + y3) / 2;
+      const mx3 = (x3 + x1) / 2;
+      const my3 = (y3 + y1) / 2;
+
+      this.drawSierpinski(x1, y1, mx1, my1, mx3, my3, depth + 1, baseHue, audio);
+      this.drawSierpinski(mx1, my1, x2, y2, mx2, my2, depth + 1, baseHue, audio);
+      this.drawSierpinski(mx3, my3, mx2, my2, x3, y3, depth + 1, baseHue, audio);
+      return;
+    }
 
     const hue = (baseHue + depth * 30) % 360;
     const color = hslToHex(hue, 80, 60);
@@ -209,15 +243,6 @@ export class FeedbackFractal implements Pattern {
   }
 
   private drawKochLine(x1: number, y1: number, x2: number, y2: number, depth: number, baseHue: number, audio: AudioData): void {
-    if (depth > this.growthPhase) {
-      const hue = (baseHue + depth * 30) % 360;
-      const color = hslToHex(hue, 80, 60);
-      this.graphics.lineStyle(2, color, 0.8);
-      this.graphics.moveTo(x1, y1);
-      this.graphics.lineTo(x2, y2);
-      return;
-    }
-
     const segmentLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
     if (segmentLength < 3) {
       const hue = (baseHue + depth * 30) % 360;
@@ -227,6 +252,36 @@ export class FeedbackFractal implements Pattern {
       this.graphics.lineTo(x2, y2);
       return;
     }
+
+    // Draw segments from middle outward/inward simultaneously
+    const depthProgress = depth / this.maxDepth;
+    const growthWindow = Math.abs(depthProgress - 0.5) * 2;
+    const isVisible = this.growthPhase > growthWindow * this.maxDepth;
+    
+    if (!isVisible) {
+      // Still recurse to draw other depths
+      const dx = (x2 - x1) / 3;
+      const dy = (y2 - y1) / 3;
+      const px1 = x1 + dx;
+      const py1 = y1 + dy;
+      const px2 = x1 + 2 * dx;
+      const py2 = y1 + 2 * dy;
+      const angle = Math.atan2(y2 - y1, x2 - x1) - Math.PI / 3;
+      const peakX = px1 + segmentLength / 3 * Math.cos(angle);
+      const peakY = py1 + segmentLength / 3 * Math.sin(angle);
+
+      this.drawKochLine(x1, y1, px1, py1, depth + 1, baseHue, audio);
+      this.drawKochLine(px1, py1, peakX, peakY, depth + 1, baseHue, audio);
+      this.drawKochLine(peakX, peakY, px2, py2, depth + 1, baseHue, audio);
+      this.drawKochLine(px2, py2, x2, y2, depth + 1, baseHue, audio);
+      return;
+    }
+
+    const hue = (baseHue + depth * 30) % 360;
+    const color = hslToHex(hue, 80, 60);
+    this.graphics.lineStyle(2, color, 0.8);
+    this.graphics.moveTo(x1, y1);
+    this.graphics.lineTo(x2, y2);
 
     const dx = (x2 - x1) / 3;
     const dy = (y2 - y1) / 3;
@@ -247,7 +302,25 @@ export class FeedbackFractal implements Pattern {
   }
 
   private drawRecursiveCircles(x: number, y: number, radius: number, depth: number, baseHue: number, audio: AudioData): void {
-    if (depth > this.growthPhase || radius < 3) return;
+    if (radius < 3) return;
+
+    // Draw circles from middle outward/inward simultaneously
+    const depthProgress = depth / this.maxDepth;
+    const growthWindow = Math.abs(depthProgress - 0.5) * 2;
+    const isVisible = this.growthPhase > growthWindow * this.maxDepth;
+    
+    if (!isVisible) {
+      // Still recurse to draw other depths
+      const newRadius = radius * 0.5;
+      const angleStep = Math.PI * 2 / 6;
+      for (let i = 0; i < 6; i++) {
+        const angle = angleStep * i;
+        const nx = x + Math.cos(angle) * (radius - newRadius);
+        const ny = y + Math.sin(angle) * (radius - newRadius);
+        this.drawRecursiveCircles(nx, ny, newRadius, depth + 1, baseHue, audio);
+      }
+      return;
+    }
 
     const hue = (baseHue + depth * 30) % 360;
     const color = hslToHex(hue, 80, 60);
@@ -268,7 +341,35 @@ export class FeedbackFractal implements Pattern {
   }
 
   private drawPythagorasTree(x: number, y: number, size: number, angle: number, depth: number, baseHue: number, audio: AudioData): void {
-    if (depth > this.growthPhase || size < 2) return;
+    if (size < 2) return;
+
+    // Draw squares from middle outward/inward simultaneously
+    const depthProgress = depth / this.maxDepth;
+    const growthWindow = Math.abs(depthProgress - 0.5) * 2;
+    const isVisible = this.growthPhase > growthWindow * this.maxDepth;
+    
+    if (!isVisible) {
+      // Still recurse to draw other depths
+      const newSize = size * 0.7;
+      const branchAngle = Math.PI / 4;
+      const halfSize = size / 2;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      const x1 = x - halfSize * cos;
+      const y1 = y - halfSize * sin;
+      const x4 = x1 + halfSize * sin;
+      const y4 = y1 - halfSize * cos;
+      const x2 = x + halfSize * cos;
+      const y2 = y + halfSize * sin;
+      const x3 = x2 + halfSize * sin;
+      const y3 = y2 - halfSize * cos;
+      const topCenterX = (x3 + x4) / 2;
+      const topCenterY = (y3 + y4) / 2;
+
+      this.drawPythagorasTree(topCenterX, topCenterY, newSize, angle - branchAngle, depth + 1, baseHue, audio);
+      this.drawPythagorasTree(topCenterX, topCenterY, newSize, angle + branchAngle, depth + 1, baseHue, audio);
+      return;
+    }
 
     const hue = (baseHue + depth * 30) % 360;
     const color = hslToHex(hue, 80, 60);
