@@ -70,8 +70,11 @@ export class FeedbackFractal implements Pattern {
     // Growth phase continues indefinitely (never stops)
     this.growthPhase += dt * 0.3; // Continuous growth
     
-    // Continuously zoom in as fractal grows
-    this.targetZoom = 1 + this.growthPhase * 0.5; // Continuous zoom
+    // Continuously and aggressively zoom in as fractal grows
+    this.targetZoom = 1 + this.growthPhase * 2; // Faster zoom (2x instead of 0.5x)
+    
+    // Smoothly interpolate zoom level towards target (faster zoom)
+    this.zoomLevel += (this.targetZoom - this.zoomLevel) * 3 * dt; // Faster zoom interpolation
     
     // Update pan target to follow the newest/smallest nodes (the frontier)
     if (this.newNodes.length > 0) {
@@ -87,13 +90,9 @@ export class FeedbackFractal implements Pattern {
       
       const { width, height } = this.context;
       
-      // Smoothly pan towards this node (more responsive to follow new growth)
-      const targetPanXNew = (width / 2 - targetNode.x) * this.targetZoom;
-      const targetPanYNew = (height / 2 - targetNode.y) * this.targetZoom;
-      
-      // Interpolate towards new target more aggressively
-      this.targetPanX += (targetPanXNew - this.targetPanX) * dt * 2;
-      this.targetPanY += (targetPanYNew - this.targetPanY) * dt * 2;
+      // Calculate pan offset to center this node (accounting for current zoom)
+      this.targetPanX = (width / 2 - targetNode.x) * this.zoomLevel;
+      this.targetPanY = (height / 2 - targetNode.y) * this.zoomLevel;
     }
     
     // Gentle drift for organic movement
@@ -103,9 +102,6 @@ export class FeedbackFractal implements Pattern {
     // Smoothly interpolate camera pan towards target
     this.panX += (this.targetPanX - this.panX) * this.panSpeed * dt;
     this.panY += (this.targetPanY - this.panY) * this.panSpeed * dt;
-
-    // Smoothly interpolate zoom level towards target
-    this.zoomLevel += (this.targetZoom - this.zoomLevel) * this.zoomSpeed * dt;
 
     // Continuous rotation (slow spin)
     this.rotationPhase = this.time * 0.05 + audio.bass * 0.3;
