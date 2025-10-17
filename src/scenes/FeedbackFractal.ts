@@ -60,20 +60,10 @@ export class FeedbackFractal implements Pattern {
       this.growthPhase = this.maxDepth;
     }
 
-    // Breathing effect - expansion and contraction
-    this.breathePhase += dt * 0.5; // Slow breathing cycle
-    const breathe = Math.sin(this.breathePhase) * 0.3 + 1; // Oscillate between 0.7x and 1.3x
-
-    // Zoom in as fractal grows, then add breathing
-    const baseZoom = 1 + (this.growthPhase / this.maxDepth) * 2.5;
-    this.targetZoom = baseZoom * breathe;
-    this.zoomLevel += (this.targetZoom - this.zoomLevel) * dt * 3;
-
-    // Pan based on growth - explore different parts of the fractal
-    const panSpeed = 0.3;
-    const panAmount = 50 * (this.growthPhase / this.maxDepth);
-    this.panX = Math.sin(this.time * panSpeed) * panAmount;
-    this.panY = Math.cos(this.time * panSpeed * 0.7) * panAmount * 0.5;
+    // No zoom or pan - keep it simple
+    this.zoomLevel = 1;
+    this.panX = 0;
+    this.panY = 0;
 
     // Audio controls branch angle
     this.branchAngle = (Math.PI / 6) * (1 + audio.treble * 0.4);
