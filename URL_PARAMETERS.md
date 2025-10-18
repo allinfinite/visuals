@@ -9,7 +9,8 @@ Load a specific scene by name or index.
 
 **Examples:**
 - `?scene=Aurora` - Load Aurora scene by name (case-insensitive)
-- `?scene=Nebula` - Load Nebula scene
+- `?scene=StealYourFace` - Spaces, hyphens, and underscores are optional
+- `?scene=Steal Your Face` - Also works with spaces
 - `?scene=0` - Load first scene by index
 - `?scene=13` - Load 14th scene by index
 - `?pattern=Fireflies` - Alternative parameter name
@@ -140,6 +141,7 @@ Here are all the available scene names (case-insensitive):
 ## Notes
 
 - Scene names are **case-insensitive** (e.g., `aurora`, `Aurora`, `AURORA` all work)
+- **Spaces, hyphens, and underscores are optional** in scene names (e.g., `StealYourFace`, `Steal Your Face`, `steal-your-face` all work)
 - If a scene name is not found, a warning will be logged to the console and the default scene will load
 - Webcam-required scenes will only load if the webcam is enabled
 - Multi-layer mode is enabled by default - use `?mode=single` to show only one pattern

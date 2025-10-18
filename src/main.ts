@@ -224,9 +224,13 @@ async function main() {
     if (!isNaN(indexNum) && indexNum >= 0 && indexNum < patterns.length) {
       targetIndex = indexNum;
     } else {
-      // Search by name (case-insensitive)
+      // Search by name (case-insensitive, spaces optional)
+      // Normalize: remove spaces and special chars for flexible matching
+      const normalizeString = (s: string) => s.toLowerCase().replace(/[\s-_]/g, '');
+      const normalizedParam = normalizeString(sceneParam);
+      
       targetIndex = patterns.findIndex(p => 
-        p.name.toLowerCase() === sceneParam.toLowerCase()
+        normalizeString(p.name) === normalizedParam
       );
     }
     
