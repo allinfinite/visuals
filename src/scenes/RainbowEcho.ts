@@ -105,8 +105,11 @@ export class RainbowEcho implements Pattern {
       return;
     }
     
-    // Draw video to processing canvas
-    this.videoCtx.drawImage(video, 0, 0, this.processWidth, this.processHeight);
+    // Draw video to processing canvas (mirrored)
+    this.videoCtx.save();
+    this.videoCtx.scale(-1, 1);
+    this.videoCtx.drawImage(video, -this.processWidth, 0, this.processWidth, this.processHeight);
+    this.videoCtx.restore();
     const currentFrame = this.videoCtx.getImageData(0, 0, this.processWidth, this.processHeight);
     
     // Process based on mode

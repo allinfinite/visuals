@@ -89,7 +89,6 @@ export class FeedbackFractal implements Pattern {
       { angleOffset: 0, scale: 1.0, hueOffset: 0, xOffset: 0, yOffset: 0 },
       { angleOffset: Math.PI * 2 / 3, scale: 0.75, hueOffset: 120, xOffset: 0, yOffset: 0 },
       { angleOffset: Math.PI * 4 / 3, scale: 0.75, hueOffset: 240, xOffset: 0, yOffset: 0 },
-      { angleOffset: Math.PI / 2, scale: 0.6, hueOffset: 180, xOffset: 0, yOffset: 0 },
     ];
 
     // Draw each duplicate

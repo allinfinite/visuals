@@ -76,8 +76,11 @@ export class VoronoiShatter implements Pattern {
       return;
     }
     
-    // Process video frame
-    this.videoCtx.drawImage(video, 0, 0, this.processWidth, this.processHeight);
+    // Process video frame (mirrored)
+    this.videoCtx.save();
+    this.videoCtx.scale(-1, 1);
+    this.videoCtx.drawImage(video, -this.processWidth, 0, this.processWidth, this.processHeight);
+    this.videoCtx.restore();
     const frame = this.videoCtx.getImageData(0, 0, this.processWidth, this.processHeight);
     
     // Detect motion
