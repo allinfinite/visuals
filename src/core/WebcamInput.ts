@@ -190,7 +190,8 @@ export class WebcamInput {
     
     // Calculate centroid if motion detected
     if (motionPixels > 0) {
-      this.centroidX = motionX / motionPixels / this.processWidth;
+      // Mirror X coordinate so left movement goes left (like a mirror)
+      this.centroidX = 1 - (motionX / motionPixels / this.processWidth);
       this.centroidY = motionY / motionPixels / this.processHeight;
       
       // Normalize motion intensity
@@ -361,13 +362,16 @@ export class WebcamInput {
     this.debugCtx.fillStyle = 'black';
     this.debugCtx.fillRect(0, 0, this.debugCanvas.width, this.debugCanvas.height);
     
-    // Draw video preview
+    // Draw video preview (mirrored)
+    this.debugCtx.save();
+    this.debugCtx.scale(-1, 1);
     this.debugCtx.drawImage(
       this.canvas,
-      0, 0,
+      -this.debugCanvas.width, 0,
       this.debugCanvas.width,
       this.debugCanvas.height * 0.6
     );
+    this.debugCtx.restore();
     
     // Draw centroid marker
     const markerX = this.centroidX * this.debugCanvas.width;
