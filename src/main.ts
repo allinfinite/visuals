@@ -204,8 +204,51 @@ async function main() {
   sceneManager.addPattern(new FireSmokeBody(context));
   sceneManager.addPattern(new VoronoiShatter(context));
 
-  // Set first pattern as active
-  sceneManager.setActivePattern(0);
+  // Parse URL parameters for scene selection
+  const urlParams = new URLSearchParams(window.location.search);
+  const sceneParam = urlParams.get('scene') || urlParams.get('pattern');
+  const modeParam = urlParams.get('mode');
+  
+  // Handle single pattern mode request
+  if (modeParam === 'single') {
+    sceneManager.disableCompositionMode();
+  }
+  
+  // Load specific scene if requested
+  if (sceneParam) {
+    const patterns = sceneManager.getAllPatterns();
+    let targetIndex = -1;
+    
+    // Try to parse as index first
+    const indexNum = parseInt(sceneParam, 10);
+    if (!isNaN(indexNum) && indexNum >= 0 && indexNum < patterns.length) {
+      targetIndex = indexNum;
+    } else {
+      // Search by name (case-insensitive)
+      targetIndex = patterns.findIndex(p => 
+        p.name.toLowerCase() === sceneParam.toLowerCase()
+      );
+    }
+    
+    if (targetIndex !== -1) {
+      const pattern = patterns[targetIndex];
+      console.log(`🎯 Loading scene from URL: ${pattern.name}`);
+      
+      if (sceneManager.compositionEnabled) {
+        // In composition mode, queue the specific pattern
+        sceneManager.queueSpecificPattern(targetIndex, false);
+      } else {
+        // In single pattern mode, set it as active
+        sceneManager.setActivePattern(targetIndex);
+      }
+    } else {
+      console.warn(`⚠️  Scene not found: "${sceneParam}". Loading default.`);
+      sceneManager.setActivePattern(0);
+    }
+  } else {
+    // Set first pattern as active (default behavior)
+    sceneManager.setActivePattern(0);
+  }
 
   // Setup UI
   const paramPane = new ParamPane(sceneManager, app.getAudio(), app);
@@ -289,6 +332,10 @@ async function main() {
   console.log('🎨 Multi-Layer Mode enabled by default (dynamic compositions)');
   console.log('🖱️  Move mouse and click to interact with all layers');
   console.log('⌨️  Press "M" to hide/show menu buttons');
+  console.log('🔗 URL Parameters:');
+  console.log('   • ?scene=Aurora (load specific scene by name)');
+  console.log('   • ?scene=0 (load specific scene by index)');
+  console.log('   • ?mode=single (disable multi-layer mode)');
   console.log('📹 Enable webcam for 14 interactive visual modes!');
   console.log('🎵 Enable microphone in the UI for audio reactivity');
   console.log('🌈 WEBCAM VISUALS:');
