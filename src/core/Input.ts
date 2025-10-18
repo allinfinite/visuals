@@ -75,18 +75,37 @@ export class Input {
     const webcamData = this.webcamInput.getWebcamData();
     this.state.webcam = webcamData;
     
+    // Track previous drag state to detect transitions
+    const wasDragging = this.state.isDragging && webcamData.enabled;
+    
     // Merge webcam and mouse positions
     if (webcamData.enabled && webcamData.hasMotion) {
       // Use webcam position when motion is detected
       this.state.x = webcamData.x * this.screenWidth;
       this.state.y = webcamData.y * this.screenHeight;
+      
+      // Set drag state based on webcam drag mode
+      if (webcamData.dragMode === 'dragging') {
+        this.state.isDown = true;
+        this.state.isDragging = true;
+      } else if (webcamData.dragMode === 'ready') {
+        this.state.isDown = true;
+        this.state.isDragging = false;
+      } else {
+        // Only clear if webcam was controlling
+        if (wasDragging) {
+          this.state.isDown = false;
+          this.state.isDragging = false;
+        }
+      }
     } else {
-      // Fall back to mouse position
+      // Fall back to mouse position and state
       this.state.x = this.mouseX;
       this.state.y = this.mouseY;
+      // Mouse state is handled by event listeners
     }
     
-    // Check for webcam click gesture
+    // Check for webcam click gesture (only when not in drag mode)
     if (this.webcamInput.shouldTriggerClick()) {
       this.state.clicks.push({
         x: this.state.x,

@@ -26,6 +26,14 @@ export class WebcamInput {
   private frameSkip: number = 2; // Process every Nth frame
   private frameCount: number = 0;
   
+  // Drag mode state
+  private dragMode: 'none' | 'ready' | 'dragging' = 'none';
+  private stillnessTime: number = 0;
+  private stillnessThreshold: number = 0.08; // Very low motion = stillness
+  private stillnessDuration: number = 0.5; // Seconds to hold still
+  private slowMotionThreshold: number = 0.25; // Threshold for slow dragging motion
+  private quickMotionThreshold: number = 0.6; // Quick motion exits drag
+  
   // Click detection
   private clickCooldown: number = 0;
   private clickCooldownDuration: number = 0.5; // seconds
@@ -133,6 +141,9 @@ export class WebcamInput {
         this.detectMotion(currentFrame, this.previousFrame);
       }
       
+      // Update drag mode detection
+      this.updateDragMode(dt);
+      
       // Store current frame for next iteration
       this.previousFrame = currentFrame;
       
@@ -203,7 +214,69 @@ export class WebcamInput {
     }
   }
   
+  private updateDragMode(dt: number): void {
+    const motion = this.smoothedMotionIntensity;
+    
+    switch (this.dragMode) {
+      case 'none':
+        // Check if user is holding still
+        if (motion < this.stillnessThreshold) {
+          this.stillnessTime += dt;
+          
+          // Enter ready mode after holding still
+          if (this.stillnessTime >= this.stillnessDuration) {
+            this.dragMode = 'ready';
+            this.stillnessTime = 0;
+            console.log('🟡 Webcam: Ready to drag');
+          }
+        } else {
+          // Reset if user moves
+          this.stillnessTime = 0;
+        }
+        break;
+        
+      case 'ready':
+        // In ready mode, start dragging on slow movement
+        if (motion > this.stillnessThreshold && motion < this.slowMotionThreshold) {
+          this.dragMode = 'dragging';
+          console.log('🟢 Webcam: Dragging started');
+        } else if (motion >= this.quickMotionThreshold) {
+          // Quick motion cancels ready mode
+          this.dragMode = 'none';
+          this.stillnessTime = 0;
+          console.log('⚪ Webcam: Ready cancelled');
+        }
+        break;
+        
+      case 'dragging':
+        // Exit drag mode on quick motion or stillness
+        if (motion >= this.quickMotionThreshold) {
+          this.dragMode = 'none';
+          this.stillnessTime = 0;
+          console.log('🔴 Webcam: Drag ended (quick motion)');
+        } else if (motion < this.stillnessThreshold) {
+          this.stillnessTime += dt;
+          
+          // Hold still again to exit drag mode
+          if (this.stillnessTime >= this.stillnessDuration) {
+            this.dragMode = 'none';
+            this.stillnessTime = 0;
+            console.log('🔴 Webcam: Drag ended (stillness)');
+          }
+        } else {
+          // Reset stillness counter if moving slowly (continue dragging)
+          this.stillnessTime = 0;
+        }
+        break;
+    }
+  }
+  
   public shouldTriggerClick(): boolean {
+    // Disable regular clicks when in drag mode
+    if (this.dragMode !== 'none') {
+      return false;
+    }
+    
     if (this.clickCooldown > 0 || this.motionHistory.length < 5) {
       return false;
     }
@@ -233,7 +306,10 @@ export class WebcamInput {
       y: this.centroidY,
       motionIntensity: this.smoothedMotionIntensity,
       hasMotion: this.hasMotion,
-      enabled: this.isEnabled
+      enabled: this.isEnabled,
+      dragMode: this.dragMode,
+      stillnessProgress: this.dragMode === 'none' ? 
+        Math.min(1, this.stillnessTime / this.stillnessDuration) : 0
     };
   }
   
@@ -328,18 +404,49 @@ export class WebcamInput {
     this.debugCtx.fillText(
       `Motion: ${(this.smoothedMotionIntensity * 100).toFixed(0)}%`,
       10,
-      this.debugCanvas.height * 0.85
+      this.debugCanvas.height * 0.77
     );
     this.debugCtx.fillText(
       `Pos: (${(this.centroidX * 100).toFixed(0)}, ${(this.centroidY * 100).toFixed(0)})`,
       10,
-      this.debugCanvas.height * 0.92
+      this.debugCanvas.height * 0.85
     );
+    
+    // Draw drag mode indicator
+    const modeColors: Record<string, string> = {
+      'none': 'white',
+      'ready': 'yellow',
+      'dragging': 'lime'
+    };
+    const modeEmojis: Record<string, string> = {
+      'none': '⚪',
+      'ready': '🟡',
+      'dragging': '🟢'
+    };
+    this.debugCtx.fillStyle = modeColors[this.dragMode];
     this.debugCtx.fillText(
-      `Source: ${this.hasMotion ? 'WEBCAM' : 'mouse'}`,
+      `${modeEmojis[this.dragMode]} ${this.dragMode.toUpperCase()}`,
       10,
-      this.debugCanvas.height * 0.99
+      this.debugCanvas.height * 0.93
     );
+    
+    // Show stillness progress when in none mode
+    if (this.dragMode === 'none' && this.stillnessTime > 0) {
+      const progress = Math.min(1, this.stillnessTime / this.stillnessDuration);
+      this.debugCtx.fillStyle = 'yellow';
+      this.debugCtx.fillText(
+        `Still: ${(progress * 100).toFixed(0)}%`,
+        10,
+        this.debugCanvas.height * 0.99
+      );
+    } else {
+      this.debugCtx.fillStyle = 'white';
+      this.debugCtx.fillText(
+        `Source: ${this.hasMotion ? 'WEBCAM' : 'mouse'}`,
+        10,
+        this.debugCanvas.height * 0.99
+      );
+    }
   }
   
   public destroy(): void {

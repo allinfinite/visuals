@@ -26,6 +26,8 @@ export interface WebcamData {
   motionIntensity: number; // 0-1 motion amount
   hasMotion: boolean;     // Motion detected
   enabled: boolean;       // Webcam active
+  dragMode: 'none' | 'ready' | 'dragging'; // Drag state
+  stillnessProgress: number; // 0-1, progress toward entering drag mode
 }
 
 export interface ClickEvent {
