@@ -17,6 +17,7 @@ interface VoronoiCell {
 
 export class VoronoiShatter implements Pattern {
   public name = 'Voronoi Shatter';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

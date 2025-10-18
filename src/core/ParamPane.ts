@@ -132,7 +132,8 @@ export class ParamPane {
     
     const patternNames: { [key: string]: number } = {};
     sortedPatterns.forEach(({ pattern, index }) => {
-      patternNames[pattern.name] = index;
+      const label = pattern.requiresWebcam ? `📹 ${pattern.name}` : pattern.name;
+      patternNames[label] = index;
     });
 
     patternFolder
@@ -166,18 +167,23 @@ export class ParamPane {
       
       const buttonParam = { 
         action: () => {
-          const success = this.sceneManager.queueSpecificPattern(index);
+          const webcamEnabled = this.app.getInput().getWebcamInput().getEnabled();
+          const success = this.sceneManager.queueSpecificPattern(index, webcamEnabled);
           if (success) {
             this.globalQueuePosition++;
             this.queuePositions[index].push(this.globalQueuePosition);
             console.log(`✅ Queued: ${pattern.name} at position ${this.globalQueuePosition}`);
             this.updateQueueButtons();
+          } else if (pattern.requiresWebcam && !webcamEnabled) {
+            console.warn(`⚠️ ${pattern.name} requires webcam. Enable it in Webcam Input settings.`);
           }
         }
       };
       
+      const buttonTitle = pattern.requiresWebcam ? `📹 ${pattern.name}` : pattern.name;
+      
       const button = queueFolder.addButton({
-        title: `${pattern.name}`,
+        title: buttonTitle,
         label: '',
       }).on('click', buttonParam.action);
       
@@ -194,8 +200,11 @@ export class ParamPane {
       const enabled = this.sceneManager.isPatternInPool(index);
       const param = { enabled };
       
+      // Add webcam indicator to label
+      const label = pattern.requiresWebcam ? `📹 ${pattern.name}` : pattern.name;
+      
       poolFolder.addBinding(param, 'enabled', {
-        label: pattern.name,
+        label: label,
       }).on('change', (ev: any) => {
         this.sceneManager.togglePatternInPool(index, ev.value);
       });
@@ -391,7 +400,8 @@ export class ParamPane {
     const patterns = this.sceneManager.getAllPatterns();
     this.queueButtons.forEach(({ button, index }) => {
       const positions = this.queuePositions[index] || [];
-      const patternName = patterns[index].name;
+      const pattern = patterns[index];
+      const patternName = pattern.requiresWebcam ? `📹 ${pattern.name}` : pattern.name;
       
       // Filter out consumed positions and adjust remaining ones
       const activePositions = positions

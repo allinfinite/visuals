@@ -39,6 +39,7 @@ export interface ClickEvent {
 export interface Pattern {
   name: string;
   container: Container;
+  requiresWebcam?: boolean; // Optional: true if pattern needs webcam to function
   update(dt: number, audio: AudioData, input: InputState): void;
   destroy(): void;
 }

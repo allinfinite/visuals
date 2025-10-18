@@ -4,6 +4,7 @@ import { hslToHex } from '../utils/color';
 
 export class InfinityMirror implements Pattern {
   public name = 'Infinity Mirror';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

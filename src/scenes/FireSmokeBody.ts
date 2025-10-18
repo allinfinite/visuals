@@ -15,6 +15,7 @@ interface FireParticle {
 
 export class FireSmokeBody implements Pattern {
   public name = 'Fire/Smoke Body';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

@@ -151,18 +151,18 @@ export class SceneManager {
       if (this.timeSinceLastSpawn >= this.spawnInterval && 
           this.activeLayers.length < this.maxLayers &&
           this.patternPool.size > 0) {
-        this.spawnRandomLayer();
+        this.spawnRandomLayer(input);
         this.timeSinceLastSpawn = 0;
       }
 
       // Ensure we have at least one layer if pool is not empty
       if (this.activeLayers.length === 0 && this.patternPool.size > 0) {
-        this.spawnRandomLayer();
+        this.spawnRandomLayer(input);
       }
     }
   }
 
-  public queueSpecificPattern(index: number): boolean {
+  public queueSpecificPattern(index: number, webcamEnabled: boolean = false): boolean {
     // Add pattern to queue for multi-layer mode
     if (!this.compositionEnabled) {
       console.warn('SceneManager: Cannot queue pattern when composition mode is disabled');
@@ -176,6 +176,12 @@ export class SceneManager {
     
     if (!this.patternPool.has(index)) {
       console.warn(`SceneManager: Pattern ${index} (${this.patterns[index].name}) is not in the pool`);
+      return false;
+    }
+    
+    // Check if pattern requires webcam but it's not enabled
+    if (this.patterns[index].requiresWebcam && !webcamEnabled) {
+      console.warn(`SceneManager: ${this.patterns[index].name} requires webcam to be enabled`);
       return false;
     }
     
@@ -230,12 +236,18 @@ export class SceneManager {
     });
   }
 
-  private spawnRandomLayer(): void {
+  private spawnRandomLayer(input?: InputState): void {
     const availableIndices = Array.from(this.patternPool);
     const activeIndices = new Set(this.activeLayers.map(l => this.patterns.indexOf(l.pattern)));
     
     // Filter out already active patterns
-    const spawnableIndices = availableIndices.filter(i => !activeIndices.has(i));
+    let spawnableIndices = availableIndices.filter(i => !activeIndices.has(i));
+    
+    // Filter out webcam patterns if webcam is not enabled
+    const webcamEnabled = input?.webcam?.enabled || false;
+    if (!webcamEnabled) {
+      spawnableIndices = spawnableIndices.filter(i => !this.patterns[i].requiresWebcam);
+    }
     
     if (spawnableIndices.length === 0) return;
 

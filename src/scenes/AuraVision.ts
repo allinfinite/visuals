@@ -4,6 +4,7 @@ import { hslToHex } from '../utils/color';
 
 export class AuraVision implements Pattern {
   public name = 'Aura Vision';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

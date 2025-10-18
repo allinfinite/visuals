@@ -17,6 +17,7 @@ interface Dot {
 
 export class PointillismPortrait implements Pattern {
   public name = 'Pointillism Portrait';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

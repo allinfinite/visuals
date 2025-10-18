@@ -16,6 +16,7 @@ interface Particle {
 
 export class ParticlePuppeteer implements Pattern {
   public name = 'Particle Puppeteer';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

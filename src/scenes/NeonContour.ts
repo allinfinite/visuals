@@ -4,6 +4,7 @@ import { hslToHex } from '../utils/color';
 
 export class NeonContour implements Pattern {
   public name = 'Neon Contour';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

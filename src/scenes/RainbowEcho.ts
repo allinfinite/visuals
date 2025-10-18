@@ -4,6 +4,7 @@ import { hslToHex } from '../utils/color';
 
 export class RainbowEcho implements Pattern {
   public name = 'Rainbow Echo';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

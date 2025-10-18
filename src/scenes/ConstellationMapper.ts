@@ -23,6 +23,7 @@ interface OrbitingParticle {
 
 export class ConstellationMapper implements Pattern {
   public name = 'Constellation Mapper';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

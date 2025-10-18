@@ -15,6 +15,7 @@ interface PaintStroke {
 
 export class ColorExtractionPaint implements Pattern {
   public name = 'Color Extraction Paint';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

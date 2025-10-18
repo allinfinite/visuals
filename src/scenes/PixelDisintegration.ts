@@ -13,6 +13,7 @@ interface FallingPixel {
 
 export class PixelDisintegration implements Pattern {
   public name = 'Pixel Disintegration';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

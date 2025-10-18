@@ -4,6 +4,7 @@ import { hslToHex } from '../utils/color';
 
 export class TimeDisplacement implements Pattern {
   public name = 'Time Displacement';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

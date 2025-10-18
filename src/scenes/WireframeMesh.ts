@@ -4,6 +4,7 @@ import { hslToHex } from '../utils/color';
 
 export class WireframeMesh implements Pattern {
   public name = 'Wireframe Mesh';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;

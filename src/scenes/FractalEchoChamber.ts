@@ -4,6 +4,7 @@ import { hslToHex } from '../utils/color';
 
 export class FractalEchoChamber implements Pattern {
   public name = 'Fractal Echo Chamber';
+  public requiresWebcam = true;
   public container: Container;
   private graphics: Graphics;
   private context: RendererContext;
