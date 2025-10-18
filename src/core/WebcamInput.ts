@@ -147,10 +147,8 @@ export class WebcamInput {
       // Store current frame for next iteration
       this.previousFrame = currentFrame;
       
-      // Update debug overlay
-      if (this.showDebug) {
-        this.updateDebugOverlay();
-      }
+      // Update debug overlay (always call to handle show/hide)
+      this.updateDebugOverlay();
     } catch (error) {
       console.error('Error processing webcam frame:', error);
     }
