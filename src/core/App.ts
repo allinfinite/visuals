@@ -18,6 +18,11 @@ export class App {
   // Feedback settings
   public feedbackEnabled: boolean = true;
   public feedbackAlpha: number = 0.08; // Lower = longer trails, acts as motion blur
+  
+  // Performance settings
+  public targetFPS: number = 60; // Target frame rate (0 = unlimited)
+  private lastFrameTime: number = 0;
+  private frameInterval: number = 1000 / 60; // ms between frames
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new Renderer(canvas);
@@ -71,8 +76,27 @@ export class App {
     this.isRunning = false;
   }
 
+  public setTargetFPS(fps: number): void {
+    this.targetFPS = fps;
+    this.frameInterval = fps > 0 ? 1000 / fps : 0;
+    console.log(`🎯 Target FPS set to ${fps === 0 ? 'unlimited' : fps}`);
+  }
+
   private loop = (): void => {
     if (!this.isRunning) return;
+
+    // Frame rate limiting
+    if (this.targetFPS > 0) {
+      const now = performance.now();
+      const elapsed = now - this.lastFrameTime;
+      
+      if (elapsed < this.frameInterval) {
+        requestAnimationFrame(this.loop);
+        return;
+      }
+      
+      this.lastFrameTime = now - (elapsed % this.frameInterval);
+    }
 
     this.frameCount++;
 

@@ -4,6 +4,7 @@ import type { RendererContext } from '../types';
 export class Renderer {
   public app: Application;
   public context: RendererContext;
+  public resolutionScale: number = 1.0; // Default to full resolution
 
   constructor(canvas: HTMLCanvasElement) {
     // Cap device pixel ratio for performance
@@ -14,7 +15,7 @@ export class Renderer {
       view: canvas,
       width: window.innerWidth,
       height: window.innerHeight,
-      resolution: dpr,
+      resolution: dpr * this.resolutionScale,
       autoDensity: true,
       backgroundColor: 0x000000,
       antialias: true,
@@ -37,6 +38,14 @@ export class Renderer {
       this.context.width = window.innerWidth;
       this.context.height = window.innerHeight;
     });
+  }
+
+  public setResolutionScale(scale: number): void {
+    this.resolutionScale = scale;
+    const dpr = Math.min(window.devicePixelRatio, 1.5);
+    this.app.renderer.resolution = dpr * scale;
+    this.app.renderer.resize(window.innerWidth, window.innerHeight);
+    console.log(`🎨 Resolution scale set to ${(scale * 100).toFixed(0)}%`);
   }
 
   public getContext(): RendererContext {

@@ -21,6 +21,22 @@ Control the composition mode.
 **Examples:**
 - `?mode=single` - Disable multi-layer composition mode, show only the specified scene
 
+### `fps`
+Control the target frame rate for performance.
+
+**Examples:**
+- `?fps=30` - Limit to 30 FPS
+- `?fps=24` - Limit to 24 FPS (cinematic)
+- `?fps=15` - Limit to 15 FPS (low performance mode)
+
+### `resolution`
+Control the rendering resolution scale for performance.
+
+**Examples:**
+- `?resolution=0.5` - Render at 50% resolution
+- `?resolution=0.25` - Render at 25% resolution (lowest, best performance)
+- `?resolution=0.75` - Render at 75% resolution
+
 ## Usage Examples
 
 ### Load a specific scene in multi-layer mode (default)
@@ -40,6 +56,18 @@ This will disable multi-layer mode and show only the FeedbackFractal pattern.
 http://localhost:5173/?scene=20&mode=single
 ```
 This will load the 21st pattern (0-indexed) in single pattern mode.
+
+### Load with performance settings
+```
+http://localhost:5173/?scene=Aurora&fps=30&resolution=0.5
+```
+This will load the Aurora pattern with limited frame rate (30 FPS) and reduced resolution (50%) for better performance.
+
+### Low performance mode
+```
+http://localhost:5173/?mode=single&scene=Mandala&fps=24&resolution=0.25
+```
+This will load a single pattern at 24 FPS with 25% resolution for maximum performance on low-end devices.
 
 ## Available Scene Names
 

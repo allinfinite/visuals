@@ -208,6 +208,25 @@ async function main() {
   const urlParams = new URLSearchParams(window.location.search);
   const sceneParam = urlParams.get('scene') || urlParams.get('pattern');
   const modeParam = urlParams.get('mode');
+  const fpsParam = urlParams.get('fps');
+  const resolutionParam = urlParams.get('resolution');
+  
+  // Handle performance settings
+  if (fpsParam) {
+    const fps = parseInt(fpsParam, 10);
+    if (!isNaN(fps) && fps >= 0) {
+      app.setTargetFPS(fps);
+      console.log(`🎯 Frame rate limited to ${fps} FPS from URL`);
+    }
+  }
+  
+  if (resolutionParam) {
+    const resolution = parseFloat(resolutionParam);
+    if (!isNaN(resolution) && resolution > 0 && resolution <= 1) {
+      app.getRenderer().setResolutionScale(resolution);
+      console.log(`🎨 Resolution scaled to ${(resolution * 100).toFixed(0)}% from URL`);
+    }
+  }
   
   // Handle single pattern mode request
   if (modeParam === 'single') {
@@ -340,6 +359,8 @@ async function main() {
   console.log('   • ?scene=Aurora (load specific scene by name)');
   console.log('   • ?scene=0 (load specific scene by index)');
   console.log('   • ?mode=single (disable multi-layer mode)');
+  console.log('   • ?fps=30 (limit frame rate, e.g. 15, 24, 30, 45, 60)');
+  console.log('   • ?resolution=0.5 (scale resolution, e.g. 0.25, 0.5, 0.75, 1.0)');
   console.log('📹 Enable webcam for 14 interactive visual modes!');
   console.log('🎵 Enable microphone in the UI for audio reactivity');
   console.log('🌈 WEBCAM VISUALS:');

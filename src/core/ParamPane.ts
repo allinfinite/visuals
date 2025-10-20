@@ -17,6 +17,10 @@ export class ParamPane {
     trailLength: 30, // 1-100, inverse of clearAlpha (increased default for smoother look)
     showFPS: true,
     
+    // Performance settings
+    targetFPS: 60, // Target frame rate
+    resolutionScale: 100, // Resolution scale (25%, 50%, 75%, 100%)
+    
     // Composition mode
     compositionMode: true, // Enabled by default for dynamic visuals
     maxLayers: 2, // Reduced from 3 for performance
@@ -325,6 +329,46 @@ export class ParamPane {
       label: 'Enable Trails',
     }).on('change', (ev: any) => {
       this.app.feedbackEnabled = ev.value;
+    });
+
+    // Performance controls
+    const performanceFolder = this.pane.addFolder({
+      title: '⚡ Performance',
+      expanded: false,
+    });
+
+    performanceFolder.addBlade({
+      view: 'text',
+      label: 'Info',
+      value: 'Lower these if experiencing lag or crashes',
+      parse: (v: string) => String(v),
+      format: (v: string) => String(v),
+    } as any);
+
+    performanceFolder.addBinding(this.params, 'targetFPS', {
+      label: 'Target FPS',
+      options: {
+        'Unlimited (60+)': 0,
+        '60 FPS': 60,
+        '45 FPS': 45,
+        '30 FPS': 30,
+        '24 FPS': 24,
+        '15 FPS': 15,
+      },
+    }).on('change', (ev: any) => {
+      this.app.setTargetFPS(ev.value);
+    });
+
+    performanceFolder.addBinding(this.params, 'resolutionScale', {
+      label: 'Resolution',
+      options: {
+        '25% (Lowest)': 25,
+        '50% (Low)': 50,
+        '75% (Medium)': 75,
+        '100% (Full)': 100,
+      },
+    }).on('change', (ev: any) => {
+      this.app.getRenderer().setResolutionScale(ev.value / 100);
     });
 
     // Analog Look controls
