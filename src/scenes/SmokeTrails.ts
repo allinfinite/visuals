@@ -62,12 +62,12 @@ export class SmokeTrails implements Pattern {
       });
     }
 
-    // Spawn bursts on click
+    // Spawn bursts on click (reduced for performance)
     input.clicks.forEach((click) => {
       const age = (performance.now() - click.time) / 1000;
-      if (age < 0.1 && this.particles.length < 5000) {
-        for (let i = 0; i < 20; i++) {
-          const angle = (i / 20) * Math.PI * 2;
+      if (age < 0.1 && this.particles.length < 1000) {
+        for (let i = 0; i < 10; i++) { // Reduced from 20 to 10
+          const angle = (i / 10) * Math.PI * 2;
           const speed = randomRange(50, 150) * audio.rms;
           this.particles.push({
             x: click.x,

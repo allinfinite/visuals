@@ -168,9 +168,9 @@ export class WeatherSync implements Pattern {
       return p.y < this.context.height + margin;
     });
 
-    // Limit particle count
-    if (this.particles.length > 500) {
-      this.particles = this.particles.slice(-400);
+    // Limit particle count (reduced for performance)
+    if (this.particles.length > 300) {
+      this.particles = this.particles.slice(-250);
     }
 
     this.draw(audio);

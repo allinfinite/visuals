@@ -104,14 +104,14 @@ export class WireframeTunnel implements Pattern {
     // Sort rings by depth (far to near)
     this.rings.sort((a, b) => a.z - b.z);
 
-    // Spawn particles from rings
+    // Spawn particles from rings (reduced frequency for performance)
     this.particleSpawnTimer += dt;
-    if (this.particleSpawnTimer > 0.05) { // Spawn every 0.05 seconds
+    if (this.particleSpawnTimer > 0.1) { // Spawn every 0.1 seconds (reduced from 0.05)
       this.particleSpawnTimer = 0;
       
       // Pick a random ring to spawn from
       const ring = this.rings[Math.floor(Math.random() * this.rings.length)];
-      const spawnCount = 2 + Math.floor(audio.rms * 3);
+      const spawnCount = 1 + Math.floor(audio.rms * 2); // Reduced from 2+3
       
       for (let i = 0; i < spawnCount; i++) {
         const angle = (Math.random() * ring.sides / ring.sides) * Math.PI * 2 + ring.rotation;
@@ -153,9 +153,9 @@ export class WireframeTunnel implements Pattern {
     // Remove dead particles
     this.particles = this.particles.filter(p => p.life < p.maxLife && p.z < 1.2);
     
-    // Limit particle count
-    if (this.particles.length > 500) {
-      this.particles = this.particles.slice(-400);
+    // Limit particle count (reduced for performance)
+    if (this.particles.length > 200) {
+      this.particles = this.particles.slice(-150);
     }
 
     this.draw(audio);

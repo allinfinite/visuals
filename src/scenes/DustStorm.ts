@@ -90,15 +90,15 @@ export class DustStorm implements Pattern {
       p.alpha = Math.min(0.6, 0.2 + speed * 0.003) * (0.5 + audio.rms * 0.5);
     });
 
-    // Add more particles on high energy
-    if (audio.beat && this.particles.length < 800) {
-      for (let i = 0; i < 20; i++) {
+    // Add more particles on high energy (reduced for performance)
+    if (audio.beat && this.particles.length < 400) {
+      for (let i = 0; i < 10; i++) {
         this.spawnParticle();
       }
     }
 
     // Remove excess particles
-    if (this.particles.length > 600 && audio.rms < 0.3) {
+    if (this.particles.length > 300 && audio.rms < 0.3) {
       this.particles.splice(0, 10);
     }
 

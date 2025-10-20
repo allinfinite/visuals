@@ -62,14 +62,17 @@ export class FirePlume implements Pattern {
       }
     });
 
-    // Spawn fire particles from sources (higher base rate for visibility)
-    const baseSpawnRate = 60; // Increased from 30
-    const spawnRate = baseSpawnRate + audio.rms * 80; // More audio reactive
+    // Spawn fire particles from sources (optimized for performance)
+    const baseSpawnRate = 30; // Reduced from 60 for performance
+    const spawnRate = baseSpawnRate + audio.rms * 40; // Reduced from 80
     const flameHeight = 150 + audio.rms * 200; // Taller flames (was 100+150)
+    
+    // Cap total particle count
+    const maxParticles = 600;
 
     this.sources.forEach((source) => {
       const spawnCount = Math.floor(spawnRate * dt);
-      for (let i = 0; i < spawnCount; i++) {
+      for (let i = 0; i < spawnCount && this.particles.length < maxParticles; i++) {
         this.particles.push({
           x: source.x + randomRange(-30, 30), // Wider base
           y: source.y + randomRange(-10, 10),

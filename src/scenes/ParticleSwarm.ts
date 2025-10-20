@@ -25,7 +25,7 @@ export class ParticleSwarm implements Pattern {
   private expansionPhase: number = 0; // 0 = contract, 1 = expand
 
   private params = {
-    count: 2000,
+    count: 800, // Reduced from 2000 for performance
     maxSpeed: 3,
     attractionStrength: 0.5,
     noiseScale: 0.003,
