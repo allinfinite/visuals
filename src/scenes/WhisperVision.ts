@@ -40,6 +40,23 @@ export class WhisperVision implements Pattern {
   private currentTranscript: string = '';
   private lastImageGenerationTime: number = 0;
   private imageGenerationInterval: number = 20; // Generate image every 20 seconds
+  
+  // Different trippy visual styles to rotate through
+  private visualStyles: string[] = [
+    'vibrant neon colors with kaleidoscopic patterns and fractal elements',
+    'liquid chrome and holographic rainbow reflections with fluid shapes',
+    'bioluminescent glowing elements with sacred geometry patterns',
+    'cosmic nebula style with crystalline structures and light beams',
+    'electric plasma arcs with infinite recursive spirals',
+    'watercolor psychedelic with flowing organic forms and gradients',
+    'glitch art aesthetic with digital distortions and chromatic aberration',
+    'mandala patterns with intricate geometric details and bright colors',
+    'aurora borealis style with flowing ribbons of colored light',
+    'abstract expressionism with bold strokes and vivid color explosions',
+    'vaporwave aesthetic with retro futuristic elements and pink/purple hues',
+    'oil painting texture with surreal melting dreamlike qualities'
+  ];
+  private currentStyleIndex: number = 0;
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -239,10 +256,14 @@ export class WhisperVision implements Pattern {
     this.isGenerating = true;
     
     try {
-      // Create a prompt that represents the content in a trippy style
-      const prompt = `${transcript}, visualized as psychedelic trippy art with vibrant colors, kaleidoscopic effects, fractal patterns, glowing neon elements, and surreal dreamlike atmosphere. Emphasize the core concept/subject while making it visually trippy and cosmic. NO TEXT, NO WORDS, NO LETTERS in the image.`;
+      // Rotate through different visual styles for variety
+      const style = this.visualStyles[this.currentStyleIndex];
+      this.currentStyleIndex = (this.currentStyleIndex + 1) % this.visualStyles.length;
       
-      console.log(`WhisperVision: Generating image for: "${transcript}"`);
+      // Create a prompt that represents the content in the selected style
+      const prompt = `${transcript}, visualized as trippy psychedelic art with ${style}. Emphasize the core subject/concept while making it visually stunning and surreal. NO TEXT, NO WORDS, NO LETTERS in the image.`;
+      
+      console.log(`WhisperVision: Generating image with style: "${style.substring(0, 40)}..."`);
       
       const response = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
