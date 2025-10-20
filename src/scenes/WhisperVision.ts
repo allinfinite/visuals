@@ -135,16 +135,9 @@ export class WhisperVision implements Pattern {
   private async transcribeAudio(audioBlob: Blob): Promise<void> {
     if (this.isTranscribing || !this.apiKey) return;
     
-    // Check if audio blob is valid
-    if (!audioBlob || audioBlob.size < 100) {
+    // Check if audio blob is valid (minimal threshold - let Whisper handle silence detection)
+    if (!audioBlob || audioBlob.size < 1000) {
       console.log('WhisperVision: Audio blob too small, skipping transcription');
-      return;
-    }
-    
-    // If blob is small, it's probably silence - skip generation
-    const isSilence = audioBlob.size < 10000; // Increased threshold
-    if (isSilence) {
-      console.log('WhisperVision: Silence detected - keeping current image playing');
       return;
     }
     
@@ -180,12 +173,12 @@ export class WhisperVision implements Pattern {
       
       console.log(`WhisperVision: Transcribed: "${transcript}"`);
       
-      if (transcript.length > 10) {
-        // Generate image from actual transcript
+      if (transcript.length > 15) {
+        // Generate image from actual transcript (meaningful speech detected)
         this.generateImageFromTranscript(transcript);
       } else {
         // Silence or very short - don't generate, just keep current image playing
-        console.log('WhisperVision: Silence or short transcript - keeping current image');
+        console.log(`WhisperVision: Transcript too short (${transcript.length} chars) - keeping current image`);
       }
       
     } catch (error) {
@@ -336,7 +329,9 @@ export class WhisperVision implements Pattern {
     this.time += dt;
     
     // Start recording when pattern becomes active (lazy initialization)
-    if (this.apiKey && !this.mediaRecorder && this.container.visible && this.container.alpha > 0.1) {
+    // Once started, keep recording even if alpha drops (for multi-layer transitions)
+    const shouldBeActive = this.container.visible && this.container.alpha > 0.01;
+    if (this.apiKey && !this.mediaRecorder && shouldBeActive) {
       console.log('WhisperVision: Pattern now active, starting audio capture');
       this.startAudioCapture();
     }
