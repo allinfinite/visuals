@@ -108,6 +108,12 @@ export class WhisperVision implements Pattern {
     const recordAndRestart = () => {
       if (!this.mediaRecorder) return;
       
+      // Don't start new recording if still processing previous one
+      if (this.isTranscribing || this.isGenerating) {
+        console.log('WhisperVision: Skipping recording - still processing previous audio');
+        return;
+      }
+      
       // Stop previous recording if running
       if (this.mediaRecorder.state === 'recording') {
         this.mediaRecorder.stop();
@@ -116,11 +122,13 @@ export class WhisperVision implements Pattern {
       // Start new recording
       this.audioChunks = [];
       this.mediaRecorder.start();
+      console.log('WhisperVision: Recording started...');
       
       // Stop after recordingDuration
       setTimeout(() => {
         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
           this.mediaRecorder.stop();
+          console.log('WhisperVision: Recording stopped');
         }
       }, this.recordingDuration * 1000);
     };
@@ -128,12 +136,13 @@ export class WhisperVision implements Pattern {
     // Start first recording
     recordAndRestart();
     
-    // Repeat every recordingDuration seconds
-    this.recordingInterval = setInterval(recordAndRestart, this.recordingDuration * 1000);
+    // Check every 2 seconds if we can start new recording
+    this.recordingInterval = setInterval(recordAndRestart, 2000);
   }
 
   private async transcribeAudio(audioBlob: Blob): Promise<void> {
-    if (this.isTranscribing || !this.apiKey) return;
+    // Don't transcribe if already busy or if generating
+    if (this.isTranscribing || this.isGenerating || !this.apiKey) return;
     
     // Check if audio blob is valid
     if (!audioBlob || audioBlob.size < 1000) {
