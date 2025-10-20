@@ -108,12 +108,6 @@ export class WhisperVision implements Pattern {
     const recordAndRestart = () => {
       if (!this.mediaRecorder) return;
       
-      // Don't start new recording if still processing previous one
-      if (this.isTranscribing || this.isGenerating) {
-        console.log('WhisperVision: Skipping recording - still processing previous audio');
-        return;
-      }
-      
       // Stop previous recording if running
       if (this.mediaRecorder.state === 'recording') {
         this.mediaRecorder.stop();
@@ -122,13 +116,11 @@ export class WhisperVision implements Pattern {
       // Start new recording
       this.audioChunks = [];
       this.mediaRecorder.start();
-      console.log('WhisperVision: Recording started...');
       
       // Stop after recordingDuration
       setTimeout(() => {
         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
           this.mediaRecorder.stop();
-          console.log('WhisperVision: Recording stopped');
         }
       }, this.recordingDuration * 1000);
     };
@@ -136,13 +128,12 @@ export class WhisperVision implements Pattern {
     // Start first recording
     recordAndRestart();
     
-    // Check every 2 seconds if we can start new recording
-    this.recordingInterval = setInterval(recordAndRestart, 2000);
+    // Repeat every recordingDuration seconds
+    this.recordingInterval = setInterval(recordAndRestart, this.recordingDuration * 1000);
   }
 
   private async transcribeAudio(audioBlob: Blob): Promise<void> {
-    // Don't transcribe if already busy or if generating
-    if (this.isTranscribing || this.isGenerating || !this.apiKey) return;
+    if (this.isTranscribing || !this.apiKey) return;
     
     // Check if audio blob is valid
     if (!audioBlob || audioBlob.size < 1000) {
@@ -202,10 +193,10 @@ export class WhisperVision implements Pattern {
     this.isGenerating = true;
     
     try {
-      // Create a prompt that emphasizes visual imagery without text
-      const prompt = `A beautiful artistic visualization of: ${transcript}. 
-Style: abstract, surreal, dreamlike, colorful. 
-NO TEXT, NO WORDS, NO LETTERS - only pure visual imagery and artistic expression.`;
+      // Create a trippy psychedelic prompt without text
+      const prompt = `Psychedelic trippy visualization of: ${transcript}. 
+Style: vibrant neon colors, kaleidoscopic patterns, fractal elements, surreal dreamlike, abstract flowing shapes, cosmic energy, sacred geometry, intense saturated colors, glowing elements, infinite recursion.
+NO TEXT, NO WORDS, NO LETTERS - only pure trippy visual imagery and psychedelic artistic expression.`;
       
       console.log(`WhisperVision: Generating image for: "${transcript}"`);
       
@@ -291,6 +282,16 @@ NO TEXT, NO WORDS, NO LETTERS - only pure visual imagery and artistic expression
           this.container.addChild(sprite);
           this.images.push(imageState);
           
+          // Remove oldest images if we exceed max (keep newest ones)
+          while (this.images.length > this.maxImages) {
+            const oldest = this.images.shift();
+            if (oldest) {
+              this.container.removeChild(oldest.sprite);
+              oldest.texture.destroy(true);
+              oldest.sprite.destroy();
+            }
+          }
+          
           console.log(`WhisperVision: Image loaded (${this.images.length}/${this.maxImages})`);
           resolve();
         } catch (error) {
@@ -343,11 +344,18 @@ NO TEXT, NO WORDS, NO LETTERS - only pure visual imagery and artistic expression
       img.sprite.tint = this.rgbToHex(brightness, brightness, brightness);
     });
     
-    // Remove expired images
-    this.images = this.images.filter(img => {
+    // Remove expired images (but keep at least 1 image visible)
+    this.images = this.images.filter((img, index) => {
       const age = this.time - img.startTime;
       const extendedDuration = img.duration + this.transitionDuration;
-      if (age > extendedDuration) {
+      
+      // Never remove the last image - keep showing it until a new one arrives
+      if (this.images.length === 1) {
+        return true;
+      }
+      
+      // Remove if expired and we have newer images
+      if (age > extendedDuration && index < this.images.length - 1) {
         this.container.removeChild(img.sprite);
         img.texture.destroy(true);
         img.sprite.destroy();
