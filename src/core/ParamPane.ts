@@ -281,7 +281,7 @@ export class ParamPane {
     webcamFolder.addBlade({
       view: 'text',
       label: 'Info',
-      value: '📹 Move in frame to control cursor\n💥 Quick motion = click',
+      value: '📹 Move = cursor position\n🎨 Motion = auto-drag\n💥 Quick motion = click',
       parse: (v: string) => String(v),
       format: (v: string) => String(v),
     } as any);
@@ -293,6 +293,19 @@ export class ParamPane {
       step: 5,
     }).on('change', (ev: any) => {
       webcamInput.motionSensitivity = ev.value / 100;
+    });
+
+    const dragThreshold = {
+      value: webcamInput.dragMotionThreshold * 100,
+    };
+
+    webcamFolder.addBinding(dragThreshold, 'value', {
+      label: 'Drag Threshold',
+      min: 5,
+      max: 50,
+      step: 5,
+    }).on('change', (ev: any) => {
+      webcamInput.dragMotionThreshold = ev.value / 100;
     });
 
     webcamFolder.addBinding(webcamParams, 'clickThreshold', {
