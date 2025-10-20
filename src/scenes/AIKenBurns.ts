@@ -63,10 +63,8 @@ export class AIKenBurns implements Pattern {
     // Load fallback image immediately for instant display
     this.loadFallbackImage();
     
-    // Queue first AI generation
-    if (this.apiKey) {
-      this.queueImageGeneration();
-    }
+    // Don't queue generation in constructor - wait until pattern becomes active
+    // This prevents generation when pattern is not being displayed
   }
 
   private loadFallbackImage(): void {
@@ -354,8 +352,9 @@ export class AIKenBurns implements Pattern {
       return true;
     });
     
-    // Queue new images to maintain smooth rotation
-    if (this.apiKey && !this.isGenerating) {
+    // Queue new images to maintain smooth rotation (only when visible)
+    const isActive = this.container.visible && this.container.alpha > 0.1;
+    if (isActive && this.apiKey && !this.isGenerating) {
       this.queueImageGeneration();
     }
     

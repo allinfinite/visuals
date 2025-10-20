@@ -35,7 +35,7 @@ export class WhisperVision implements Pattern {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
   private recordingInterval: number | null = null;
-  private recordingDuration: number = 10; // Record 10 seconds at a time
+  private recordingDuration: number = 20; // Record 20 seconds at a time (longer segments)
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -49,8 +49,8 @@ export class WhisperVision implements Pattern {
     if (!this.apiKey) {
       console.warn('WhisperVision: No OpenAI API key found');
     } else {
-      console.log('WhisperVision: OpenAI API key loaded');
-      this.startAudioCapture();
+      console.log('WhisperVision: OpenAI API key loaded - will start audio on first activation');
+      // Don't start recording immediately - wait until pattern is active
     }
   }
 
@@ -141,11 +141,10 @@ export class WhisperVision implements Pattern {
       return;
     }
     
-    // If blob is small but not tiny, it might just be silence - try anyway or use fallback
-    const isSilence = audioBlob.size < 5000;
+    // If blob is small, it's probably silence - skip generation
+    const isSilence = audioBlob.size < 10000; // Increased threshold
     if (isSilence) {
-      console.log('WhisperVision: Possible silence detected, using ambient fallback');
-      this.generateImageFromTranscript('ambient cosmic energy flowing through space');
+      console.log('WhisperVision: Silence detected - keeping current image playing');
       return;
     }
     
@@ -181,12 +180,12 @@ export class WhisperVision implements Pattern {
       
       console.log(`WhisperVision: Transcribed: "${transcript}"`);
       
-      if (transcript.length > 5) {
-        // Generate image from transcript
+      if (transcript.length > 10) {
+        // Generate image from actual transcript
         this.generateImageFromTranscript(transcript);
       } else {
-        console.log('WhisperVision: Transcript too short, using ambient fallback');
-        this.generateImageFromTranscript('flowing liquid light and cosmic particles');
+        // Silence or very short - don't generate, just keep current image playing
+        console.log('WhisperVision: Silence or short transcript - keeping current image');
       }
       
     } catch (error) {
@@ -335,6 +334,12 @@ export class WhisperVision implements Pattern {
 
   public update(dt: number, audio: AudioData, _input: InputState): void {
     this.time += dt;
+    
+    // Start recording when pattern becomes active (lazy initialization)
+    if (this.apiKey && !this.mediaRecorder && this.container.visible && this.container.alpha > 0.1) {
+      console.log('WhisperVision: Pattern now active, starting audio capture');
+      this.startAudioCapture();
+    }
     
     // Update images with Ken Burns effect
     this.images.forEach((img) => {
