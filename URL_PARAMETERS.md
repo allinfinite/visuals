@@ -165,6 +165,8 @@ Here are all the available scene names (case-insensitive):
 - ConstellationMapper
 - FireSmokeBody
 - VoronoiShatter
+- FallsOnFire
+- WhisperVision (requires API key)
 
 ## Notes
 
