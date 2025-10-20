@@ -21,7 +21,7 @@ export class LatentMorphs implements Pattern {
   private currentTexture: Texture;
   private nextTexture: Texture;
   private morphProgress: number = 0;
-  private morphDuration: number = 12; // Increased from 5 to 12 seconds for slower morphs
+  private morphDuration: number = 20; // Very slow morphs for calm visual
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -67,17 +67,17 @@ export class LatentMorphs implements Pattern {
       this.nextTexture = this.generateRandomTexture();
       this.morphProgress = 0;
       
-      // Vary morph duration between 10-16 seconds (increased from 3-7)
-      this.morphDuration = 10 + Math.random() * 6;
+      // Vary morph duration between 18-25 seconds for very slow, calm transitions
+      this.morphDuration = 18 + Math.random() * 7;
     }
 
-    // Update textures with audio - slower rotation
-    this.currentTexture.rotation += dt * 0.1 * (1 + audio.treble * 0.5);
-    this.nextTexture.rotation += dt * 0.15 * (1 + audio.treble * 0.5);
+    // Very slow rotation
+    this.currentTexture.rotation += dt * 0.03 * (1 + audio.treble * 0.2);
+    this.nextTexture.rotation += dt * 0.04 * (1 + audio.treble * 0.2);
 
-    // Slower hue shift
-    this.currentTexture.hue = (this.currentTexture.hue + dt * 10 + audio.centroid * 15) % 360;
-    this.nextTexture.hue = (this.nextTexture.hue + dt * 12 + audio.centroid * 18) % 360;
+    // Minimal hue shift
+    this.currentTexture.hue = (this.currentTexture.hue + dt * 3 + audio.centroid * 5) % 360;
+    this.nextTexture.hue = (this.nextTexture.hue + dt * 4 + audio.centroid * 6) % 360;
 
     const scaleTarget = 1 + audio.rms * 0.2;
     this.currentTexture.scale += (scaleTarget - this.currentTexture.scale) * 1.5 * dt;
@@ -147,12 +147,12 @@ export class LatentMorphs implements Pattern {
   }
 
   private drawRadialGradient(x: number, y: number, size: number, texture: Texture, alpha: number, _audio: AudioData): void {
-    const rings = 20;
+    const rings = 8; // Reduced from 20 to 8
     for (let i = 0; i < rings; i++) {
       const radius = (size / rings) * (i + 1);
-      const ringAlpha = (1 - i / rings) * alpha * texture.alpha;
-      const hue = (texture.hue + i * 10) % 360;
-      const color = hslToHex(hue, 70, 50 + i * 2);
+      const ringAlpha = (1 - i / rings) * alpha * texture.alpha * 0.6;
+      const hue = (texture.hue + i * 5) % 360; // Reduced hue variation
+      const color = hslToHex(hue, 60, 50 + i * 2); // Reduced saturation
       
       this.graphics.beginFill(color, ringAlpha);
       this.graphics.drawCircle(x, y, radius);
@@ -161,7 +161,7 @@ export class LatentMorphs implements Pattern {
   }
 
   private drawNoiseField(x: number, y: number, size: number, texture: Texture, alpha: number, _audio: AudioData): void {
-    const gridSize = 20;
+    const gridSize = 10; // Reduced from 20 to 10
     const cellSize = size / gridSize;
     
     for (let i = 0; i < gridSize; i++) {
@@ -170,13 +170,13 @@ export class LatentMorphs implements Pattern {
         const py = y - size / 2 + j * cellSize;
         
         const noiseValue = noise2D(
-          (i + texture.offset.x) * 0.1 + this.time * 0.5,
-          (j + texture.offset.y) * 0.1 + this.time * 0.5
+          (i + texture.offset.x) * 0.05 + this.time * 0.2, // Slower movement
+          (j + texture.offset.y) * 0.05 + this.time * 0.2
         );
         
-        const brightness = 30 + noiseValue * 50;
-        const cellAlpha = alpha * texture.alpha * (0.3 + noiseValue * 0.7);
-        const color = hslToHex(texture.hue, 70, brightness);
+        const brightness = 35 + noiseValue * 30; // Less contrast
+        const cellAlpha = alpha * texture.alpha * (0.4 + noiseValue * 0.4); // More uniform
+        const color = hslToHex(texture.hue, 50, brightness); // Reduced saturation
         
         this.graphics.beginFill(color, cellAlpha);
         this.graphics.drawRect(px, py, cellSize, cellSize);
@@ -186,69 +186,69 @@ export class LatentMorphs implements Pattern {
   }
 
   private drawConcentricRings(x: number, y: number, size: number, texture: Texture, alpha: number, audio: AudioData): void {
-    const rings = 15;
+    const rings = 8; // Reduced from 15 to 8
     for (let i = 0; i < rings; i++) {
       const radius = size * (0.3 + (i / rings) * 0.7);
-      const thickness = 10 + audio.rms * 10;
-      const hue = (texture.hue + i * 360 / rings) % 360;
-      const color = hslToHex(hue, 70, 50);
+      const thickness = 8 + audio.rms * 4; // Less variation
+      const hue = (texture.hue + i * 45) % 360; // Less rainbow effect
+      const color = hslToHex(hue, 50, 50); // Reduced saturation
       
-      this.graphics.lineStyle(thickness, color, alpha * texture.alpha * 0.6);
+      this.graphics.lineStyle(thickness, color, alpha * texture.alpha * 0.4);
       this.graphics.drawCircle(x, y, radius);
     }
   }
 
   private drawVoronoiLike(x: number, y: number, size: number, texture: Texture, alpha: number, audio: AudioData): void {
-    const points = 12;
+    const points = 6; // Reduced from 12 to 6
     
     for (let i = 0; i < points; i++) {
       const angle = (i / points) * Math.PI * 2 + texture.rotation;
-      const dist = size * (0.3 + Math.random() * 0.4);
+      const dist = size * 0.35; // Fixed distance, less random
       const px = x + Math.cos(angle) * dist;
       const py = y + Math.sin(angle) * dist;
-      const radius = size * 0.2 * (0.5 + audio.spectrum[i % audio.spectrum.length]);
+      const radius = size * 0.15 * (0.7 + audio.spectrum[i % audio.spectrum.length] * 0.3); // Less variation
       
-      const hue = (texture.hue + i * 30) % 360;
-      const color = hslToHex(hue, 70, 50);
+      const hue = (texture.hue + i * 20) % 360; // Less hue variation
+      const color = hslToHex(hue, 50, 50); // Reduced saturation
       
       // Draw filled circles
-      this.graphics.beginFill(color, alpha * texture.alpha * 0.5);
+      this.graphics.beginFill(color, alpha * texture.alpha * 0.4);
       this.graphics.drawCircle(px, py, radius);
       this.graphics.endFill();
       
-      // Draw glow
-      this.graphics.beginFill(color, alpha * texture.alpha * 0.2);
-      this.graphics.drawCircle(px, py, radius * 1.5);
+      // Draw subtle glow
+      this.graphics.beginFill(color, alpha * texture.alpha * 0.15);
+      this.graphics.drawCircle(px, py, radius * 1.3);
       this.graphics.endFill();
     }
   }
 
   private drawPerlinBlobs(x: number, y: number, size: number, texture: Texture, alpha: number, audio: AudioData): void {
-    const blobCount = 8;
+    const blobCount = 5; // Reduced from 8 to 5
     
     for (let i = 0; i < blobCount; i++) {
-      const angle = (i / blobCount) * Math.PI * 2 + this.time * 0.5;
+      const angle = (i / blobCount) * Math.PI * 2 + this.time * 0.2; // Slower rotation
       const noiseVal = noise2D(
-        Math.cos(angle) * 2 + this.time * 0.3,
-        Math.sin(angle) * 2 + this.time * 0.3
+        Math.cos(angle) * 2 + this.time * 0.15, // Slower movement
+        Math.sin(angle) * 2 + this.time * 0.15
       );
       
-      const dist = size * 0.3 * (0.5 + noiseVal * 0.5) * (1 + audio.bass * 0.5);
+      const dist = size * 0.3 * (0.6 + noiseVal * 0.3) * (1 + audio.bass * 0.2); // Less variation
       const px = x + Math.cos(angle + texture.rotation) * dist;
       const py = y + Math.sin(angle + texture.rotation) * dist;
-      const radius = size * 0.15 * (0.7 + noiseVal * 0.3);
+      const radius = size * 0.12 * (0.8 + noiseVal * 0.2); // Smaller, more uniform
       
-      const hue = (texture.hue + i * 45 + noiseVal * 60) % 360;
-      const color = hslToHex(hue, 70, 50);
+      const hue = (texture.hue + i * 30 + noiseVal * 30) % 360; // Less hue variation
+      const color = hslToHex(hue, 50, 50); // Reduced saturation
       
-      this.graphics.beginFill(color, alpha * texture.alpha * 0.6);
+      this.graphics.beginFill(color, alpha * texture.alpha * 0.5);
       this.graphics.drawCircle(px, py, radius);
       this.graphics.endFill();
     }
   }
 
   private drawSpectralBands(x: number, y: number, size: number, texture: Texture, alpha: number, audio: AudioData): void {
-    const bands = Math.min(32, audio.spectrum.length);
+    const bands = Math.min(16, audio.spectrum.length); // Reduced from 32 to 16
     const bandHeight = size / bands;
     
     for (let i = 0; i < bands; i++) {
