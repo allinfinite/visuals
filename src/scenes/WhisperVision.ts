@@ -56,10 +56,27 @@ export class WhisperVision implements Pattern {
 
   private async startAudioCapture(): Promise<void> {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      });
       
       // Create MediaRecorder with supported format
-      const options = { mimeType: 'audio/webm' };
+      // Try different formats for better compatibility
+      let mimeType = 'audio/webm';
+      if (!MediaRecorder.isTypeSupported('audio/webm')) {
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          mimeType = 'audio/webm;codecs=opus';
+        }
+      }
+      
+      console.log(`WhisperVision: Using audio format: ${mimeType}`);
+      const options = { mimeType };
       this.mediaRecorder = new MediaRecorder(stream, options);
       
       this.mediaRecorder.ondataavailable = (event) => {
@@ -118,13 +135,23 @@ export class WhisperVision implements Pattern {
   private async transcribeAudio(audioBlob: Blob): Promise<void> {
     if (this.isTranscribing || !this.apiKey) return;
     
+    // Check if audio blob is valid
+    if (!audioBlob || audioBlob.size < 1000) {
+      console.log('WhisperVision: Audio blob too small, skipping transcription');
+      return;
+    }
+    
     this.isTranscribing = true;
     
     try {
-      console.log('WhisperVision: Transcribing audio...');
+      console.log(`WhisperVision: Transcribing audio (${(audioBlob.size / 1024).toFixed(1)} KB)...`);
       
       const formData = new FormData();
-      formData.append('file', audioBlob, 'audio.webm');
+      // Determine file extension based on mime type
+      const extension = audioBlob.type.includes('mp4') ? 'audio.mp4' : 
+                       audioBlob.type.includes('mpeg') ? 'audio.mp3' :
+                       audioBlob.type.includes('webm') ? 'audio.webm' : 'audio.wav';
+      formData.append('file', audioBlob, extension);
       formData.append('model', 'whisper-1');
       
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -136,6 +163,8 @@ export class WhisperVision implements Pattern {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('WhisperVision: API error details:', errorText);
         throw new Error(`Transcription error: ${response.status} ${response.statusText}`);
       }
 
