@@ -31,11 +31,15 @@ export class WhisperVision implements Pattern {
   private transitionDuration: number = 3; // fade transition time
   private maxImages: number = 2; // Keep 2 images in rotation
   
-  // Audio recording
-  private mediaRecorder: MediaRecorder | null = null;
-  private audioChunks: Blob[] = [];
-  private recordingInterval: number | null = null;
-  private recordingDuration: number = 20; // Record 20 seconds at a time (longer segments)
+  // Real-time audio streaming
+  private websocket: WebSocket | null = null;
+  private audioContext: AudioContext | null = null;
+  private mediaStream: MediaStream | null = null;
+  
+  // Transcription accumulation
+  private currentTranscript: string = '';
+  private lastImageGenerationTime: number = 0;
+  private imageGenerationInterval: number = 20; // Generate image every 20 seconds
 
   constructor(context: RendererContext) {
     this.context = context;
@@ -56,135 +60,163 @@ export class WhisperVision implements Pattern {
 
   private async startAudioCapture(): Promise<void> {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      // Connect to GPT Realtime API via WebSocket
+      const url = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01';
+      
+      this.websocket = new WebSocket(url, [
+        'realtime',
+        `openai-insecure-api-key.${this.apiKey}`,
+        'openai-beta.realtime-v1'
+      ]);
+      
+      this.websocket.onopen = async () => {
+        console.log('WhisperVision: Connected to realtime API');
+        
+        // Configure the session for audio input
+        this.websocket?.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            modalities: ['text', 'audio'],
+            instructions: 'You are a transcription assistant. Transcribe all speech accurately.',
+            voice: 'alloy',
+            input_audio_format: 'pcm16',
+            output_audio_format: 'pcm16',
+            input_audio_transcription: {
+              model: 'whisper-1'
+            },
+            turn_detection: {
+              type: 'server_vad',
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 500
+            }
+          }
+        }));
+        
+        // Start capturing microphone audio
+        await this.startMicrophoneStream();
+      };
+      
+      this.websocket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          this.handleRealtimeEvent(data);
+        } catch (error) {
+          console.error('WhisperVision: Error parsing websocket message:', error);
+        }
+      };
+      
+      this.websocket.onerror = (error) => {
+        console.error('WhisperVision: WebSocket error:', error);
+      };
+      
+      this.websocket.onclose = () => {
+        console.log('WhisperVision: Disconnected from realtime API');
+      };
+      
+    } catch (error) {
+      console.error('WhisperVision: Failed to connect to realtime API:', error);
+    }
+  }
+
+  private async startMicrophoneStream(): Promise<void> {
+    try {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          sampleRate: 44100
-        } 
+          sampleRate: 24000 // Realtime API expects 24kHz
+        }
       });
       
-      // Create MediaRecorder with supported format
-      // Try different formats for better compatibility
-      let mimeType = 'audio/webm';
-      if (!MediaRecorder.isTypeSupported('audio/webm')) {
-        if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = 'audio/mp4';
-        } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-          mimeType = 'audio/webm;codecs=opus';
-        }
-      }
+      this.audioContext = new AudioContext({ sampleRate: 24000 });
+      const source = this.audioContext.createMediaStreamSource(this.mediaStream);
       
-      console.log(`WhisperVision: Using audio format: ${mimeType}`);
-      const options = { mimeType };
-      this.mediaRecorder = new MediaRecorder(stream, options);
+      // Create a ScriptProcessorNode to capture audio (simpler than AudioWorklet for now)
+      const bufferSize = 4096;
+      const processor = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
       
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-        }
-      };
-      
-      this.mediaRecorder.onstop = () => {
-        if (this.audioChunks.length > 0) {
-          const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-          this.audioChunks = [];
-          this.transcribeAudio(audioBlob);
+      processor.onaudioprocess = (e) => {
+        if (this.websocket?.readyState === WebSocket.OPEN) {
+          const inputData = e.inputBuffer.getChannelData(0);
+          
+          // Convert Float32Array to Int16Array (PCM16)
+          const pcm16 = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            const s = Math.max(-1, Math.min(1, inputData[i]));
+            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
+          
+          // Convert to base64 and send
+          const base64 = this.arrayBufferToBase64(pcm16.buffer);
+          this.websocket.send(JSON.stringify({
+            type: 'input_audio_buffer.append',
+            audio: base64
+          }));
         }
       };
       
-      // Start recording cycle
-      this.startRecordingCycle();
+      source.connect(processor);
+      processor.connect(this.audioContext.destination);
       
-      console.log('WhisperVision: Audio capture started');
+      console.log('WhisperVision: Microphone streaming to realtime API');
     } catch (error) {
-      console.error('WhisperVision: Failed to access microphone:', error);
+      console.error('WhisperVision: Failed to start microphone stream:', error);
     }
   }
-
-  private startRecordingCycle(): void {
-    if (!this.mediaRecorder) return;
-    
-    const recordAndRestart = () => {
-      if (!this.mediaRecorder) return;
-      
-      // Stop previous recording if running
-      if (this.mediaRecorder.state === 'recording') {
-        this.mediaRecorder.stop();
-      }
-      
-      // Start new recording
-      this.audioChunks = [];
-      this.mediaRecorder.start();
-      
-      // Stop after recordingDuration
-      setTimeout(() => {
-        if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-          this.mediaRecorder.stop();
+  
+  private arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+  
+  private handleRealtimeEvent(event: any): void {
+    switch (event.type) {
+      case 'conversation.item.input_audio_transcription.completed':
+        // Received transcription from realtime API
+        const transcript = event.transcript || '';
+        if (transcript.trim().length > 0) {
+          console.log(`WhisperVision: Real-time transcript: "${transcript}"`);
+          this.currentTranscript += ' ' + transcript;
         }
-      }, this.recordingDuration * 1000);
-    };
-    
-    // Start first recording
-    recordAndRestart();
-    
-    // Repeat every recordingDuration seconds
-    this.recordingInterval = setInterval(recordAndRestart, this.recordingDuration * 1000);
+        break;
+        
+      case 'input_audio_buffer.speech_started':
+        console.log('WhisperVision: Speech detected');
+        break;
+        
+      case 'input_audio_buffer.speech_stopped':
+        console.log('WhisperVision: Speech ended');
+        break;
+        
+      case 'error':
+        console.error('WhisperVision: Realtime API error:', event.error);
+        break;
+    }
   }
 
-  private async transcribeAudio(audioBlob: Blob): Promise<void> {
-    if (this.isTranscribing || !this.apiKey) return;
+  private checkAndGenerateFromTranscript(): void {
+    // Check if it's time to generate a new image
+    const timeSinceLastImage = this.time - this.lastImageGenerationTime;
     
-    // Check if audio blob is valid (minimal threshold - let Whisper handle silence detection)
-    if (!audioBlob || audioBlob.size < 1000) {
-      console.log('WhisperVision: Audio blob too small, skipping transcription');
-      return;
-    }
-    
-    this.isTranscribing = true;
-    
-    try {
-      console.log(`WhisperVision: Transcribing audio (${(audioBlob.size / 1024).toFixed(1)} KB)...`);
-      
-      const formData = new FormData();
-      // Determine file extension based on mime type
-      const extension = audioBlob.type.includes('mp4') ? 'audio.mp4' : 
-                       audioBlob.type.includes('mpeg') ? 'audio.mp3' :
-                       audioBlob.type.includes('webm') ? 'audio.webm' : 'audio.wav';
-      formData.append('file', audioBlob, extension);
-      formData.append('model', 'whisper-1');
-      
-      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('WhisperVision: API error details:', errorText);
-        throw new Error(`Transcription error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const transcript = data.text.trim();
-      
-      console.log(`WhisperVision: Transcribed: "${transcript}"`);
+    if (timeSinceLastImage >= this.imageGenerationInterval) {
+      const transcript = this.currentTranscript.trim();
       
       if (transcript.length > 15) {
-        // Generate image from actual transcript (meaningful speech detected)
+        console.log(`WhisperVision: Generating from accumulated transcript (${transcript.length} chars)`);
         this.generateImageFromTranscript(transcript);
+        
+        // Reset transcript and timer
+        this.currentTranscript = '';
+        this.lastImageGenerationTime = this.time;
       } else {
-        // Silence or very short - don't generate, just keep current image playing
-        console.log(`WhisperVision: Transcript too short (${transcript.length} chars) - keeping current image`);
+        console.log(`WhisperVision: Not enough speech yet (${transcript.length} chars) - waiting...`);
+        // Don't reset timer, keep accumulating
       }
-      
-    } catch (error) {
-      console.error('WhisperVision: Transcription failed:', error);
-    } finally {
-      this.isTranscribing = false;
     }
   }
 
@@ -331,9 +363,14 @@ export class WhisperVision implements Pattern {
     // Start recording when pattern becomes active (lazy initialization)
     // Once started, keep recording even if alpha drops (for multi-layer transitions)
     const shouldBeActive = this.container.visible && this.container.alpha > 0.01;
-    if (this.apiKey && !this.mediaRecorder && shouldBeActive) {
+    if (this.apiKey && !this.websocket && shouldBeActive) {
       console.log('WhisperVision: Pattern now active, starting audio capture');
       this.startAudioCapture();
+    }
+    
+    // Check if we should generate a new image from accumulated transcript
+    if (this.websocket?.readyState === WebSocket.OPEN) {
+      this.checkAndGenerateFromTranscript();
     }
     
     // Update images with Ken Burns effect
@@ -402,7 +439,7 @@ export class WhisperVision implements Pattern {
       this.graphics.endFill();
       
       // Microphone icon (recording indicator)
-      const micColor = this.mediaRecorder?.state === 'recording' ? 0xff4444 : 0x888888;
+      const micColor = this.websocket?.readyState === WebSocket.OPEN ? 0xff4444 : 0x888888;
       this.graphics.beginFill(micColor, 0.8);
       this.graphics.drawCircle(25, 25, 6);
       this.graphics.endFill();
@@ -439,19 +476,22 @@ export class WhisperVision implements Pattern {
   }
 
   public destroy(): void {
-    // Stop recording
-    if (this.recordingInterval) {
-      clearInterval(this.recordingInterval);
-      this.recordingInterval = null;
+    // Close websocket
+    if (this.websocket) {
+      this.websocket.close();
+      this.websocket = null;
     }
     
-    if (this.mediaRecorder) {
-      if (this.mediaRecorder.state === 'recording') {
-        this.mediaRecorder.stop();
-      }
-      const stream = this.mediaRecorder.stream;
-      stream.getTracks().forEach(track => track.stop());
-      this.mediaRecorder = null;
+    // Stop audio context
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+    
+    // Stop media stream
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream = null;
     }
     
     // Clean up images
@@ -466,4 +506,5 @@ export class WhisperVision implements Pattern {
     this.container.destroy();
   }
 }
+
 
