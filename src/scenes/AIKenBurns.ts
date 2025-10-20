@@ -149,6 +149,10 @@ export class AIKenBurns implements Pattern {
   }
 
   private queueImageGeneration(): void {
+    // Only generate if pattern is active/visible
+    const isActive = this.container.visible && this.container.alpha > 0.1;
+    if (!isActive) return;
+    
     if (this.isGenerating) return;
     
     // Queue more images if we're running low

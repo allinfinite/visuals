@@ -199,6 +199,13 @@ export class WhisperVision implements Pattern {
   private async generateImageFromTranscript(transcript: string): Promise<void> {
     if (!this.apiKey) return;
     
+    // Only generate if pattern is active/visible
+    const isActive = this.container.visible && this.container.alpha > 0.1;
+    if (!isActive) {
+      console.log('WhisperVision: Pattern not active, skipping generation');
+      return;
+    }
+    
     // Allow queueing if we're still generating but don't have enough images
     if (this.isGenerating && this.images.length >= this.maxImages) {
       console.log('WhisperVision: Already generating and have enough images, skipping');
