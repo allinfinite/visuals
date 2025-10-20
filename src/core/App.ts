@@ -20,9 +20,9 @@ export class App {
   public feedbackAlpha: number = 0.08; // Lower = longer trails, acts as motion blur
   
   // Performance settings
-  public targetFPS: number = 60; // Target frame rate (0 = unlimited)
+  public targetFPS: number = 15; // Target frame rate (0 = unlimited)
   private lastFrameTime: number = 0;
-  private frameInterval: number = 1000 / 60; // ms between frames
+  private frameInterval: number = 1000 / 15; // ms between frames
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new Renderer(canvas);

@@ -18,8 +18,8 @@ export class ParamPane {
     showFPS: true,
     
     // Performance settings
-    targetFPS: 60, // Target frame rate
-    resolutionScale: 100, // Resolution scale (25%, 50%, 75%, 100%)
+    targetFPS: 15, // Target frame rate
+    resolutionScale: 50, // Resolution scale (25%, 50%, 75%, 100%)
     
     // Composition mode
     compositionMode: true, // Enabled by default for dynamic visuals

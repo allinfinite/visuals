@@ -4,7 +4,7 @@ import type { RendererContext } from '../types';
 export class Renderer {
   public app: Application;
   public context: RendererContext;
-  public resolutionScale: number = 1.0; // Default to full resolution
+  public resolutionScale: number = 0.5; // Default to 50% resolution for performance
 
   constructor(canvas: HTMLCanvasElement) {
     // Cap device pixel ratio for performance
