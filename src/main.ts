@@ -94,6 +94,7 @@ import { FractalEchoChamber } from './scenes/FractalEchoChamber';
 import { ConstellationMapper } from './scenes/ConstellationMapper';
 import { FireSmokeBody } from './scenes/FireSmokeBody';
 import { VoronoiShatter } from './scenes/VoronoiShatter';
+import { WhisperVision } from './scenes/WhisperVision';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -203,6 +204,15 @@ async function main() {
   sceneManager.addPattern(new ConstellationMapper(context));
   sceneManager.addPattern(new FireSmokeBody(context));
   sceneManager.addPattern(new VoronoiShatter(context));
+  
+  // Only add WhisperVision if API key is available
+  const apiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
+  if (apiKey && apiKey.length > 20) {
+    sceneManager.addPattern(new WhisperVision(context));
+    console.log('✨ WhisperVision added (API key detected)');
+  } else {
+    console.log('⚠️  WhisperVision skipped (no API key)');
+  }
 
   // Parse URL parameters for scene selection
   const urlParams = new URLSearchParams(window.location.search);
@@ -378,6 +388,9 @@ async function main() {
   console.log('   • Constellation Mapper - connect body points with stars');
   console.log('   • Fire/Smoke Body - edges emit particles with physics');
   console.log('   • Voronoi Shatter - mosaic cells that explode');
+  if (apiKey && apiKey.length > 20) {
+    console.log('   • Whisper Vision - speech to image via AI 🎤→🖼️');
+  }
   console.log(`📊 ${sceneManager.getAllPatterns().length} patterns loaded`);
 }
 
