@@ -136,8 +136,16 @@ export class WhisperVision implements Pattern {
     if (this.isTranscribing || !this.apiKey) return;
     
     // Check if audio blob is valid
-    if (!audioBlob || audioBlob.size < 1000) {
+    if (!audioBlob || audioBlob.size < 100) {
       console.log('WhisperVision: Audio blob too small, skipping transcription');
+      return;
+    }
+    
+    // If blob is small but not tiny, it might just be silence - try anyway or use fallback
+    const isSilence = audioBlob.size < 5000;
+    if (isSilence) {
+      console.log('WhisperVision: Possible silence detected, using ambient fallback');
+      this.generateImageFromTranscript('ambient cosmic energy flowing through space');
       return;
     }
     
@@ -177,7 +185,8 @@ export class WhisperVision implements Pattern {
         // Generate image from transcript
         this.generateImageFromTranscript(transcript);
       } else {
-        console.log('WhisperVision: Transcript too short, skipping image generation');
+        console.log('WhisperVision: Transcript too short, using ambient fallback');
+        this.generateImageFromTranscript('flowing liquid light and cosmic particles');
       }
       
     } catch (error) {
@@ -188,7 +197,13 @@ export class WhisperVision implements Pattern {
   }
 
   private async generateImageFromTranscript(transcript: string): Promise<void> {
-    if (this.isGenerating || !this.apiKey) return;
+    if (!this.apiKey) return;
+    
+    // Allow queueing if we're still generating but don't have enough images
+    if (this.isGenerating && this.images.length >= this.maxImages) {
+      console.log('WhisperVision: Already generating and have enough images, skipping');
+      return;
+    }
     
     this.isGenerating = true;
     
@@ -218,6 +233,10 @@ export class WhisperVision implements Pattern {
 
       const data = await response.json();
       const b64Image = data.data[0].b64_json;
+      
+      if (!b64Image) {
+        throw new Error('No image data in response');
+      }
       
       console.log('WhisperVision: Image generated successfully');
       await this.loadImageFromBase64(b64Image, transcript);
