@@ -27,8 +27,8 @@ export class WhisperVision implements Pattern {
   private apiKey: string = '';
   
   // Ken Burns parameters
-  private imageDuration: number = 10; // 10 seconds per image
-  private transitionDuration: number = 2; // fade transition time
+  private imageDuration: number = 30; // 30 seconds per image (extended for continuous animation)
+  private transitionDuration: number = 3; // fade transition time
   private maxImages: number = 2; // Keep 2 images in rotation
   
   // Audio recording
@@ -193,10 +193,8 @@ export class WhisperVision implements Pattern {
     this.isGenerating = true;
     
     try {
-      // Create a trippy psychedelic prompt without text
-      const prompt = `Psychedelic trippy visualization of: ${transcript}. 
-Style: vibrant neon colors, kaleidoscopic patterns, fractal elements, surreal dreamlike, abstract flowing shapes, cosmic energy, sacred geometry, intense saturated colors, glowing elements, infinite recursion.
-NO TEXT, NO WORDS, NO LETTERS - only pure trippy visual imagery and psychedelic artistic expression.`;
+      // Create a prompt that represents the content in a trippy style
+      const prompt = `${transcript}, visualized as psychedelic trippy art with vibrant colors, kaleidoscopic effects, fractal patterns, glowing neon elements, and surreal dreamlike atmosphere. Emphasize the core concept/subject while making it visually trippy and cosmic. NO TEXT, NO WORDS, NO LETTERS in the image.`;
       
       console.log(`WhisperVision: Generating image for: "${transcript}"`);
       
@@ -255,14 +253,14 @@ NO TEXT, NO WORDS, NO LETTERS - only pure trippy visual imagery and psychedelic 
           // Center image
           sprite.anchor.set(0.5, 0.5);
           
-          // Random Ken Burns parameters
+          // Random Ken Burns parameters (extended zoom range)
           const zoomDirection = Math.random() > 0.5 ? 1 : -1;
-          const startScale = zoomDirection > 0 ? 1.0 : 1.2;
-          const endScale = zoomDirection > 0 ? 1.2 : 1.0;
+          const startScale = zoomDirection > 0 ? 1.0 : 1.4; // Increased from 1.2 to 1.4
+          const endScale = zoomDirection > 0 ? 1.4 : 1.0;   // Increased from 1.2 to 1.4
           
-          // Random pan direction
-          const panX = (Math.random() - 0.5) * 0.1;
-          const panY = (Math.random() - 0.5) * 0.1;
+          // Random pan direction (extended range)
+          const panX = (Math.random() - 0.5) * 0.2; // Increased from 0.1 to 0.2
+          const panY = (Math.random() - 0.5) * 0.2; // Increased from 0.1 to 0.2
           
           const imageState: ImageState = {
             sprite,
