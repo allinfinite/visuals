@@ -55,6 +55,9 @@ export class MysticWords implements Pattern {
   // Words appearing letter by letter
   private appearing: AppearingText[] = [];
   
+  // Reusable text objects pool to prevent memory leaks
+  private textObjects: Text[] = [];
+  
   // Collections of sacred text
   private readonly hebrewWords = ['אור', 'חיים', 'שלום', 'אהבה', 'חכמה', 'אמת', 'ברכה', 'קדוש'];
   private readonly runeWords = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ'];
@@ -80,9 +83,9 @@ export class MysticWords implements Pattern {
   public update(dt: number, audio: AudioData, input: InputState): void {
     this.time += dt;
     
-    // Spawn new appearing text periodically
+    // Spawn new appearing text periodically (reduced frequency and max count)
     this.lastSpawnTime += dt;
-    if (this.lastSpawnTime > 3 + Math.random() * 2 && this.appearing.length < 5) {
+    if (this.lastSpawnTime > 4 + Math.random() * 3 && this.appearing.length < 3) {
       this.spawnAppearingText();
       this.lastSpawnTime = 0;
     }
@@ -216,31 +219,35 @@ export class MysticWords implements Pattern {
     const charSpacing = 20;
     const startX = x - (text.length * charSpacing) / 2;
     
-    // Create particles for each character
+    // Create particles for each character (reduced from 3 to 1 per character)
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
       const px = startX + i * charSpacing;
       
-      // Create multiple particles per character for better effect
-      for (let j = 0; j < 3; j++) {
-        this.particles.push({
-          char,
-          x: px + (Math.random() - 0.5) * 5,
-          y: y + (Math.random() - 0.5) * 5,
-          vx: (Math.random() - 0.5) * 8,
-          vy: -Math.random() * 10 - 5,
-          alpha: 1,
-          size: 16 + Math.random() * 8,
-          hue: (baseHue + Math.random() * 60 - 30) % 360,
-          life: 0,
-          maxLife: 2 + Math.random() * 2,
-        });
-      }
+      // Only 1 particle per character for performance
+      this.particles.push({
+        char,
+        x: px + (Math.random() - 0.5) * 5,
+        y: y + (Math.random() - 0.5) * 5,
+        vx: (Math.random() - 0.5) * 8,
+        vy: -Math.random() * 10 - 5,
+        alpha: 1,
+        size: 16 + Math.random() * 8,
+        hue: (baseHue + Math.random() * 60 - 30) % 360,
+        life: 0,
+        maxLife: 2 + Math.random() * 2,
+      });
     }
   }
 
   private draw(audio: AudioData, _input: InputState): void {
     this.graphics.clear();
+    
+    // Clear all text objects from previous frame
+    this.textObjects.forEach(text => {
+      text.destroy({ children: true, texture: false, baseTexture: false });
+    });
+    this.textObjects = [];
     
     // Draw appearing text (letter by letter)
     this.appearing.forEach(text => {
@@ -312,7 +319,7 @@ export class MysticWords implements Pattern {
   }
   
   private drawChar(char: string, x: number, y: number, size: number, color: number, alpha: number): void {
-    // Create temporary text object for measuring
+    // Create text object
     const style = new TextStyle({
       fontFamily: 'Arial, sans-serif',
       fontSize: size,
@@ -327,7 +334,8 @@ export class MysticWords implements Pattern {
     
     this.container.addChild(text);
     
-    // Note: We're adding Text objects directly. They'll be cleaned up on next clear.
+    // Track for cleanup
+    this.textObjects.push(text);
   }
 
   private hslToHex(h: number, s: number, l: number): number {
@@ -355,6 +363,12 @@ export class MysticWords implements Pattern {
   }
 
   public destroy(): void {
+    // Clean up all text objects
+    this.textObjects.forEach(text => {
+      text.destroy({ children: true, texture: true, baseTexture: true });
+    });
+    this.textObjects = [];
+    
     this.graphics.destroy();
     this.container.destroy();
   }
