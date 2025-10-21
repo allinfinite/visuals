@@ -92,15 +92,15 @@ export class WhisperVision implements Pattern {
     
     // Adjust timing based on generation speed
     if (this.useFlux) {
-      // Flux is much faster, so shorter duration and transitions
-      this.imageDuration = 12; // 12 seconds (was 30)
-      this.transitionDuration = 2; // 2 seconds (was 3)
-      console.log('WhisperVision: Using fast timing for Flux (12s duration, 2s transition)');
+      // Flux is faster, but still give images time to be appreciated
+      this.imageDuration = 45; // 45 seconds for good viewing time
+      this.transitionDuration = 3; // 3 seconds
+      console.log('WhisperVision: Using Flux timing (45s duration, 3s transition)');
     } else {
-      // OpenAI is slower, keep longer duration
-      this.imageDuration = 30;
-      this.transitionDuration = 3;
-      console.log('WhisperVision: Using standard timing for OpenAI (30s duration, 3s transition)');
+      // OpenAI is slower, longer duration
+      this.imageDuration = 60; // 60 seconds (1 minute)
+      this.transitionDuration = 4; // 4 seconds
+      console.log('WhisperVision: Using OpenAI timing (60s duration, 4s transition)');
     }
     
     // Don't start recording immediately - wait until pattern is active
@@ -552,14 +552,16 @@ export class WhisperVision implements Pattern {
     // Remove expired images (but keep at least 1 image visible)
     this.images = this.images.filter((img, index) => {
       const age = this.time - img.startTime;
-      const extendedDuration = img.duration + this.transitionDuration;
       
-      // Never remove the last image - keep showing it until a new one arrives
+      // Never remove the last image - keep showing it indefinitely until a new one arrives
       if (this.images.length === 1) {
+        // Let Ken Burns keep animating even past normal duration
         return true;
       }
       
-      // Remove if expired and we have newer images
+      // Only remove old images when we have newer ones to replace them
+      // Remove after duration + transition time, but only if not the newest image
+      const extendedDuration = img.duration + this.transitionDuration;
       if (age > extendedDuration && index < this.images.length - 1) {
         this.container.removeChild(img.sprite);
         img.texture.destroy(true);
