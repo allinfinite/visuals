@@ -36,10 +36,12 @@ export class WhisperVision implements Pattern {
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
   
-  // Transcription accumulation
+  // Transcription and topic tracking
   private currentTranscript: string = '';
-  private lastImageGenerationTime: number = 0;
-  private imageGenerationInterval: number = 20; // Generate image every 20 seconds
+  private pendingTopics: string[] = []; // Queue of topics waiting for image generation
+  private lastTranscriptLength: number = 0;
+  private topicCheckInterval: number = 5; // Check for new topics every 5 seconds
+  private lastTopicCheckTime: number = 0;
   
   // Different trippy visual styles to rotate through
   private visualStyles: string[] = [
@@ -199,6 +201,7 @@ export class WhisperVision implements Pattern {
         if (transcript.trim().length > 0) {
           console.log(`WhisperVision: Real-time transcript: "${transcript}"`);
           this.currentTranscript += ' ' + transcript;
+          this.extractAndQueueTopics();
         }
         break;
         
@@ -207,7 +210,8 @@ export class WhisperVision implements Pattern {
         break;
         
       case 'input_audio_buffer.speech_stopped':
-        console.log('WhisperVision: Speech ended');
+        console.log('WhisperVision: Speech ended - checking for topics');
+        this.extractAndQueueTopics();
         break;
         
       case 'error':
@@ -215,25 +219,38 @@ export class WhisperVision implements Pattern {
         break;
     }
   }
+  
+  private extractAndQueueTopics(): void {
+    const newText = this.currentTranscript.substring(this.lastTranscriptLength);
+    this.lastTranscriptLength = this.currentTranscript.length;
+    
+    if (newText.trim().length < 10) return;
+    
+    // Split by sentence endings or significant pauses
+    const sentences = newText.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 15);
+    
+    sentences.forEach(sentence => {
+      // Check if this seems like a complete thought/topic
+      if (sentence.length > 20 && !this.pendingTopics.includes(sentence)) {
+        console.log(`WhisperVision: Queued topic: "${sentence.substring(0, 50)}..."`);
+        this.pendingTopics.push(sentence);
+      }
+    });
+  }
 
   private checkAndGenerateFromTranscript(): void {
-    // Check if it's time to generate a new image
-    const timeSinceLastImage = this.time - this.lastImageGenerationTime;
+    // Process queue if we have topics and are not already generating
+    if (this.pendingTopics.length > 0 && !this.isGenerating) {
+      const topic = this.pendingTopics.shift()!;
+      console.log(`WhisperVision: Processing queued topic (${this.pendingTopics.length} remaining)`);
+      this.generateImageFromTranscript(topic);
+    }
     
-    if (timeSinceLastImage >= this.imageGenerationInterval) {
-      const transcript = this.currentTranscript.trim();
-      
-      if (transcript.length > 15) {
-        console.log(`WhisperVision: Generating from accumulated transcript (${transcript.length} chars)`);
-        this.generateImageFromTranscript(transcript);
-        
-        // Reset transcript and timer
-        this.currentTranscript = '';
-        this.lastImageGenerationTime = this.time;
-      } else {
-        console.log(`WhisperVision: Not enough speech yet (${transcript.length} chars) - waiting...`);
-        // Don't reset timer, keep accumulating
-      }
+    // Periodically check transcript for new topics
+    this.lastTopicCheckTime += 1/60; // Approximate dt
+    if (this.lastTopicCheckTime >= this.topicCheckInterval) {
+      this.lastTopicCheckTime = 0;
+      this.extractAndQueueTopics();
     }
   }
 
