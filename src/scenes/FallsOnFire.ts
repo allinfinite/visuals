@@ -1,4 +1,4 @@
-import { Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Container, Graphics, Text, TextStyle, Sprite, Texture } from 'pixi.js';
 import type { Pattern, AudioData, InputState, RendererContext } from '../types';
 import { noise2D } from '../utils/noise';
 import { randomRange } from '../utils/math';
@@ -25,6 +25,8 @@ export class FallsOnFire implements Pattern {
   private textOverlays: Text[] = [];
   private textTimer: number = 0;
   private textInterval: number = 12; // Show text every 12 seconds
+  private videoSprite: Sprite | null = null;
+  private videoElement: HTMLVideoElement | null = null;
   
   // Waterfall parameters
   private waterfallWidth: number = 400;
@@ -36,11 +38,72 @@ export class FallsOnFire implements Pattern {
     this.context = context;
     this.container = new Container();
     this.graphics = new Graphics();
+    
+    // Set up video background
+    this.setupVideoBackground();
+    
     this.container.addChild(this.graphics);
+  }
+
+  private setupVideoBackground(): void {
+    try {
+      // Create video element
+      this.videoElement = document.createElement('video');
+      this.videoElement.src = '/fallsonfire.mp4';
+      this.videoElement.loop = true;
+      this.videoElement.muted = true;
+      this.videoElement.playsInline = true;
+      this.videoElement.autoplay = true;
+      
+      // Start playing
+      this.videoElement.play().catch(err => {
+        console.warn('Video autoplay failed:', err);
+      });
+      
+      // Create texture and sprite from video
+      const texture = Texture.from(this.videoElement);
+      this.videoSprite = new Sprite(texture);
+      
+      // Position and scale the video to crop center
+      this.updateVideoScale();
+      
+      // Add as background layer
+      this.container.addChildAt(this.videoSprite, 0);
+    } catch (err) {
+      console.warn('Failed to load video background:', err);
+    }
+  }
+
+  private updateVideoScale(): void {
+    if (!this.videoSprite || !this.videoElement) return;
+    
+    const videoWidth = this.videoElement.videoWidth || 1920;
+    const videoHeight = this.videoElement.videoHeight || 1080;
+    const screenWidth = this.context.width;
+    const screenHeight = this.context.height;
+    
+    // Calculate scale to cover screen (crop center)
+    const scaleX = screenWidth / videoWidth;
+    const scaleY = screenHeight / videoHeight;
+    const scale = Math.max(scaleX, scaleY);
+    
+    this.videoSprite.scale.set(scale);
+    
+    // Center the video
+    this.videoSprite.x = (screenWidth - videoWidth * scale) / 2;
+    this.videoSprite.y = (screenHeight - videoHeight * scale) / 2;
+    
+    // Add slight transparency to blend with effects
+    this.videoSprite.alpha = 0.6;
   }
 
   public update(dt: number, audio: AudioData, input: InputState): void {
     this.time += dt;
+    
+    // Update video scale if needed
+    if (this.videoSprite && this.videoElement && this.videoElement.videoWidth > 0) {
+      this.updateVideoScale();
+    }
     
     // Update text timer
     this.textTimer += dt;
@@ -162,7 +225,10 @@ export class FallsOnFire implements Pattern {
       dropShadowDistance: 0,
     });
     
-    const text = new Text('FALLS ON FIRE', style);
+    // Randomly choose between "FALLS ON FIRE" and "Camp Imagine"
+    const textContent = Math.random() > 0.5 ? 'FALLS ON FIRE' : 'Camp Imagine';
+    
+    const text = new Text(textContent, style);
     text.anchor.set(0.5, 0.5);
     text.x = this.context.width / 2 + (Math.random() - 0.5) * 100;
     text.y = this.context.height / 2 + (Math.random() - 0.5) * 200;
@@ -244,6 +310,17 @@ export class FallsOnFire implements Pattern {
       text.destroy();
     });
     this.textOverlays = [];
+    
+    // Clean up video
+    if (this.videoElement) {
+      this.videoElement.pause();
+      this.videoElement.src = '';
+      this.videoElement = null;
+    }
+    if (this.videoSprite) {
+      this.videoSprite.destroy();
+      this.videoSprite = null;
+    }
     
     this.graphics.destroy();
     this.container.destroy();

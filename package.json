@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-video": "node generate-video.js"
   },
   "dependencies": {
     "pixi.js": "^7.3.2",
@@ -13,7 +14,8 @@
     "gl-matrix": "^3.4.3",
     "simplex-noise": "^4.0.1",
     "bezier-easing": "^2.1.0",
-    "alea": "^0.0.9"
+    "alea": "^0.0.9",
+    "openai": "^4.20.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
