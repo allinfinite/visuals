@@ -98,15 +98,15 @@ export class WhisperVision implements Pattern {
     
     // Adjust timing based on generation speed
     if (this.useFlux) {
-      // Flux is faster, but still give images time to be appreciated
-      this.imageDuration = 45; // 45 seconds for good viewing time
-      this.transitionDuration = 3; // 3 seconds
-      console.log('WhisperVision: Using Flux timing (45s duration, 3s transition)');
-    } else {
-      // OpenAI is slower, longer duration
-      this.imageDuration = 60; // 60 seconds (1 minute)
+      // Flux is faster - long duration since it generates quickly
+      this.imageDuration = 120; // 2 minutes per image
       this.transitionDuration = 4; // 4 seconds
-      console.log('WhisperVision: Using OpenAI timing (60s duration, 4s transition)');
+      console.log('WhisperVision: Using Flux timing (120s duration, 4s transition)');
+    } else {
+      // OpenAI is slower - very long duration
+      this.imageDuration = 180; // 3 minutes per image
+      this.transitionDuration = 5; // 5 seconds
+      console.log('WhisperVision: Using OpenAI timing (180s duration, 5s transition)');
     }
     
     // Don't start recording immediately - wait until pattern is active
