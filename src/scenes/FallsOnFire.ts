@@ -288,19 +288,6 @@ export class FallsOnFire implements Pattern {
       }
     });
     
-    // Draw title at top (subtle, always visible)
-    const titleY = 30;
-    const titleX = this.context.width / 2;
-    
-    // Title background
-    this.graphics.beginFill(0x000000, 0.4);
-    this.graphics.drawRoundedRect(titleX - 150, titleY - 20, 300, 50, 10);
-    this.graphics.endFill();
-    
-    // Title border with fire glow
-    const glowIntensity = 0.5 + audio.bass * 0.5;
-    this.graphics.lineStyle(3, 0xff4400, glowIntensity);
-    this.graphics.drawRoundedRect(titleX - 150, titleY - 20, 300, 50, 10);
   }
 
   public destroy(): void {
