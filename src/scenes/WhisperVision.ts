@@ -29,6 +29,9 @@ export class WhisperVision implements Pattern {
   private activeGenerations: Set<Promise<void>> = new Set();
   private readonly MAX_PARALLEL_GENERATIONS: number = 2;
   private imageCache: Map<string, string> = new Map(); // Cache topic -> base64 image
+  private imageHistory: ImageState[] = []; // Keep history of all generated images
+  private readonly MAX_HISTORY: number = 20; // Keep last 20 images
+  private historyIndex: number = 0; // Current position in history when cycling
   
   // Image generation settings
   public useFlux: boolean = false; // Toggle between OpenAI and Flux
@@ -381,11 +384,46 @@ export class WhisperVision implements Pattern {
       promise.finally(() => this.activeGenerations.delete(promise));
     }
     
+    // If no topics in queue and no active generations, cycle through history
+    if (this.pendingTopics.length === 0 && this.activeGenerations.size === 0 && this.imageHistory.length > 0) {
+      // Check if current image is nearing end
+      if (this.images.length > 0) {
+        const currentImage = this.images[this.images.length - 1];
+        const age = this.time - currentImage.startTime;
+        
+        // When current image is finishing, load next from history
+        if (age > this.imageDuration - this.transitionDuration) {
+          this.loadNextHistoryImage();
+        }
+      } else if (this.images.length === 0) {
+        // No images at all, load first from history
+        this.loadNextHistoryImage();
+      }
+    }
+    
     // Periodically check transcript for new topics
     this.lastTopicCheckTime += 1/60; // Approximate dt
     if (this.lastTopicCheckTime >= this.topicCheckInterval) {
       this.lastTopicCheckTime = 0;
       this.extractAndQueueTopics();
+    }
+  }
+  
+  private loadNextHistoryImage(): void {
+    if (this.imageHistory.length === 0) return;
+    
+    // Get next image from history (cycle through)
+    this.historyIndex = (this.historyIndex + 1) % this.imageHistory.length;
+    const historyItem = this.imageHistory[this.historyIndex];
+    
+    console.log(`WhisperVision: Loading from history [${this.historyIndex + 1}/${this.imageHistory.length}]: "${historyItem.transcript.substring(0, 40)}..."`);
+    
+    // Re-generate image from cache (should be instant)
+    const cachedKey = historyItem.transcript.substring(0, 40).toLowerCase();
+    const cachedImage = this.imageCache.get(cachedKey);
+    
+    if (cachedImage) {
+      this.loadImageFromBase64(cachedImage, historyItem.transcript);
     }
   }
 
@@ -631,6 +669,26 @@ export class WhisperVision implements Pattern {
           this.container.addChild(sprite);
           this.images.push(imageState);
           
+          // Add to history (create a snapshot of image data for later reuse)
+          this.imageHistory.push({
+            sprite: null as any, // Don't store sprite reference in history
+            texture: null as any,
+            startTime: 0,
+            duration: imageState.duration,
+            startScale: imageState.startScale,
+            endScale: imageState.endScale,
+            startX: imageState.startX,
+            startY: imageState.startY,
+            endX: imageState.endX,
+            endY: imageState.endY,
+            transcript: imageState.transcript,
+          });
+          
+          // Limit history size
+          if (this.imageHistory.length > this.MAX_HISTORY) {
+            this.imageHistory.shift();
+          }
+          
           // Remove oldest images if we exceed max (keep newest ones)
           while (this.images.length > this.maxImages) {
             const oldest = this.images.shift();
@@ -641,7 +699,7 @@ export class WhisperVision implements Pattern {
             }
           }
           
-          console.log(`WhisperVision: Image loaded (${this.images.length}/${this.maxImages})`);
+          console.log(`WhisperVision: Image loaded (${this.images.length}/${this.maxImages}, ${this.imageHistory.length} in history)`);
           resolve();
         } catch (error) {
           console.error('WhisperVision: Error creating sprite:', error);
