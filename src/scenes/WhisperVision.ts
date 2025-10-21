@@ -74,6 +74,10 @@ export class WhisperVision implements Pattern {
     this.openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY || '';
     this.getimgApiKey = (import.meta as any).env?.VITE_GETIMG_API || '';
     
+    // Check which image model to use from environment
+    const imageModel = ((import.meta as any).env?.VITE_IMAGE_MODEL || 'openai').toLowerCase();
+    this.useFlux = imageModel === 'flux';
+    
     if (!this.openaiApiKey) {
       console.warn('WhisperVision: No OpenAI API key found');
     } else {
@@ -83,6 +87,8 @@ export class WhisperVision implements Pattern {
     if (this.getimgApiKey) {
       console.log('WhisperVision: GetImg.ai (Flux) API key loaded');
     }
+    
+    console.log(`WhisperVision: Image model set to: ${this.useFlux ? 'Flux Schnell' : 'OpenAI gpt-image-1-mini'}`);
     
     // Don't start recording immediately - wait until pattern is active
   }

@@ -432,37 +432,6 @@ export class ParamPane {
     displayFolder.addBinding(this.params, 'showFPS', {
       label: 'Show FPS',
     });
-    
-    // WhisperVision controls (if pattern exists)
-    const allPatterns = this.sceneManager.getAllPatterns();
-    const whisperVision = allPatterns.find(p => p.name === 'Whisper Vision') as any;
-    
-    if (whisperVision && whisperVision.useFlux !== undefined) {
-      const whisperFolder = this.pane.addFolder({
-        title: '🎤 Whisper Vision',
-        expanded: false,
-      });
-      
-      whisperFolder.addBlade({
-        view: 'text',
-        label: 'Info',
-        value: 'Speech → Images via AI',
-        parse: (v: string) => String(v),
-        format: (v: string) => String(v),
-      } as any);
-      
-      whisperFolder.addBinding(whisperVision, 'useFlux', {
-        label: 'Use Flux Model',
-      });
-      
-      whisperFolder.addBlade({
-        view: 'text',
-        label: 'Models',
-        value: 'OFF = OpenAI\nON = Flux Schnell',
-        parse: (v: string) => String(v),
-        format: (v: string) => String(v),
-      } as any);
-    }
   }
 
   public addPatternParams(name: string, params: any): void {
