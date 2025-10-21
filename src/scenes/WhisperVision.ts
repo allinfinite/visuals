@@ -258,16 +258,35 @@ export class WhisperVision implements Pattern {
     const newText = this.currentTranscript.substring(this.lastTranscriptLength);
     this.lastTranscriptLength = this.currentTranscript.length;
     
-    if (newText.trim().length < 10) return;
+    if (newText.trim().length < 50) return; // Much higher threshold
     
-    // Split by sentence endings or significant pauses
-    const sentences = newText.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 15);
+    // Only split on clear topic indicators (not every sentence)
+    // Look for: question marks, exclamations, or very long pauses (multiple periods)
+    const topicIndicators = /[!?]|\.{2,}/;
     
-    sentences.forEach(sentence => {
-      // Check if this seems like a complete thought/topic
-      if (sentence.length > 20 && !this.pendingTopics.includes(sentence)) {
-        console.log(`WhisperVision: Queued topic: "${sentence.substring(0, 50)}..."`);
-        this.pendingTopics.push(sentence);
+    // Also detect topic shift keywords
+    const topicShiftWords = /\b(also|anyway|so|now|next|then|later|meanwhile|speaking of|by the way|oh|actually)\b/i;
+    
+    // Split only on clear boundaries
+    const potentialTopics = newText.split(topicIndicators).map(s => s.trim());
+    
+    potentialTopics.forEach(topic => {
+      // Very selective: must be substantial content (>60 chars) or have clear topic shift
+      const isSubstantial = topic.length > 60;
+      const hasTopicShift = topicShiftWords.test(topic);
+      const isVeryLong = topic.length > 100;
+      
+      if ((isSubstantial && hasTopicShift) || isVeryLong) {
+        // Check for duplicate or similar topics
+        const isDuplicate = this.pendingTopics.some(existing => 
+          existing.toLowerCase().includes(topic.toLowerCase().substring(0, 30)) ||
+          topic.toLowerCase().includes(existing.toLowerCase().substring(0, 30))
+        );
+        
+        if (!isDuplicate && this.pendingTopics.length < 5) { // Max 5 topics in queue
+          console.log(`WhisperVision: Queued topic (${topic.length} chars): "${topic.substring(0, 50)}..."`);
+          this.pendingTopics.push(topic);
+        }
       }
     });
   }
