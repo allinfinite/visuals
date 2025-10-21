@@ -96,6 +96,7 @@ import { FireSmokeBody } from './scenes/FireSmokeBody';
 import { VoronoiShatter } from './scenes/VoronoiShatter';
 import { WhisperVision } from './scenes/WhisperVision';
 import { FallsOnFire } from './scenes/FallsOnFire';
+import { CherryBlossoms } from './scenes/CherryBlossoms';
 
 async function main() {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -206,6 +207,7 @@ async function main() {
   sceneManager.addPattern(new FireSmokeBody(context));
   sceneManager.addPattern(new VoronoiShatter(context));
   sceneManager.addPattern(new FallsOnFire(context));
+  sceneManager.addPattern(new CherryBlossoms(context));
   
   // Only add WhisperVision if API key is available
   const apiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
