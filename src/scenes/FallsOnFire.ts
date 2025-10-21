@@ -49,7 +49,9 @@ export class FallsOnFire implements Pattern {
     try {
       // Create video element
       this.videoElement = document.createElement('video');
-      this.videoElement.src = '/fallsonfire.mp4';
+      // Add cache-busting parameter
+      const timestamp = Date.now();
+      this.videoElement.src = `/fallsonfire.mp4?v=${timestamp}`;
       this.videoElement.loop = true;
       this.videoElement.muted = true;
       this.videoElement.playsInline = true;
