@@ -43,7 +43,7 @@ export class WhisperVision implements Pattern {
   // Transcription and topic tracking
   private currentTranscript: string = '';
   private pendingTopics: string[] = []; // Queue of topics waiting for image generation
-  private lastTranscriptLength: number = 0;
+  private processedTopics: Set<string> = new Set(); // Track which topics we've already queued
   private topicCheckInterval: number = 5; // Check for new topics every 5 seconds
   private lastTopicCheckTime: number = 0;
   
@@ -255,40 +255,31 @@ export class WhisperVision implements Pattern {
   }
   
   private extractAndQueueTopics(): void {
-    const newText = this.currentTranscript.substring(this.lastTranscriptLength);
-    this.lastTranscriptLength = this.currentTranscript.length;
+    const fullTranscript = this.currentTranscript.trim();
     
-    if (newText.trim().length < 50) return; // Much higher threshold
+    // Only process if we have substantial content (50+ chars)
+    if (fullTranscript.length < 50) {
+      console.log(`WhisperVision: Transcript too short (${fullTranscript.length} chars), waiting for more...`);
+      return;
+    }
     
-    // Only split on clear topic indicators (not every sentence)
-    // Look for: question marks, exclamations, or very long pauses (multiple periods)
-    const topicIndicators = /[!?]|\.{2,}/;
+    // Check if this content is already processed
+    const topicKey = fullTranscript.substring(0, 30).toLowerCase();
+    if (this.processedTopics.has(topicKey)) {
+      return; // Already queued this topic
+    }
     
-    // Also detect topic shift keywords
-    const topicShiftWords = /\b(also|anyway|so|now|next|then|later|meanwhile|speaking of|by the way|oh|actually)\b/i;
-    
-    // Split only on clear boundaries
-    const potentialTopics = newText.split(topicIndicators).map(s => s.trim());
-    
-    potentialTopics.forEach(topic => {
-      // Very selective: must be substantial content (>60 chars) or have clear topic shift
-      const isSubstantial = topic.length > 60;
-      const hasTopicShift = topicShiftWords.test(topic);
-      const isVeryLong = topic.length > 100;
+    // Queue the accumulated transcript as a topic
+    if (this.pendingTopics.length < 3) {
+      console.log(`WhisperVision: Queued new topic (${fullTranscript.length} chars): "${fullTranscript.substring(0, 60)}..."`);
+      this.pendingTopics.push(fullTranscript);
+      this.processedTopics.add(topicKey);
       
-      if ((isSubstantial && hasTopicShift) || isVeryLong) {
-        // Check for duplicate or similar topics
-        const isDuplicate = this.pendingTopics.some(existing => 
-          existing.toLowerCase().includes(topic.toLowerCase().substring(0, 30)) ||
-          topic.toLowerCase().includes(existing.toLowerCase().substring(0, 30))
-        );
-        
-        if (!isDuplicate && this.pendingTopics.length < 5) { // Max 5 topics in queue
-          console.log(`WhisperVision: Queued topic (${topic.length} chars): "${topic.substring(0, 50)}..."`);
-          this.pendingTopics.push(topic);
-        }
-      }
-    });
+      // Clear transcript after queuing
+      this.currentTranscript = '';
+    } else {
+      console.log(`WhisperVision: Queue full (3 topics), waiting to process...`);
+    }
   }
 
   private checkAndGenerateFromTranscript(): void {
