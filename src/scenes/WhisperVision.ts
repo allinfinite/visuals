@@ -26,6 +26,9 @@ export class WhisperVision implements Pattern {
   private isTranscribing: boolean = false;
   private openaiApiKey: string = '';
   private getimgApiKey: string = '';
+  private activeGenerations: Set<Promise<void>> = new Set();
+  private readonly MAX_PARALLEL_GENERATIONS: number = 2;
+  private imageCache: Map<string, string> = new Map(); // Cache topic -> base64 image
   
   // Image generation settings
   public useFlux: boolean = false; // Toggle between OpenAI and Flux
@@ -39,6 +42,8 @@ export class WhisperVision implements Pattern {
   private websocket: WebSocket | null = null;
   private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
+  private audioBuffer: Int16Array[] = [];
+  private readonly AUDIO_BATCH_SIZE: number = 3; // Batch 3 chunks before sending (~500ms)
   
   // Transcription and topic tracking
   private currentTranscript: string = '';
@@ -46,6 +51,7 @@ export class WhisperVision implements Pattern {
   private processedTopics: Set<string> = new Set(); // Track which topics we've already queued
   private topicCheckInterval: number = 5; // Check for new topics every 5 seconds
   private lastTopicCheckTime: number = 0;
+  private speechIntensity: number = 0; // For visualization
   
   // Different trippy visual styles to rotate through
   private visualStyles: string[] = [
@@ -200,12 +206,29 @@ export class WhisperVision implements Pattern {
             pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
           }
           
-          // Convert to base64 and send
-          const base64 = this.arrayBufferToBase64(pcm16.buffer);
-          this.websocket.send(JSON.stringify({
-            type: 'input_audio_buffer.append',
-            audio: base64
-          }));
+          // Batch audio chunks for efficiency
+          this.audioBuffer.push(pcm16);
+          
+          if (this.audioBuffer.length >= this.AUDIO_BATCH_SIZE) {
+            // Combine buffers
+            const totalLength = this.audioBuffer.reduce((sum, buf) => sum + buf.length, 0);
+            const combined = new Int16Array(totalLength);
+            let offset = 0;
+            
+            for (const buf of this.audioBuffer) {
+              combined.set(buf, offset);
+              offset += buf.length;
+            }
+            
+            // Convert to base64 and send
+            const base64 = this.arrayBufferToBase64(combined.buffer);
+            this.websocket.send(JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: base64
+            }));
+            
+            this.audioBuffer = [];
+          }
         }
       };
       
@@ -220,11 +243,16 @@ export class WhisperVision implements Pattern {
   
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
+    // Optimized: use apply with chunks to avoid call stack limits
+    const CHUNK_SIZE = 0x8000; // 32KB chunks
+    const chunks: string[] = [];
+    
+    for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+      const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
+      chunks.push(String.fromCharCode.apply(null, Array.from(chunk)));
     }
-    return btoa(binary);
+    
+    return btoa(chunks.join(''));
   }
   
   private handleRealtimeEvent(event: any): void {
@@ -235,6 +263,7 @@ export class WhisperVision implements Pattern {
         if (transcript.trim().length > 0) {
           console.log(`WhisperVision: Real-time transcript: "${transcript}"`);
           this.currentTranscript += ' ' + transcript;
+          this.speechIntensity = 1.0; // Spike on new transcript
           this.extractAndQueueTopics();
         }
         break;
@@ -256,6 +285,9 @@ export class WhisperVision implements Pattern {
   
   private extractAndQueueTopics(): void {
     const fullTranscript = this.currentTranscript.trim();
+    
+    // Check for voice commands first
+    this.handleVoiceCommands(fullTranscript);
     
     // Only process if we have substantial content (50+ chars)
     if (fullTranscript.length < 50) {
@@ -281,13 +313,72 @@ export class WhisperVision implements Pattern {
       console.log(`WhisperVision: Queue full (3 topics), waiting to process...`);
     }
   }
+  
+  private handleVoiceCommands(transcript: string): void {
+    const lower = transcript.toLowerCase();
+    let commandDetected = false;
+    
+    // "show me X" - immediate generation
+    if (lower.includes('show me')) {
+      const match = transcript.match(/show me (.+)/i);
+      if (match && match[1].length > 5) {
+        console.log(`WhisperVision: 🎤 Voice command - Show me: "${match[1]}"`);
+        this.pendingTopics.unshift(match[1]); // Add to front of queue
+        commandDetected = true;
+      }
+    }
+    
+    // "zoom in/out" - adjust current image zoom
+    if (lower.includes('zoom in')) {
+      console.log(`WhisperVision: 🎤 Voice command - Zoom in (not implemented yet - use 'faster' or 'slower')`);
+      this.imageDuration = Math.max(15, this.imageDuration * 0.7);
+      commandDetected = true;
+    }
+    
+    if (lower.includes('zoom out')) {
+      console.log(`WhisperVision: 🎤 Voice command - Zoom out (not implemented yet - use 'faster' or 'slower')`);
+      this.imageDuration = Math.min(120, this.imageDuration * 1.3);
+      commandDetected = true;
+    }
+    
+    // "faster" / "slower" - adjust Ken Burns speed
+    if (lower.includes('faster') || lower.includes('speed up')) {
+      this.imageDuration = Math.max(15, this.imageDuration * 0.7);
+      console.log(`WhisperVision: 🎤 Voice command - Faster! Duration now ${this.imageDuration.toFixed(0)}s`);
+      commandDetected = true;
+    }
+    
+    if (lower.includes('slower') || lower.includes('slow down')) {
+      this.imageDuration = Math.min(120, this.imageDuration * 1.3);
+      console.log(`WhisperVision: 🎤 Voice command - Slower! Duration now ${this.imageDuration.toFixed(0)}s`);
+      commandDetected = true;
+    }
+    
+    // "next" or "skip" - skip to next queued topic
+    if (lower.includes('next image') || lower.includes('skip')) {
+      console.log(`WhisperVision: 🎤 Voice command - Next image`);
+      // Force current image to finish
+      if (this.images.length > 0) {
+        this.images[0].startTime = this.time - this.imageDuration;
+      }
+      commandDetected = true;
+    }
+    
+    // Clear transcript if command was detected to prevent it being queued as a topic
+    if (commandDetected) {
+      this.currentTranscript = '';
+    }
+  }
 
   private checkAndGenerateFromTranscript(): void {
-    // Process queue if we have topics and are not already generating
-    if (this.pendingTopics.length > 0 && !this.isGenerating) {
+    // Process queue with parallel generation (up to MAX_PARALLEL_GENERATIONS at once)
+    while (this.pendingTopics.length > 0 && this.activeGenerations.size < this.MAX_PARALLEL_GENERATIONS) {
       const topic = this.pendingTopics.shift()!;
-      console.log(`WhisperVision: Processing queued topic (${this.pendingTopics.length} remaining)`);
-      this.generateImageFromTranscript(topic);
+      console.log(`WhisperVision: Processing queued topic (${this.pendingTopics.length} remaining, ${this.activeGenerations.size} generating)`);
+      
+      const promise = this.generateImageFromTranscript(topic);
+      this.activeGenerations.add(promise);
+      promise.finally(() => this.activeGenerations.delete(promise));
     }
     
     // Periodically check transcript for new topics
@@ -320,12 +411,8 @@ export class WhisperVision implements Pattern {
       return;
     }
     
-    // Allow queueing if we're still generating but don't have enough images
-    if (this.isGenerating && this.images.length >= this.maxImages) {
-      console.log('WhisperVision: Already generating and have enough images, skipping');
-      return;
-    }
-    
+    // Allow parallel generation up to MAX_PARALLEL_GENERATIONS
+    // Note: isGenerating flag is now managed per-promise in activeGenerations set
     this.isGenerating = true;
     
     try {
@@ -342,6 +429,15 @@ export class WhisperVision implements Pattern {
   }
   
   private async generateWithOpenAI(transcript: string): Promise<void> {
+    // Check cache first
+    const cacheKey = transcript.substring(0, 40).toLowerCase();
+    if (this.imageCache.has(cacheKey)) {
+      console.log(`WhisperVision: Loading cached image for similar topic`);
+      const cachedImage = this.imageCache.get(cacheKey)!;
+      await this.loadImageFromBase64(cachedImage, transcript);
+      return;
+    }
+    
     // Rotate through different visual styles for variety
     const style = this.visualStyles[this.currentStyleIndex];
     this.currentStyleIndex = (this.currentStyleIndex + 1) % this.visualStyles.length;
@@ -377,10 +473,30 @@ export class WhisperVision implements Pattern {
     }
     
     console.log('WhisperVision: OpenAI image generated successfully');
+    
+    // Cache the image
+    const openaiCacheKey = transcript.substring(0, 40).toLowerCase();
+    this.imageCache.set(openaiCacheKey, b64Image);
+    
+    // Limit cache size to 10 most recent
+    if (this.imageCache.size > 10) {
+      const firstKey = this.imageCache.keys().next().value;
+      if (firstKey) this.imageCache.delete(firstKey);
+    }
+    
     await this.loadImageFromBase64(b64Image, transcript);
   }
   
   private async generateWithFlux(transcript: string): Promise<void> {
+    // Check cache first
+    const cacheKey = transcript.substring(0, 40).toLowerCase();
+    if (this.imageCache.has(cacheKey)) {
+      console.log(`WhisperVision: Loading cached image for similar topic`);
+      const cachedImage = this.imageCache.get(cacheKey)!;
+      await this.loadImageFromBase64(cachedImage, transcript);
+      return;
+    }
+    
     // Rotate through different visual styles for variety
     const style = this.visualStyles[this.currentStyleIndex];
     this.currentStyleIndex = (this.currentStyleIndex + 1) % this.visualStyles.length;
@@ -420,6 +536,17 @@ export class WhisperVision implements Pattern {
     }
     
     console.log('WhisperVision: Flux image generated successfully');
+    
+    // Cache the image  
+    const fluxCacheKey = transcript.substring(0, 40).toLowerCase();
+    this.imageCache.set(fluxCacheKey, b64Image);
+    
+    // Limit cache size to 10 most recent
+    if (this.imageCache.size > 10) {
+      const firstKey = this.imageCache.keys().next().value;
+      if (firstKey) this.imageCache.delete(firstKey);
+    }
+    
     await this.loadImageFromBase64(b64Image, transcript);
   }
 
@@ -447,14 +574,44 @@ export class WhisperVision implements Pattern {
           // Center image
           sprite.anchor.set(0.5, 0.5);
           
-          // Random Ken Burns parameters (extended zoom range)
-          const zoomDirection = Math.random() > 0.5 ? 1 : -1;
-          const startScale = zoomDirection > 0 ? 1.0 : 1.4; // Increased from 1.2 to 1.4
-          const endScale = zoomDirection > 0 ? 1.4 : 1.0;   // Increased from 1.2 to 1.4
+          // Analyze image for dynamic Ken Burns (check brightness for complexity hint)
+          const canvas = document.createElement('canvas');
+          canvas.width = 100;
+          canvas.height = 100;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, 100, 100);
+          const imageData = ctx?.getImageData(0, 0, 100, 100);
           
-          // Random pan direction (extended range)
-          const panX = (Math.random() - 0.5) * 0.2; // Increased from 0.1 to 0.2
-          const panY = (Math.random() - 0.5) * 0.2; // Increased from 0.1 to 0.2
+          // Simple complexity measure: variance in brightness
+          let totalBrightness = 0;
+          let brightnessVariance = 0;
+          if (imageData) {
+            for (let i = 0; i < imageData.data.length; i += 4) {
+              const brightness = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
+              totalBrightness += brightness;
+            }
+            const avgBrightness = totalBrightness / (imageData.data.length / 4);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+              const brightness = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
+              brightnessVariance += Math.abs(brightness - avgBrightness);
+            }
+          }
+          
+          // Higher variance = more detail = more zoom/pan
+          const complexity = Math.min(1, brightnessVariance / 10000);
+          const zoomAmount = 1.2 + complexity * 0.3; // 1.2x to 1.5x zoom
+          const panAmount = 0.15 + complexity * 0.1; // 15% to 25% pan
+          
+          // Random Ken Burns parameters (dynamic based on complexity)
+          const zoomDirection = Math.random() > 0.5 ? 1 : -1;
+          const startScale = zoomDirection > 0 ? 1.0 : zoomAmount;
+          const endScale = zoomDirection > 0 ? zoomAmount : 1.0;
+          
+          // Random pan direction (dynamic range)
+          const panX = (Math.random() - 0.5) * panAmount;
+          const panY = (Math.random() - 0.5) * panAmount;
+          
+          console.log(`WhisperVision: Ken Burns params - complexity: ${complexity.toFixed(2)}, zoom: ${zoomAmount.toFixed(2)}x, pan: ${(panAmount*100).toFixed(0)}%`);
           
           const imageState: ImageState = {
             sprite,
@@ -504,6 +661,9 @@ export class WhisperVision implements Pattern {
   public update(dt: number, audio: AudioData, _input: InputState): void {
     this.time += dt;
     
+    // Decay speech intensity for visualization
+    this.speechIntensity *= 0.95;
+    
     // Start recording when pattern becomes active (lazy initialization)
     // Once started, keep recording even if alpha drops (for multi-layer transitions)
     const shouldBeActive = this.container.visible && this.container.alpha > 0.01;
@@ -517,18 +677,24 @@ export class WhisperVision implements Pattern {
       this.checkAndGenerateFromTranscript();
     }
     
-    // Update images with Ken Burns effect
+    // Update images with Ken Burns effect (synced to audio beat)
     this.images.forEach((img) => {
       const age = this.time - img.startTime;
-      const progress = Math.min(1, age / img.duration);
+      
+      // Speed up Ken Burns on beat for dynamic effect
+      const beatBoost = audio.beat ? 0.02 : 0;
+      const adjustedAge = age * (1 + beatBoost);
+      const progress = Math.min(1, adjustedAge / img.duration);
       
       // Smooth easing
       const eased = progress < 0.5 
         ? 2 * progress * progress 
         : 1 - Math.pow(-2 * progress + 2, 2) / 2;
       
-      // Apply Ken Burns effect
-      const scale = img.startScale + (img.endScale - img.startScale) * eased;
+      // Apply Ken Burns effect with audio reactivity
+      const baseScale = img.startScale + (img.endScale - img.startScale) * eased;
+      const audioPulse = 1 + audio.rms * 0.03; // Subtle pulse
+      const scale = baseScale * audioPulse;
       img.sprite.scale.set(scale, scale);
       
       img.sprite.x = img.startX + (img.endX - img.startX) * eased;
@@ -618,10 +784,35 @@ export class WhisperVision implements Pattern {
         this.graphics.endFill();
       }
       
-      // Queue indicator
+      // Queue indicator (shows number of pending topics)
       if (this.pendingTopics.length > 0) {
         this.graphics.beginFill(0xffaa00, 0.6);
         this.graphics.drawCircle(170, 25, 8);
+        this.graphics.endFill();
+      }
+      
+      // Speech intensity visualization bar
+      if (this.speechIntensity > 0.1) {
+        const barWidth = 200;
+        const barHeight = 8;
+        const barX = this.context.width - barWidth - 20;
+        const barY = 20;
+        
+        // Background
+        this.graphics.beginFill(0x000000, 0.5);
+        this.graphics.drawRoundedRect(barX, barY, barWidth, barHeight, 4);
+        this.graphics.endFill();
+        
+        // Active speech indicator
+        const activeWidth = barWidth * this.speechIntensity;
+        this.graphics.beginFill(0x00ff88, 0.8);
+        this.graphics.drawRoundedRect(barX, barY, activeWidth, barHeight, 4);
+        this.graphics.endFill();
+        
+        // Transcript length indicator
+        const transcriptProgress = Math.min(1, this.currentTranscript.length / 100);
+        this.graphics.beginFill(0xffaa00, 0.6);
+        this.graphics.drawRoundedRect(barX, barY + 12, barWidth * transcriptProgress, 4, 2);
         this.graphics.endFill();
       }
     }
