@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Texture, Text, TextStyle } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import type { Pattern, AudioData, InputState, RendererContext } from '../types';
 
 interface ImageState {
@@ -32,11 +32,6 @@ export class WhisperVision implements Pattern {
   private imageHistory: ImageState[] = []; // Keep history of all generated images
   private readonly MAX_HISTORY: number = 20; // Keep last 20 images
   private historyIndex: number = 0; // Current position in history when cycling
-  
-  // Text overlays
-  private textOverlays: Text[] = [];
-  private textTimer: number = 0;
-  private textInterval: number = 15; // Show text every 15 seconds
   
   // Image generation settings
   public useFlux: boolean = false; // Toggle between OpenAI and Flux
@@ -727,53 +722,6 @@ export class WhisperVision implements Pattern {
     // Decay speech intensity for visualization
     this.speechIntensity *= 0.95;
     
-    // Update text overlay timer
-    this.textTimer += dt;
-    if (this.textTimer >= this.textInterval) {
-      this.textTimer = 0;
-      this.spawnTextOverlay();
-    }
-    
-    // Update text overlays
-    this.textOverlays.forEach(text => {
-      const data = (text as any).userData;
-      if (data) {
-        data.age += dt;
-        
-        // Fade in
-        if (data.age < 1) {
-          text.alpha = data.age;
-        }
-        // Stay visible
-        else if (data.age < 4) {
-          text.alpha = 1;
-        }
-        // Fade out
-        else if (data.age < 6) {
-          text.alpha = 1 - (data.age - 4) / 2;
-        }
-        // Remove
-        else {
-          text.alpha = 0;
-        }
-        
-        // Subtle drift
-        text.y += dt * 10;
-        text.x += Math.sin(data.age * 2) * dt * 5;
-      }
-    });
-    
-    // Remove old text overlays
-    this.textOverlays = this.textOverlays.filter(text => {
-      const data = (text as any).userData;
-      if (data && data.age > 6) {
-        this.container.removeChild(text);
-        text.destroy();
-        return false;
-      }
-      return true;
-    });
-    
     // Start recording when pattern becomes active (lazy initialization)
     // Once started, keep recording even if alpha drops (for multi-layer transitions)
     const shouldBeActive = this.container.visible && this.container.alpha > 0.01;
@@ -928,35 +876,6 @@ export class WhisperVision implements Pattern {
     }
   }
 
-  private spawnTextOverlay(): void {
-    const style = new TextStyle({
-      fontFamily: 'Arial, sans-serif',
-      fontSize: 80,
-      fontWeight: 'bold',
-      fill: ['#00ffff', '#0088ff'], // Gradient: cyan to blue (different from Falls on Fire)
-      stroke: '#000000',
-      strokeThickness: 5,
-      dropShadow: true,
-      dropShadowColor: '#00aaff',
-      dropShadowBlur: 25,
-      dropShadowAngle: Math.PI / 2,
-      dropShadowDistance: 0,
-    });
-    
-    const text = new Text('CAMP IMAGINE', style);
-    text.anchor.set(0.5, 0.5);
-    text.x = this.context.width / 2 + (Math.random() - 0.5) * 200;
-    text.y = this.context.height / 2 + (Math.random() - 0.5) * 300;
-    text.alpha = 0;
-    text.rotation = (Math.random() - 0.5) * 0.3;
-    
-    // Store age data
-    (text as any).userData = { age: 0 };
-    
-    this.container.addChild(text);
-    this.textOverlays.push(text);
-  }
-
   private rgbToHex(r: number, g: number, b: number): number {
     r = Math.max(0, Math.min(1, r));
     g = Math.max(0, Math.min(1, g));
@@ -982,13 +901,6 @@ export class WhisperVision implements Pattern {
       this.mediaStream.getTracks().forEach(track => track.stop());
       this.mediaStream = null;
     }
-    
-    // Clean up text overlays
-    this.textOverlays.forEach(text => {
-      this.container.removeChild(text);
-      text.destroy();
-    });
-    this.textOverlays = [];
     
     // Clean up images
     this.images.forEach(img => {
