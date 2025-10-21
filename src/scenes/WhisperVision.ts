@@ -30,9 +30,9 @@ export class WhisperVision implements Pattern {
   // Image generation settings
   public useFlux: boolean = false; // Toggle between OpenAI and Flux
   
-  // Ken Burns parameters
-  private imageDuration: number = 30; // 30 seconds per image (extended for continuous animation)
-  private transitionDuration: number = 3; // fade transition time
+  // Ken Burns parameters (adjusted based on generation speed)
+  private imageDuration: number = 30; // Will be adjusted based on model
+  private transitionDuration: number = 3; // Will be adjusted based on model
   private maxImages: number = 2; // Keep 2 images in rotation
   
   // Real-time audio streaming
@@ -89,6 +89,19 @@ export class WhisperVision implements Pattern {
     }
     
     console.log(`WhisperVision: Image model set to: ${this.useFlux ? 'Flux Schnell' : 'OpenAI gpt-image-1-mini'}`);
+    
+    // Adjust timing based on generation speed
+    if (this.useFlux) {
+      // Flux is much faster, so shorter duration and transitions
+      this.imageDuration = 12; // 12 seconds (was 30)
+      this.transitionDuration = 2; // 2 seconds (was 3)
+      console.log('WhisperVision: Using fast timing for Flux (12s duration, 2s transition)');
+    } else {
+      // OpenAI is slower, keep longer duration
+      this.imageDuration = 30;
+      this.transitionDuration = 3;
+      console.log('WhisperVision: Using standard timing for OpenAI (30s duration, 3s transition)');
+    }
     
     // Don't start recording immediately - wait until pattern is active
   }
