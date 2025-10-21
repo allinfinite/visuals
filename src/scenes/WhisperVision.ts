@@ -24,7 +24,11 @@ export class WhisperVision implements Pattern {
   private images: ImageState[] = [];
   private isGenerating: boolean = false;
   private isTranscribing: boolean = false;
-  private apiKey: string = '';
+  private openaiApiKey: string = '';
+  private getimgApiKey: string = '';
+  
+  // Image generation settings
+  public useFlux: boolean = false; // Toggle between OpenAI and Flux
   
   // Ken Burns parameters
   private imageDuration: number = 30; // 30 seconds per image (extended for continuous animation)
@@ -66,25 +70,36 @@ export class WhisperVision implements Pattern {
     this.graphics = new Graphics();
     this.container.addChild(this.graphics);
     
-    // Get API key from environment
-    this.apiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY || '';
+    // Get API keys from environment
+    this.openaiApiKey = (import.meta as any).env?.VITE_OPENAI_API_KEY || '';
+    this.getimgApiKey = (import.meta as any).env?.VITE_GETIMG_API || '';
     
-    if (!this.apiKey) {
+    if (!this.openaiApiKey) {
       console.warn('WhisperVision: No OpenAI API key found');
     } else {
-      console.log('WhisperVision: OpenAI API key loaded - will start audio on first activation');
-      // Don't start recording immediately - wait until pattern is active
+      console.log('WhisperVision: OpenAI API key loaded');
     }
+    
+    if (this.getimgApiKey) {
+      console.log('WhisperVision: GetImg.ai (Flux) API key loaded');
+    }
+    
+    // Don't start recording immediately - wait until pattern is active
   }
 
   private async startAudioCapture(): Promise<void> {
+    if (!this.openaiApiKey) {
+      console.error('WhisperVision: No OpenAI API key for realtime transcription');
+      return;
+    }
+    
     try {
       // Connect to GPT Realtime API via WebSocket
       const url = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01';
       
       this.websocket = new WebSocket(url, [
         'realtime',
-        `openai-insecure-api-key.${this.apiKey}`,
+        `openai-insecure-api-key.${this.openaiApiKey}`,
         'openai-beta.realtime-v1'
       ]);
       
@@ -255,7 +270,19 @@ export class WhisperVision implements Pattern {
   }
 
   private async generateImageFromTranscript(transcript: string): Promise<void> {
-    if (!this.apiKey) return;
+    // Check which API to use
+    const hasOpenAI = !!this.openaiApiKey;
+    const hasFlux = !!this.getimgApiKey;
+    
+    if (this.useFlux && !hasFlux) {
+      console.error('WhisperVision: Flux selected but no API key available');
+      return;
+    }
+    
+    if (!this.useFlux && !hasOpenAI) {
+      console.error('WhisperVision: OpenAI selected but no API key available');
+      return;
+    }
     
     // Only generate if pattern is active/visible
     const isActive = this.container.visible && this.container.alpha > 0.1;
@@ -273,48 +300,98 @@ export class WhisperVision implements Pattern {
     this.isGenerating = true;
     
     try {
-      // Rotate through different visual styles for variety
-      const style = this.visualStyles[this.currentStyleIndex];
-      this.currentStyleIndex = (this.currentStyleIndex + 1) % this.visualStyles.length;
-      
-      // Create a prompt that represents the content in the selected style
-      const prompt = `${transcript}, visualized as trippy psychedelic art with ${style}. Emphasize the core subject/concept while making it visually stunning and surreal. NO TEXT, NO WORDS, NO LETTERS in the image.`;
-      
-      console.log(`WhisperVision: Generating image with style: "${style.substring(0, 40)}..."`);
-      
-      const response = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-image-1-mini',
-          prompt: prompt,
-          n: 1,
-          size: '1024x1024',
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Image generation error: ${response.status} ${response.statusText}`);
+      if (this.useFlux) {
+        await this.generateWithFlux(transcript);
+      } else {
+        await this.generateWithOpenAI(transcript);
       }
-
-      const data = await response.json();
-      const b64Image = data.data[0].b64_json;
-      
-      if (!b64Image) {
-        throw new Error('No image data in response');
-      }
-      
-      console.log('WhisperVision: Image generated successfully');
-      await this.loadImageFromBase64(b64Image, transcript);
-      
     } catch (error) {
       console.error('WhisperVision: Image generation failed:', error);
     } finally {
       this.isGenerating = false;
     }
+  }
+  
+  private async generateWithOpenAI(transcript: string): Promise<void> {
+    // Rotate through different visual styles for variety
+    const style = this.visualStyles[this.currentStyleIndex];
+    this.currentStyleIndex = (this.currentStyleIndex + 1) % this.visualStyles.length;
+    
+    // Create a prompt that represents the content in the selected style
+    const prompt = `${transcript}, visualized as trippy psychedelic art with ${style}. Emphasize the core subject/concept while making it visually stunning and surreal. NO TEXT, NO WORDS, NO LETTERS in the image.`;
+    
+    console.log(`WhisperVision: Generating with OpenAI, style: "${style.substring(0, 40)}..."`);
+    
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.openaiApiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-image-1-mini',
+        prompt: prompt,
+        n: 1,
+        size: '1024x1024',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI generation error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const b64Image = data.data[0].b64_json;
+    
+    if (!b64Image) {
+      throw new Error('No image data in OpenAI response');
+    }
+    
+    console.log('WhisperVision: OpenAI image generated successfully');
+    await this.loadImageFromBase64(b64Image, transcript);
+  }
+  
+  private async generateWithFlux(transcript: string): Promise<void> {
+    // Rotate through different visual styles for variety
+    const style = this.visualStyles[this.currentStyleIndex];
+    this.currentStyleIndex = (this.currentStyleIndex + 1) % this.visualStyles.length;
+    
+    // Create a prompt that represents the content in the selected style
+    const prompt = `${transcript}, visualized as trippy psychedelic art with ${style}. Emphasize the core subject/concept while making it visually stunning and surreal. NO TEXT, NO WORDS, NO LETTERS in the image.`;
+    
+    console.log(`WhisperVision: Generating with Flux, style: "${style.substring(0, 40)}..."`);
+    
+    const response = await fetch('https://api.getimg.ai/v1/flux-schnell/text-to-image', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'Authorization': `Bearer ${this.getimgApiKey}`,
+      },
+      body: JSON.stringify({
+        prompt: prompt,
+        width: 1024,
+        height: 1024,
+        steps: 4, // Flux Schnell is optimized for 1-4 steps
+        output_format: 'jpeg',
+        response_format: 'b64'
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Flux generation error: ${response.status} ${response.statusText}\n${errorText}`);
+    }
+
+    const data = await response.json();
+    const b64Image = data.image;
+    
+    if (!b64Image) {
+      throw new Error('No image data in Flux response');
+    }
+    
+    console.log('WhisperVision: Flux image generated successfully');
+    await this.loadImageFromBase64(b64Image, transcript);
   }
 
   private async loadImageFromBase64(b64Data: string, transcript: string): Promise<void> {
@@ -401,7 +478,7 @@ export class WhisperVision implements Pattern {
     // Start recording when pattern becomes active (lazy initialization)
     // Once started, keep recording even if alpha drops (for multi-layer transitions)
     const shouldBeActive = this.container.visible && this.container.alpha > 0.01;
-    if (this.apiKey && !this.websocket && shouldBeActive) {
+    if (this.openaiApiKey && !this.websocket && shouldBeActive) {
       console.log('WhisperVision: Pattern now active, starting audio capture');
       this.startAudioCapture();
     }
@@ -470,10 +547,10 @@ export class WhisperVision implements Pattern {
     this.graphics.clear();
     
     // Draw status indicator
-    if (this.apiKey) {
+    if (this.openaiApiKey || this.getimgApiKey) {
       // Background
       this.graphics.beginFill(0x000000, 0.6);
-      this.graphics.drawRoundedRect(10, 10, 140, 30, 5);
+      this.graphics.drawRoundedRect(10, 10, 180, 30, 5);
       this.graphics.endFill();
       
       // Microphone icon (recording indicator)
@@ -489,18 +566,31 @@ export class WhisperVision implements Pattern {
         this.graphics.endFill();
       }
       
-      // Generating indicator
+      // Generating indicator (color indicates which model)
       if (this.isGenerating) {
-        this.graphics.beginFill(0x00ff88, 0.8);
+        const genColor = this.useFlux ? 0x00ffff : 0x00ff88; // Cyan for Flux, Green for OpenAI
+        this.graphics.beginFill(genColor, 0.8);
         this.graphics.drawCircle(75, 25, 5);
         this.graphics.endFill();
       }
+      
+      // Model indicator text (F for Flux, O for OpenAI)
+      this.graphics.beginFill(this.useFlux ? 0x00ffff : 0x00ff88, 0.6);
+      this.graphics.drawCircle(100, 25, 8);
+      this.graphics.endFill();
       
       // Image count dots
       for (let i = 0; i < this.maxImages; i++) {
         const filled = i < this.images.length;
         this.graphics.beginFill(0xffffff, filled ? 0.8 : 0.2);
-        this.graphics.drawCircle(100 + i * 20, 25, 4);
+        this.graphics.drawCircle(125 + i * 20, 25, 4);
+        this.graphics.endFill();
+      }
+      
+      // Queue indicator
+      if (this.pendingTopics.length > 0) {
+        this.graphics.beginFill(0xffaa00, 0.6);
+        this.graphics.drawCircle(170, 25, 8);
         this.graphics.endFill();
       }
     }
