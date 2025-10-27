@@ -247,6 +247,7 @@ export class ParamPane {
       enabled: false,
       motionSensitivity: webcamInput.motionSensitivity * 100,
       clickThreshold: webcamInput.clickThreshold * 100,
+      accelerationThreshold: webcamInput.accelerationThreshold * 100,
       smoothing: webcamInput.smoothingFactor * 100,
       showDebug: webcamInput.showDebug,
       status: 'Not initialized',
@@ -281,7 +282,7 @@ export class ParamPane {
     webcamFolder.addBlade({
       view: 'text',
       label: 'Info',
-      value: '📹 Move = cursor position\n🎨 Motion = auto-drag\n💥 Quick motion = click',
+      value: '📹 Move = cursor position\n🎨 Motion = auto-drag\n💥 Sharp movement = click',
       parse: (v: string) => String(v),
       format: (v: string) => String(v),
     } as any);
@@ -315,6 +316,15 @@ export class ParamPane {
       step: 5,
     }).on('change', (ev: any) => {
       webcamInput.clickThreshold = ev.value / 100;
+    });
+
+    webcamFolder.addBinding(webcamParams, 'accelerationThreshold', {
+      label: 'Sharp Movement Click',
+      min: 0,
+      max: 100,
+      step: 5,
+    }).on('change', (ev: any) => {
+      webcamInput.accelerationThreshold = ev.value / 100;
     });
 
     webcamFolder.addBinding(webcamParams, 'smoothing', {

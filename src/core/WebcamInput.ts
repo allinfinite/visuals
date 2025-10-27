@@ -13,6 +13,7 @@ export class WebcamInput {
   private centroidY: number = 0.5;
   private motionIntensity: number = 0;
   private smoothedMotionIntensity: number = 0;
+  private previousMotionIntensity: number = 0;
   private hasMotion: boolean = false;
   
   // Processing settings
@@ -22,6 +23,7 @@ export class WebcamInput {
   public clickThreshold: number = 0.7; // 0-1, motion spike threshold for clicks
   public smoothingFactor: number = 0.3; // 0-1, higher = more smoothing
   public dragMotionThreshold: number = 0.15; // 0-1, motion threshold for auto-dragging
+  public accelerationThreshold: number = 0.5; // 0-1, threshold for sharp movement clicks
   
   // Performance optimization
   private frameSkip: number = 2; // Process every Nth frame
@@ -30,8 +32,16 @@ export class WebcamInput {
   // Click detection
   private clickCooldown: number = 0;
   private clickCooldownDuration: number = 0.5; // seconds
+  private clickPauseTimer: number = 0;
+  private clickPauseDuration: number = 0.15; // seconds to pause drag after click
   private motionHistory: number[] = [];
   private maxHistoryLength: number = 10;
+  
+  // Acceleration tracking for sharp movement detection
+  private velocityHistory: number[] = [];
+  private accelerationHistory: number[] = [];
+  private maxAccelHistoryLength: number = 10;
+  private lastClickTriggered: boolean = false;
   
   // Debug overlay
   public showDebug: boolean = false;
@@ -104,6 +114,11 @@ export class WebcamInput {
     // Update click cooldown
     if (this.clickCooldown > 0) {
       this.clickCooldown -= dt;
+    }
+    
+    // Update click pause timer
+    if (this.clickPauseTimer > 0) {
+      this.clickPauseTimer -= dt;
     }
     
     // Frame skipping for performance
@@ -196,6 +211,28 @@ export class WebcamInput {
       this.smoothingFactor * this.motionIntensity + 
       (1 - this.smoothingFactor) * this.smoothedMotionIntensity;
     
+    // Calculate velocity (rate of change of motion)
+    const velocity = this.smoothedMotionIntensity - this.previousMotionIntensity;
+    this.velocityHistory.push(velocity);
+    if (this.velocityHistory.length > this.maxAccelHistoryLength) {
+      this.velocityHistory.shift();
+    }
+    
+    // Calculate acceleration (rate of change of velocity)
+    if (this.velocityHistory.length >= 2) {
+      const currentVel = this.velocityHistory[this.velocityHistory.length - 1];
+      const prevVel = this.velocityHistory[this.velocityHistory.length - 2];
+      const acceleration = Math.abs(currentVel - prevVel);
+      
+      this.accelerationHistory.push(acceleration);
+      if (this.accelerationHistory.length > this.maxAccelHistoryLength) {
+        this.accelerationHistory.shift();
+      }
+    }
+    
+    // Store current motion for next frame's velocity calculation
+    this.previousMotionIntensity = this.smoothedMotionIntensity;
+    
     // Track motion history for click detection
     this.motionHistory.push(this.smoothedMotionIntensity);
     if (this.motionHistory.length > this.maxHistoryLength) {
@@ -204,31 +241,50 @@ export class WebcamInput {
   }
   
   public shouldTriggerClick(): boolean {
-    // Disable regular clicks when dragging
-    if (this.smoothedMotionIntensity > this.dragMotionThreshold) {
-      return false;
-    }
-    
+    // Need cooldown and minimum history
     if (this.clickCooldown > 0 || this.motionHistory.length < 5) {
+      this.lastClickTriggered = false;
       return false;
     }
     
-    // Detect motion spike (sudden increase)
-    const recent = this.motionHistory.slice(-3);
-    const older = this.motionHistory.slice(-6, -3);
-    
-    const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
-    const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
-    
-    // Check if there's a significant spike
-    const spike = recentAvg - olderAvg;
-    const isSpike = spike > this.clickThreshold * 0.3 && recentAvg > this.clickThreshold;
-    
-    if (isSpike) {
-      this.clickCooldown = this.clickCooldownDuration;
-      return true;
+    // FIRST: Check for sharp acceleration spikes (works even during drag mode)
+    // This allows clicks during continuous motion
+    if (this.accelerationHistory.length >= 3) {
+      const recentAccel = this.accelerationHistory.slice(-3);
+      const avgAcceleration = recentAccel.reduce((a, b) => a + b, 0) / recentAccel.length;
+      
+      // Sharp movement detected - trigger click even if dragging
+      if (avgAcceleration > this.accelerationThreshold) {
+        this.clickCooldown = this.clickCooldownDuration;
+        this.clickPauseTimer = this.clickPauseDuration; // Pause dragging briefly
+        this.lastClickTriggered = true;
+        console.log(`Webcam click: Sharp movement (accel: ${avgAcceleration.toFixed(3)})`);
+        return true;
+      }
     }
     
+    // SECOND: Original gentle spike detection (only when NOT in drag mode)
+    if (this.smoothedMotionIntensity < this.dragMotionThreshold) {
+      // Detect motion spike (sudden increase)
+      const recent = this.motionHistory.slice(-3);
+      const older = this.motionHistory.slice(-6, -3);
+      
+      const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+      const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
+      
+      // Check if there's a significant spike
+      const spike = recentAvg - olderAvg;
+      const isSpike = spike > this.clickThreshold * 0.3 && recentAvg > this.clickThreshold;
+      
+      if (isSpike) {
+        this.clickCooldown = this.clickCooldownDuration;
+        this.lastClickTriggered = true;
+        console.log(`Webcam click: Gentle spike (motion: ${recentAvg.toFixed(3)})`);
+        return true;
+      }
+    }
+    
+    this.lastClickTriggered = false;
     return false;
   }
   
@@ -239,7 +295,7 @@ export class WebcamInput {
       motionIntensity: this.smoothedMotionIntensity,
       hasMotion: this.hasMotion,
       enabled: this.isEnabled,
-      isDragging: this.smoothedMotionIntensity > this.dragMotionThreshold
+      isDragging: this.smoothedMotionIntensity > this.dragMotionThreshold && this.clickPauseTimer <= 0
     };
   }
   
@@ -321,8 +377,8 @@ export class WebcamInput {
     this.debugCtx.stroke();
     
     // Draw motion intensity bar
-    const barY = this.debugCanvas.height * 0.65;
-    const barHeight = 15;
+    const barY = this.debugCanvas.height * 0.55;
+    const barHeight = 12;
     const barWidth = this.debugCanvas.width - 20;
     
     this.debugCtx.strokeStyle = 'white';
@@ -331,36 +387,66 @@ export class WebcamInput {
     this.debugCtx.fillStyle = this.smoothedMotionIntensity > this.clickThreshold ? 'red' : 'lime';
     this.debugCtx.fillRect(10, barY, barWidth * this.smoothedMotionIntensity, barHeight);
     
+    // Draw acceleration bar
+    const accelBarY = barY + barHeight + 5;
+    const currentAccel = this.accelerationHistory.length > 0 
+      ? this.accelerationHistory[this.accelerationHistory.length - 1] 
+      : 0;
+    const accelDisplay = Math.min(1, currentAccel / this.accelerationThreshold);
+    
+    this.debugCtx.strokeStyle = 'white';
+    this.debugCtx.strokeRect(10, accelBarY, barWidth, barHeight);
+    
+    this.debugCtx.fillStyle = currentAccel > this.accelerationThreshold ? 'yellow' : 'cyan';
+    this.debugCtx.fillRect(10, accelBarY, barWidth * accelDisplay, barHeight);
+    
     // Draw text info
     this.debugCtx.fillStyle = 'white';
-    this.debugCtx.font = '10px monospace';
+    this.debugCtx.font = '9px monospace';
     this.debugCtx.fillText(
       `Motion: ${(this.smoothedMotionIntensity * 100).toFixed(0)}%`,
+      10,
+      this.debugCanvas.height * 0.70
+    );
+    this.debugCtx.fillText(
+      `Accel: ${(currentAccel * 100).toFixed(0)}% (${(this.accelerationThreshold * 100).toFixed(0)}%)`,
       10,
       this.debugCanvas.height * 0.77
     );
     this.debugCtx.fillText(
       `Pos: (${(this.centroidX * 100).toFixed(0)}, ${(this.centroidY * 100).toFixed(0)})`,
       10,
-      this.debugCanvas.height * 0.85
+      this.debugCanvas.height * 0.84
     );
     
     // Draw drag state indicator
-    const isDragging = this.smoothedMotionIntensity > this.dragMotionThreshold;
+    const isDragging = this.smoothedMotionIntensity > this.dragMotionThreshold && this.clickPauseTimer <= 0;
     this.debugCtx.fillStyle = isDragging ? 'lime' : 'white';
     this.debugCtx.fillText(
       `${isDragging ? '🟢' : '⚪'} Drag: ${isDragging ? 'ON' : 'OFF'}`,
       10,
-      this.debugCanvas.height * 0.93
+      this.debugCanvas.height * 0.91
     );
     
-    // Show drag threshold indicator
-    this.debugCtx.fillStyle = 'white';
-    this.debugCtx.fillText(
-      `Threshold: ${(this.dragMotionThreshold * 100).toFixed(0)}%`,
-      10,
-      this.debugCanvas.height * 0.99
-    );
+    // Show click trigger indicator
+    if (this.lastClickTriggered || this.clickCooldown > 0) {
+      this.debugCtx.fillStyle = 'yellow';
+      this.debugCtx.fillText(
+        `⚡ CLICK!`,
+        120,
+        this.debugCanvas.height * 0.91
+      );
+    }
+    
+    // Show click pause state
+    if (this.clickPauseTimer > 0) {
+      this.debugCtx.fillStyle = 'orange';
+      this.debugCtx.fillText(
+        `⏸ Pause: ${(this.clickPauseTimer * 1000).toFixed(0)}ms`,
+        10,
+        this.debugCanvas.height * 0.98
+      );
+    }
   }
   
   public destroy(): void {

@@ -148,9 +148,9 @@ export class WhisperVision implements Pattern {
             },
             turn_detection: {
               type: 'server_vad',
-              threshold: 0.5,
+              threshold: 0.3, // More sensitive to pick up speech better
               prefix_padding_ms: 300,
-              silence_duration_ms: 500
+              silence_duration_ms: 400 // Shorter silence before ending (more responsive)
             }
           }
         }));
@@ -292,8 +292,8 @@ export class WhisperVision implements Pattern {
     // Check for voice commands first
     this.handleVoiceCommands(fullTranscript);
     
-    // Only process if we have substantial content (50+ chars)
-    if (fullTranscript.length < 50) {
+    // Only process if we have some content (15+ chars - much more responsive)
+    if (fullTranscript.length < 15) {
       console.log(`WhisperVision: Transcript too short (${fullTranscript.length} chars), waiting for more...`);
       return;
     }
